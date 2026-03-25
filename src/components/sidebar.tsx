@@ -10,11 +10,13 @@ import {
   BarChart3,
   Settings,
   Zap,
+  Clock,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/agents", label: "Agents", icon: Bot },
+  { href: "/crons", label: "Cron Jobs", icon: Clock },
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
