@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -10,6 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Bot,
   Brain,
@@ -38,7 +41,9 @@ import {
   Clock,
   Zap,
   Cpu,
+  Send,
 } from "lucide-react";
+import { saveAgentChat, type StoredMessage } from "@/lib/chat-history";
 
 interface LastEvent {
   action: string;
@@ -133,12 +138,60 @@ function timeAgo(ts: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+interface InlineMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 function AgentCard({ agent }: { agent: Agent }) {
   const [expanded, setExpanded] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [inlineMessages, setInlineMessages] = useState<InlineMessage[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const Icon = AGENT_ICONS[agent.name] || Bot;
   const le = agent.last_event;
   const modelShort = (agent.model || "none").split("/").pop();
   const costStr = agent.cost_per_call > 0 ? `$${agent.cost_per_call.toFixed(4)}` : "Free";
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!chatInput.trim() || isSending) return;
+
+    const userText = chatInput.trim();
+    setChatInput("");
+    setIsSending(true);
+    setInlineMessages((prev) => [...prev, { role: "user", content: userText }]);
+
+    try {
+      const res = await fetch("/api/chat/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText, agent: agent.name }),
+      });
+      const reply = await res.text();
+      setInlineMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: reply || "No response." },
+      ]);
+    } catch {
+      setInlineMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Connection error." },
+      ]);
+    } finally {
+      setIsSending(false);
+      textareaRef.current?.focus();
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend(e);
+    }
+  }
 
   return (
     <Card
@@ -188,7 +241,7 @@ function AgentCard({ agent }: { agent: Agent }) {
         </div>
 
         {expanded && (
-          <div className="mt-4 pt-4 border-t border-border space-y-3">
+          <div className="mt-4 pt-4 border-t border-border space-y-3" onClick={(e) => e.stopPropagation()}>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <span className="text-muted-foreground">Provider</span>
@@ -259,6 +312,64 @@ function AgentCard({ agent }: { agent: Agent }) {
                 No recent activity recorded
               </p>
             )}
+
+            {/* Inline chat */}
+            {inlineMessages.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                {inlineMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`text-xs rounded-lg px-3 py-2 ${
+                      msg.role === "user"
+                        ? "bg-primary/10 text-primary ml-6"
+                        : "bg-muted mr-6"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                ))}
+                {isSending && (
+                  <div className="flex gap-1 px-3 py-2">
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:0ms]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:150ms]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:300ms]" />
+                  </div>
+                )}
+                <Link
+                  href={`/agents/${encodeURIComponent(agent.name)}`}
+                  className="block text-center text-xs text-primary hover:underline pt-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Save inline messages to localStorage so the full chat page picks them up
+                    const now = new Date().toISOString();
+                    const toStore: StoredMessage[] = inlineMessages.map((m, idx) => ({
+                      id: `inline-${idx}`,
+                      role: m.role,
+                      content: m.content,
+                      timestamp: now,
+                    }));
+                    saveAgentChat(agent.name, toStore);
+                  }}
+                >
+                  Open full chat →
+                </Link>
+              </div>
+            )}
+            <form onSubmit={handleSend} className={`flex items-end gap-2 ${inlineMessages.length === 0 ? "pt-2 border-t border-border" : ""}`}>
+              <Textarea
+                ref={textareaRef}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Message ${agent.name}...`}
+                rows={1}
+                className="min-h-[38px] max-h-[80px] resize-none text-sm"
+                disabled={isSending}
+              />
+              <Button type="submit" size="icon" className="shrink-0 h-[38px] w-[38px]" disabled={!chatInput.trim() || isSending}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
           </div>
         )}
       </CardContent>

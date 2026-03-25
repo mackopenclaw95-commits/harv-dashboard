@@ -1,6 +1,5 @@
 export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const lastMessage = messages[messages.length - 1]?.content || "";
+  const { message, agent } = await req.json();
 
   const API_BASE =
     process.env.API_URL ||
@@ -13,7 +12,7 @@ export async function POST(req: Request) {
       "Content-Type": "application/json",
       "X-API-Key": API_KEY,
     },
-    body: JSON.stringify({ message: lastMessage }),
+    body: JSON.stringify({ message, agent }),
   });
 
   if (!response.ok) {

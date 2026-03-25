@@ -18,10 +18,10 @@ import {
   Shield,
   Cpu,
   BarChart3,
-  Twitter,
+  Timer,
   TrendingUp,
-  Heart,
-  HelpCircle,
+  HeartPulse,
+  CircleHelp,
 } from "lucide-react";
 
 interface CronJob {
@@ -38,10 +38,10 @@ const GROUP_ICONS: Record<string, React.ElementType> = {
   System: Shield,
   Core: Cpu,
   Analytics: BarChart3,
-  Social: Twitter,
+  Social: Timer,
   Trading: TrendingUp,
-  Health: Heart,
-  Other: HelpCircle,
+  Health: HeartPulse,
+  Other: CircleHelp,
 };
 
 function groupColor(group: string) {
@@ -77,7 +77,7 @@ function timeAgo(ts: string): string {
 
 function CronCard({ job }: { job: CronJob }) {
   const [expanded, setExpanded] = useState(false);
-  const Icon = GROUP_ICONS[job.group] || HelpCircle;
+  const Icon = GROUP_ICONS[job.group] || CircleHelp;
 
   return (
     <Card
