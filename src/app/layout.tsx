@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/components/auth-provider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const jetbrainsMono = JetBrains_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
@@ -26,11 +29,25 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full dark`}
+      className={`${outfit.variable} ${jetbrainsMono.variable} h-full`}
+      suppressHydrationWarning
     >
       <body className="flex h-screen overflow-hidden bg-background text-foreground">
-        <Sidebar />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <ThemeProvider>
+          <AuthProvider>
+            <div
+              className="fixed inset-0 -z-10 overflow-hidden"
+              aria-hidden="true"
+            >
+              <div className="orb orb-1" />
+              <div className="orb orb-2" />
+              <div className="orb orb-3" />
+            </div>
+            <Sidebar />
+            <main className="relative flex-1 overflow-auto">{children}</main>
+            <Toaster richColors theme="dark" />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

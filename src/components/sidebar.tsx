@@ -35,14 +35,24 @@ import {
   Trophy,
   Megaphone,
   History,
+  LayoutDashboard,
+  FolderOpen,
+  Users2,
+  Heart,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const NAV_ITEMS = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/agents", label: "Agents", icon: Bot },
-  { href: "/crons", label: "Cron Jobs", icon: Clock },
+  { href: "/team", label: "Meet the Team", icon: Users2 },
+  { href: "/crons", label: "Automations", icon: Zap },
+  { href: "/documents", label: "Documents", icon: FolderOpen },
+  { href: "/journal", label: "Journal", icon: FileText },
   { href: "/memory", label: "Memory", icon: Brain },
+  { href: "/activity", label: "Activity", icon: Activity },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -72,7 +82,7 @@ const AGENT_ICONS: Record<string, React.ElementType> = {
   Ledger: FileText,
   Drive: Database,
   "Image Gen": Image,
-  Heartbeat: Activity,
+  Heartbeat: Heart,
   Postman: Mail,
 };
 
@@ -107,7 +117,7 @@ export function Sidebar() {
 
   // Refresh history agents on pathname change (when navigating between chats)
   useEffect(() => {
-    setHistoryAgents(getAgentsWithHistory());
+    getAgentsWithHistory().then(setHistoryAgents).catch(() => {});
   }, [pathname]);
 
   // Auto-open dropdown when on an agent chat page
@@ -132,9 +142,11 @@ export function Sidebar() {
         <nav className="flex flex-col gap-1 px-2 w-full">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active =
-              href === "/agents"
-                ? pathname === "/agents"
-                : pathname.startsWith(href);
+              href === "/"
+                ? pathname === "/"
+                : href === "/agents"
+                  ? pathname === "/agents"
+                  : pathname.startsWith(href);
             return (
               <Link
                 key={href}
