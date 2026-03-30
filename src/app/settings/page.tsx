@@ -177,7 +177,7 @@ export default function SettingsPage() {
   async function loadPersonality() {
     setPersonalityLoading(true);
     try {
-      const res = await fetch("/api/proxy?path=/api/settings/personality");
+      const res = await fetch("/api/personality");
       if (res.ok) { const d = await res.json(); setPersonality(d.personality || "default"); }
     } catch { /* default */ }
     finally { setPersonalityLoading(false); }
@@ -186,17 +186,21 @@ export default function SettingsPage() {
   async function togglePersonality() {
     const next = personality === "cars1" ? "default" : "cars1";
     try {
-      const res = await fetch("/api/proxy?path=/api/settings/personality", {
+      const res = await fetch("/api/personality", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ personality: next }),
       });
       if (res.ok) {
         setPersonality(next);
+        // Toggle the kachow CSS class and notify other components
         if (next === "cars1") {
+          document.documentElement.classList.add("kachow");
           toast.success("Ka-chow! Speed, I am speed. 🏎️");
         } else {
+          document.documentElement.classList.remove("kachow");
           toast.success("Back to standard mode");
         }
+        window.dispatchEvent(new CustomEvent("personality-change", { detail: next }));
       }
     } catch { toast.error("Could not reach Harv API"); }
   }
@@ -868,21 +872,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Secret activation code (Easter egg) */}
-          <div className="pt-4 border-t border-white/[0.04]">
-            <div className="flex items-center gap-2">
-              <Input
-                value={kachowInput}
-                onChange={(e) => setKachowInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleKachowSubmit(); }}
-                placeholder="Enter activation code..."
-                className="text-xs h-8 max-w-48 opacity-30 focus:opacity-100 transition-opacity"
-              />
-              {personality === "cars1" && (
-                <span className="text-[10px] text-red-400 animate-pulse">🏎️</span>
-              )}
-            </div>
-          </div>
         </TabsContent>
       </Tabs>
     </div>

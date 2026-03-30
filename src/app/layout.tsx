@@ -5,6 +5,9 @@ import { Sidebar } from "@/components/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth-provider";
+import { PersonalityProvider } from "@/components/personality-provider";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { NotificationProvider } from "@/components/notification-provider";
 
 const outfit = Outfit({
   variable: "--font-sans",
@@ -43,6 +46,9 @@ export default function RootLayout({
               <div className="orb orb-2" />
               <div className="orb orb-3" />
             </div>
+            <PersonalityProvider />
+            <KeyboardShortcuts />
+            <NotificationProvider />
             <Sidebar />
             <main className="relative flex-1 overflow-auto">{children}</main>
             <Toaster richColors theme="dark" />

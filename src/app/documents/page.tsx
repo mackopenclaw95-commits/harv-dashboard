@@ -210,7 +210,7 @@ export default function DocumentsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Documents
+                Files
               </h1>
               <p className="text-sm text-muted-foreground">
                 {total} file{total !== 1 ? "s" : ""} from your agents
@@ -628,9 +628,9 @@ function EmptyState({
         </>
       ) : (
         <>
-          <p className="font-medium">No documents yet</p>
+          <p className="font-medium">No files yet</p>
           <p className="text-sm text-muted-foreground/60 mt-1 max-w-xs">
-            Documents created by agents will appear here automatically. You can
+            Files created by agents will appear here automatically. You can
             also upload files manually.
           </p>
           <Button

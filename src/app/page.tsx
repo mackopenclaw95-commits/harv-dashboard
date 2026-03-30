@@ -244,7 +244,7 @@ export default function DashboardPage() {
     },
     {
       href: "/documents",
-      label: "Documents",
+      label: "Files",
       description: "Files and media from your agents",
       icon: FolderOpen,
       color: "text-amber-400",

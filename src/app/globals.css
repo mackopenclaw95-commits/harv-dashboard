@@ -100,6 +100,84 @@ nextjs-portal { display: none !important; }
   --sidebar-ring: oklch(0.78 0.145 192 / 40%);
 }
 
+/* ─── Ka-chow Mode: Lightning McQueen Theme ─── */
+.dark.kachow {
+  --background: oklch(0.08 0.02 15);
+  --foreground: oklch(0.95 0.005 15);
+  --card: oklch(0.13 0.015 15);
+  --card-foreground: oklch(0.95 0.005 15);
+  --popover: oklch(0.14 0.015 15);
+  --popover-foreground: oklch(0.95 0.005 15);
+  --primary: oklch(0.55 0.25 25);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.15 0.02 30);
+  --secondary-foreground: oklch(0.95 0.005 15);
+  --muted: oklch(0.17 0.02 20);
+  --muted-foreground: oklch(0.65 0.02 20);
+  --accent: oklch(0.75 0.18 85);
+  --accent-foreground: oklch(0.15 0.02 85);
+  --destructive: oklch(0.55 0.25 25);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.55 0.25 25 / 40%);
+  --chart-1: oklch(0.55 0.25 25);
+  --chart-2: oklch(0.75 0.18 85);
+  --chart-3: oklch(0.65 0.18 50);
+  --chart-4: oklch(0.60 0.20 35);
+  --chart-5: oklch(0.50 0.22 15);
+  --sidebar: oklch(0.09 0.02 15);
+  --sidebar-foreground: oklch(0.95 0.005 15);
+  --sidebar-primary: oklch(0.55 0.25 25);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.55 0.25 25);
+  --sidebar-accent-foreground: oklch(0.95 0.005 15);
+  --sidebar-border: oklch(1 0 0 / 6%);
+  --sidebar-ring: oklch(0.55 0.25 25 / 40%);
+}
+
+/* Ka-chow orbs: red, orange, yellow flames */
+.dark.kachow .orb-1 { background: oklch(0.40 0.22 25); }
+.dark.kachow .orb-2 { background: oklch(0.35 0.20 55); }
+.dark.kachow .orb-3 { background: oklch(0.40 0.17 85); }
+
+/* Ka-chow racing stripe on sidebar */
+.dark.kachow aside {
+  border-right: 2px solid oklch(0.55 0.25 25);
+  box-shadow: inset -3px 0 12px oklch(0.55 0.25 25 / 10%);
+}
+
+/* Ka-chow checkered flag pattern on active nav items */
+.dark.kachow aside a[class*="bg-primary"] {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    oklch(1 0 0 / 3%) 4px,
+    oklch(1 0 0 / 3%) 8px
+  );
+}
+
+/* Ka-chow send button glow */
+.dark.kachow button[type="submit"]:not(:disabled) {
+  box-shadow: 0 0 12px oklch(0.55 0.25 25 / 30%);
+}
+
+/* Ka-chow tab active pulse */
+.dark.kachow [data-slot="tabs-trigger"][data-active] {
+  box-shadow: 0 0 8px oklch(0.55 0.25 25 / 20%);
+}
+
+/* Speed lines animation for kachow loading */
+@keyframes speed-lines {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 0.3; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+.dark.kachow [data-slot="card"] {
+  border-top: 1px solid oklch(0.55 0.25 25 / 15%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
