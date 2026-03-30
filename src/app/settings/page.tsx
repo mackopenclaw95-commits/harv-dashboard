@@ -79,7 +79,7 @@ const KACHOW_CODES = ["kachow", "speed", "ka-chow"];
 // ─── Main Component ─────────────────────────────────────
 
 export default function SettingsPage() {
-  const { user, signIn, signOut, updateUser } = useAuth();
+  const { user, profile, signOut, signInWithGoogle } = useAuth();
   const { theme, setTheme } = useTheme();
   const searchParams = useSearchParams();
 
@@ -685,7 +685,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-4">
                     <div className="relative group">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-2xl font-bold text-primary ring-2 ring-primary/20">
-                        {user.name.charAt(0)}
+                        {(profile?.name || user?.email || "U").charAt(0).toUpperCase()}
                       </div>
                       <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         onClick={() => toast.info("Profile photo upload coming soon")}
@@ -697,18 +697,15 @@ export default function SettingsPage() {
                       <div>
                         <label className="text-xs text-muted-foreground">Display Name</label>
                         <Input
-                          defaultValue={user.name}
+                          defaultValue={profile?.name || ""}
                           className="text-sm mt-1"
-                          onBlur={(e) => {
-                            const v = e.target.value.trim();
-                            if (v && v !== user.name) { updateUser({ name: v }); toast.success("Name updated"); }
-                          }}
+                          onBlur={() => {}}
                           onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                         />
                       </div>
                       <div>
                         <label className="text-xs text-muted-foreground">Email</label>
-                        <Input value={user.email} readOnly className="text-sm mt-1 opacity-60" />
+                        <Input value={user?.email || ""} readOnly className="text-sm mt-1 opacity-60" />
                       </div>
                     </div>
                   </div>
@@ -761,7 +758,7 @@ export default function SettingsPage() {
                   <h3 className="text-lg font-semibold">Sign In</h3>
                   <p className="text-sm text-muted-foreground">Sign in to manage your account and preferences</p>
                 </div>
-                <Button onClick={() => signIn()} className="gap-2">
+                <Button onClick={() => signInWithGoogle()} className="gap-2">
                   <Globe className="h-4 w-4" /> Sign in with Google
                 </Button>
               </CardContent>

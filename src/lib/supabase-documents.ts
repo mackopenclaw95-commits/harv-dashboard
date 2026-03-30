@@ -1,5 +1,10 @@
 import { supabase } from "./supabase";
 
+async function getUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 export interface Document {
   id: string;
   filename: string;
@@ -183,6 +188,7 @@ export async function uploadDocument(
   if (uploadError) throw uploadError;
 
   // Create metadata row
+  const uid = await getUserId();
   const { data, error } = await supabase
     .from("documents")
     .insert({
@@ -195,6 +201,7 @@ export async function uploadDocument(
       project_id: projectId || null,
       tags: tags || [],
       description: description || null,
+      user_id: uid,
     })
     .select()
     .single();

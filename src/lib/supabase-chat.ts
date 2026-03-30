@@ -1,5 +1,10 @@
 import { supabase } from "./supabase";
 
+async function getUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 export interface Conversation {
   id: string;
   agent_name: string;
@@ -54,9 +59,10 @@ export async function getOrCreateConversation(
   if (existing) return existing.id;
 
   // Create new conversation
+  const uid = await getUserId();
   const { data: created, error } = await supabase
     .from("conversations")
-    .insert({ agent_name: agentName })
+    .insert({ agent_name: agentName, user_id: uid })
     .select("id")
     .single();
 
@@ -69,9 +75,10 @@ export async function createConversation(
   agentName: string,
   title?: string
 ): Promise<string> {
+  const uid = await getUserId();
   const { data, error } = await supabase
     .from("conversations")
-    .insert({ agent_name: agentName, title: title || null })
+    .insert({ agent_name: agentName, title: title || null, user_id: uid })
     .select("id")
     .single();
 
@@ -94,7 +101,7 @@ export async function saveMessage(
 
   const { data, error } = await supabase
     .from("messages")
-    .insert({ conversation_id: conversationId, role, content })
+    .insert({ conversation_id: conversationId, role, content, user_id: (await getUserId()) })
     .select()
     .single();
 

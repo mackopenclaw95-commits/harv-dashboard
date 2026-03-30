@@ -1,6 +1,11 @@
 import { supabase } from "./supabase";
 import type { Conversation } from "./supabase-chat";
 
+async function getUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -129,12 +134,14 @@ export async function createProject(
   description?: string,
   color?: string
 ): Promise<Project> {
+  const uid = await getUserId();
   const { data, error } = await supabase
     .from("projects")
     .insert({
       name,
       description: description || null,
       color: color || "primary",
+      user_id: uid,
     })
     .select()
     .single();

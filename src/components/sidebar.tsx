@@ -18,8 +18,11 @@ import {
   FolderKanban,
   Users2,
   Calendar,
+  CreditCard,
+  Shield,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/components/auth-provider";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -34,11 +37,17 @@ const NAV_ITEMS = [
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/activity", label: "Activity", icon: Activity },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
+];
+
+const ADMIN_ITEMS = [
+  { href: "/admin", label: "Admin Hub", icon: Shield },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isAdmin } = useAuth();
   const [isKachow, setIsKachow] = useState(false);
 
   useEffect(() => {
@@ -88,6 +97,31 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Admin section — owner/admin only */}
+          {isAdmin && (
+            <>
+              <div className="mx-3 my-2 border-t border-white/[0.06]" />
+              {ADMIN_ITEMS.map(({ href, label, icon: Icon }) => {
+                const active = pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="hidden md:inline">{label}</span>
+                  </Link>
+                );
+              })}
+            </>
+          )}
 
         </nav>
       </ScrollArea>

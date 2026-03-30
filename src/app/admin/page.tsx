@@ -1,0 +1,391 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Shield,
+  Users,
+  DollarSign,
+  Activity,
+  MessageSquare,
+  FileText,
+  Search,
+  ExternalLink,
+  RefreshCw,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Zap,
+} from "lucide-react";
+import { cn, timeAgo } from "@/lib/utils";
+import { createServiceClient } from "@/lib/supabase";
+import type { Profile } from "@/components/auth-provider";
+
+interface AdminStats {
+  totalUsers: number;
+  activeTrials: number;
+  paidUsers: number;
+  cancelledUsers: number;
+  totalConversations: number;
+  totalMessages: number;
+  totalDocuments: number;
+  totalProjects: number;
+}
+
+interface VPSHealth {
+  status: string;
+  uptime_seconds: number;
+  api_uptime_seconds: number;
+}
+
+export default function AdminPage() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [vpsHealth, setVpsHealth] = useState<VPSHealth | null>(null);
+  const [events, setEvents] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const supabase = createServiceClient();
+
+      // Load all profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (profiles) {
+        setUsers(profiles);
+        setStats({
+          totalUsers: profiles.length,
+          activeTrials: profiles.filter((p) => p.plan_status === "trial").length,
+          paidUsers: profiles.filter((p) => p.plan_status === "active" && p.plan !== "free").length,
+          cancelledUsers: profiles.filter((p) => p.plan_status === "cancelled").length,
+          totalConversations: 0,
+          totalMessages: 0,
+          totalDocuments: 0,
+          totalProjects: 0,
+        });
+      }
+
+      // Load aggregate counts
+      const [convos, msgs, docs, projects] = await Promise.all([
+        supabase.from("conversations").select("id", { count: "exact", head: true }),
+        supabase.from("messages").select("id", { count: "exact", head: true }),
+        supabase.from("documents").select("id", { count: "exact", head: true }),
+        supabase.from("projects").select("id", { count: "exact", head: true }),
+      ]);
+
+      setStats((prev) =>
+        prev
+          ? {
+              ...prev,
+              totalConversations: convos.count || 0,
+              totalMessages: msgs.count || 0,
+              totalDocuments: docs.count || 0,
+              totalProjects: projects.count || 0,
+            }
+          : prev
+      );
+
+      // VPS health
+      try {
+        const healthRes = await fetch("/api/proxy?path=/api/health/quick");
+        if (healthRes.ok) setVpsHealth(await healthRes.json());
+      } catch {}
+
+      // Recent events
+      try {
+        const eventsRes = await fetch(
+          "/api/proxy?path=" + encodeURIComponent("/api/events/recent?limit=10")
+        );
+        if (eventsRes.ok) {
+          const evData = await eventsRes.json();
+          setEvents(Array.isArray(evData) ? evData : []);
+        }
+      } catch {}
+    } catch (err) {
+      console.error("Admin load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filteredUsers = searchQuery
+    ? users.filter(
+        (u) =>
+          u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : users;
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Admin Hub</h1>
+            <p className="text-sm text-muted-foreground">God mode — see everything</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => { setLoading(true); load(); }}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Users</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">{stats?.totalUsers || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-yellow-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Active Trials</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">{stats?.activeTrials || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Paid Users</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">{stats?.paidUsers || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Cancelled</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">{stats?.cancelledUsers || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Conversations</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">{stats?.totalConversations || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Messages</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">{stats?.totalMessages || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Documents</span>
+            </div>
+            <p className="text-2xl font-bold mt-1">{stats?.totalDocuments || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-green-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">VPS Status</span>
+            </div>
+            <p className="text-sm font-medium mt-1.5">
+              {vpsHealth ? (
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-400" />
+                  Online · {Math.round((vpsHealth.uptime_seconds || 0) / 3600)}h uptime
+                </span>
+              ) : (
+                <span className="text-red-400">Unreachable</span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Users list */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Users</h2>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search users..."
+                className="pl-8 h-8 w-48 text-xs bg-white/[0.03] border-white/[0.06]"
+              />
+            </div>
+          </div>
+
+          <Card>
+            <ScrollArea className="max-h-[500px]">
+              <div className="divide-y divide-white/[0.06]">
+                {filteredUsers.map((u) => (
+                  <Link
+                    key={u.id}
+                    href={`/admin/users/${u.id}`}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                  >
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                      {(u.name || u.email || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">
+                          {u.name || "Unnamed"}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] px-1.5",
+                            u.plan === "pro" && "text-primary border-primary/30",
+                            u.plan === "business" && "text-yellow-400 border-yellow-500/30",
+                            u.plan === "free" && "text-muted-foreground border-white/[0.1]"
+                          )}
+                        >
+                          {u.plan}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] px-1.5",
+                            u.plan_status === "active" && "text-green-400 border-green-500/30",
+                            u.plan_status === "trial" && "text-yellow-400 border-yellow-500/30",
+                            u.plan_status === "cancelled" && "text-red-400 border-red-500/30"
+                          )}
+                        >
+                          {u.plan_status}
+                        </Badge>
+                        {u.role === "owner" && (
+                          <Badge className="text-[9px] px-1.5 bg-primary/20 text-primary border-0">
+                            owner
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/60 truncate">
+                        {u.email} · joined {timeAgo(u.created_at)}
+                      </p>
+                    </div>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
+                  </Link>
+                ))}
+                {filteredUsers.length === 0 && (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground/50">
+                    {searchQuery ? "No matching users" : "No users yet"}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
+        </div>
+
+        {/* Recent events */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Recent Events</h2>
+          <Card>
+            <ScrollArea className="max-h-[500px]">
+              <div className="divide-y divide-white/[0.06]">
+                {events.map((evt, i) => (
+                  <div key={i} className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "h-2 w-2 rounded-full shrink-0",
+                          evt.status === "success" ? "bg-green-400" :
+                          evt.status === "error" ? "bg-red-400" : "bg-yellow-400"
+                        )}
+                      />
+                      <span className="text-xs font-medium truncate">
+                        {String(evt.agent || "Unknown")}
+                      </span>
+                      <Badge variant="outline" className="text-[9px] px-1.5 ml-auto shrink-0">
+                        {String(evt.action || "").replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-1">
+                      {String(evt.summary || "")}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/40 mt-0.5">
+                      {evt.timestamp ? timeAgo(String(evt.timestamp)) : ""}
+                    </p>
+                  </div>
+                ))}
+                {events.length === 0 && (
+                  <div className="px-4 py-8 text-center text-sm text-muted-foreground/50">
+                    No events
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
+
+          {/* Quick stats */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Revenue
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                ${((stats?.paidUsers || 0) * 20).toFixed(2)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Estimated MRR ({stats?.paidUsers || 0} paid users x $20)
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

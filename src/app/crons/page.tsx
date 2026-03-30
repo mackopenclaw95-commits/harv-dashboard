@@ -117,7 +117,7 @@ function isOverdue(lastRun: string | null, schedule: string): boolean {
 // ─── Main Component ─────────────────────────────────────
 
 export default function AutomationsPage() {
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -152,7 +152,7 @@ export default function AutomationsPage() {
   const activeJobs = allJobs.filter((j) => !ADMIN_CRONS.has(j.name) && !SYSTEM_CRONS.has(j.name));
   const systemJobs = allJobs.filter((j) => SYSTEM_CRONS.has(j.name));
   const adminJobs = jobs.filter((j) => ADMIN_CRONS.has(j.name));
-  const isAdmin = user?.role === "owner";
+  const isAdminUser = isAdmin;
 
   const counts = {
     total: activeJobs.length + customAutomations.length,

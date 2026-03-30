@@ -70,7 +70,7 @@ export default function DashboardPage() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [events, setEvents] = useState<AgentEvent[]>([]);
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [trialDays, setTrialDays] = useState(14);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -153,14 +153,14 @@ export default function DashboardPage() {
   useEffect(() => {
     load(false);
     intervalRef.current = setInterval(() => load(true), 120000);
-    if (user) {
+    if (profile) {
       ensureTrialStarted();
       setTrialDays(getTrialDaysRemaining());
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [load, user]);
+  }, [load, profile]);
 
   function timeSinceRefresh(): string {
     if (!lastRefreshed) return "";
@@ -263,7 +263,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 space-y-8 max-w-6xl mx-auto">
       {/* Trial Banner */}
-      {user && trialDays > 0 && trialDays <= 14 && (
+      {profile && trialDays > 0 && trialDays <= 14 && (
         <div className="flex items-center justify-between rounded-xl bg-primary/8 ring-1 ring-primary/15 px-4 py-2.5">
           <div className="flex items-center gap-2 text-sm">
             <Timer className="h-4 w-4 text-primary" />
