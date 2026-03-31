@@ -80,7 +80,7 @@ export function ChatPanel({
   agentDescription,
   projectId,
 }: ChatPanelProps) {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const Icon = IconProp || Bot;
   const [messages, setMessages] = useState<Message[]>([]);
   const [projectContext, setProjectContext] = useState<string | null>(null);
@@ -499,7 +499,7 @@ export function ChatPanel({
             </div>
             <h1 className="text-3xl font-semibold tracking-tight">
               {agentName === "Harv"
-                ? (isKachow ? getKachowGreeting(user?.name) : getGreeting(user?.name))
+                ? (isKachow ? getKachowGreeting(profile?.name ?? undefined) : getGreeting(profile?.name ?? undefined))
                 : `Chat with ${agentName}`}
             </h1>
           </div>

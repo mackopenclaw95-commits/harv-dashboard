@@ -29,7 +29,6 @@ export function FlowNode({ node, isSelected, isHovered, onSelect, onHover }: Flo
       className="overflow-visible"
     >
       <div
-        xmlns="http://www.w3.org/1999/xhtml"
         onClick={(e) => { e.stopPropagation(); onSelect(); }}
         onMouseEnter={() => onHover(true)}
         onMouseLeave={() => onHover(false)}

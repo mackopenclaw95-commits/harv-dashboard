@@ -33,8 +33,8 @@ export async function middleware(req: NextRequest) {
   // API routes handle their own auth
   const isApi = req.nextUrl.pathname.startsWith("/api/");
 
-  // TODO: Enable auth redirect after testing is complete
-  const SKIP_AUTH = process.env.SKIP_AUTH === "true" || process.env.NODE_ENV === "development";
+  // Only skip auth if explicitly disabled via env var (for local dev)
+  const SKIP_AUTH = process.env.SKIP_AUTH === "true";
   if (!session && !isPublic && !isApi && !SKIP_AUTH) {
     const loginUrl = new URL("/auth/login", req.url);
     loginUrl.searchParams.set("next", req.nextUrl.pathname);

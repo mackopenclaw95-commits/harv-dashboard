@@ -50,6 +50,9 @@ export function Sidebar() {
   const { isAdmin } = useAuth();
   const [isKachow, setIsKachow] = useState(false);
 
+  // Hide sidebar on auth pages
+  if (pathname?.startsWith("/auth")) return null;
+
   useEffect(() => {
     // Check on mount
     setIsKachow(document.documentElement.classList.contains("kachow"));

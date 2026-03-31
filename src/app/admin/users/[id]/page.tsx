@@ -20,7 +20,6 @@ import {
   Play,
 } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
-import { createServiceClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Profile } from "@/components/auth-provider";
 
@@ -47,47 +46,36 @@ export default function AdminUserDetailPage({
 
   useEffect(() => {
     async function load() {
-      const supabase = createServiceClient();
-
-      const [profileRes, convosRes, docsRes, projectsRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", id).single(),
-        supabase
-          .from("conversations")
-          .select("id, title, agent_name, status, updated_at, messages(count)")
-          .eq("user_id", id)
-          .order("updated_at", { ascending: false })
-          .limit(20),
-        supabase
-          .from("documents")
-          .select("id, filename, file_type, file_size, created_at")
-          .eq("user_id", id)
-          .order("created_at", { ascending: false })
-          .limit(20),
-        supabase
-          .from("projects")
-          .select("id, name, created_at, updated_at")
-          .eq("user_id", id)
-          .order("updated_at", { ascending: false }),
-      ]);
-
-      if (profileRes.data) setProfile(profileRes.data);
-      if (convosRes.data) setConversations(convosRes.data);
-      if (docsRes.data) setDocuments(docsRes.data);
-      if (projectsRes.data) setProjects(projectsRes.data);
+      try {
+        const res = await fetch(`/api/admin/users/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) setProfile(data.profile);
+          if (data.conversations) setConversations(data.conversations);
+          if (data.documents) setDocuments(data.documents);
+          if (data.projects) setProjects(data.projects);
+        }
+      } catch {}
       setLoading(false);
     }
     load();
   }, [id]);
 
   async function toggleUserStatus(action: "ban" | "activate") {
-    const supabase = createServiceClient();
-    const newStatus = action === "ban" ? "cancelled" : "active";
-    await supabase
-      .from("profiles")
-      .update({ plan_status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", id);
-    setProfile((p) => (p ? { ...p, plan_status: newStatus } : p));
-    toast.success(action === "ban" ? "User suspended" : "User activated");
+    try {
+      const res = await fetch(`/api/admin/users/${id}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfile((p) => (p ? { ...p, plan_status: data.status } : p));
+        toast.success(action === "ban" ? "User suspended" : "User activated");
+      }
+    } catch {
+      toast.error("Action failed");
+    }
   }
 
   if (loading) {

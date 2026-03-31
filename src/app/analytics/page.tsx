@@ -66,7 +66,7 @@ interface AnalyticsData {
   total_calls: number;
   cost_by_agent: Record<string, number>;
   recent_costs: Array<{ date: string; cost: number }>;
-  credits: { budget_usd: number; remaining_usd: number; days_remaining: number };
+  credits: { budget_usd: number; remaining_usd: number; days_remaining: number; sources?: Array<{ name: string; amount: number; remaining?: number }> };
 }
 
 // Agents excluded from cost breakdown (system/internal)

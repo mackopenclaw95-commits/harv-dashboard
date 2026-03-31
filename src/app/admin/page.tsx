@@ -25,7 +25,6 @@ import {
   Zap,
 } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
-import { createServiceClient } from "@/lib/supabase";
 import type { Profile } from "@/components/auth-provider";
 
 interface AdminStats {
@@ -55,47 +54,13 @@ export default function AdminPage() {
 
   const load = useCallback(async () => {
     try {
-      const supabase = createServiceClient();
-
-      // Load all profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (profiles) {
-        setUsers(profiles);
-        setStats({
-          totalUsers: profiles.length,
-          activeTrials: profiles.filter((p) => p.plan_status === "trial").length,
-          paidUsers: profiles.filter((p) => p.plan_status === "active" && p.plan !== "free").length,
-          cancelledUsers: profiles.filter((p) => p.plan_status === "cancelled").length,
-          totalConversations: 0,
-          totalMessages: 0,
-          totalDocuments: 0,
-          totalProjects: 0,
-        });
+      // Fetch from server-side API route (has service role access)
+      const adminRes = await fetch("/api/admin/stats");
+      if (adminRes.ok) {
+        const data = await adminRes.json();
+        setUsers(data.users || []);
+        setStats(data.stats || null);
       }
-
-      // Load aggregate counts
-      const [convos, msgs, docs, projects] = await Promise.all([
-        supabase.from("conversations").select("id", { count: "exact", head: true }),
-        supabase.from("messages").select("id", { count: "exact", head: true }),
-        supabase.from("documents").select("id", { count: "exact", head: true }),
-        supabase.from("projects").select("id", { count: "exact", head: true }),
-      ]);
-
-      setStats((prev) =>
-        prev
-          ? {
-              ...prev,
-              totalConversations: convos.count || 0,
-              totalMessages: msgs.count || 0,
-              totalDocuments: docs.count || 0,
-              totalProjects: projects.count || 0,
-            }
-          : prev
-      );
 
       // VPS health
       try {

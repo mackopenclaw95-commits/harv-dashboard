@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -78,7 +79,15 @@ const KACHOW_CODES = ["kachow", "speed", "ka-chow"];
 
 // ─── Main Component ─────────────────────────────────────
 
-export default function SettingsPage() {
+export default function SettingsPageWrapper() {
+  return (
+    <Suspense>
+      <SettingsPage />
+    </Suspense>
+  );
+}
+
+function SettingsPage() {
   const { user, profile, signOut, signInWithGoogle } = useAuth();
   const { theme, setTheme } = useTheme();
   const searchParams = useSearchParams();

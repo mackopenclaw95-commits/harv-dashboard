@@ -19,7 +19,12 @@ export interface Profile {
   plan: string;
   plan_status: string;
   trial_ends_at: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  promo_code: string | null;
   onboarded: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
