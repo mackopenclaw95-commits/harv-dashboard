@@ -371,6 +371,8 @@ export function ChatPanel({
 
       const contentType = res.headers.get("content-type") || "";
       const assistantId = (Date.now() + 1).toString();
+      let tokensIn = 0;
+      let tokensOut = 0;
 
       if (contentType.includes("text/event-stream") && res.body) {
         // SSE streaming: render text incrementally
@@ -411,6 +413,8 @@ export function ChatPanel({
                 );
               } else if (payload.type === "done") {
                 fullText = payload.full_text || fullText;
+                tokensIn = payload.tokens_in || 0;
+                tokensOut = payload.tokens_out || 0;
                 streamDone = true;
               }
               // tool events are informational — text keeps streaming after
@@ -451,11 +455,15 @@ export function ChatPanel({
 
       onNewMessage?.();
 
-      // Log usage
+      // Log usage with token data
       fetch("/api/usage/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_name: agentName || "Harv" }),
+        body: JSON.stringify({
+          agent_name: agentName || "Harv",
+          tokens_used: tokensIn + tokensOut,
+          estimated_cost: 0, // Cost calculated server-side
+        }),
       }).catch(() => {});
     } catch {
       toast.error("Connection error — is the Harv API running?");
