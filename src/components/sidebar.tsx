@@ -37,7 +37,6 @@ const NAV_ITEMS = [
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/activity", label: "Activity", icon: Activity },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
