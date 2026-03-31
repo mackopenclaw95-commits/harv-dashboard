@@ -185,28 +185,30 @@ export default function AdminPage() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Conversations</span>
+              <DollarSign className="h-4 w-4 text-yellow-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">API Cost</span>
             </div>
-            <p className="text-2xl font-bold mt-1">{stats?.totalConversations || 0}</p>
+            <p className="text-2xl font-bold mt-1">${(stats?.totalApiCost || 0).toFixed(4)}</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">user usage this period</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Messages</span>
+              <Zap className="h-4 w-4 text-red-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Monthly Overhead</span>
             </div>
-            <p className="text-2xl font-bold mt-1">{stats?.totalMessages || 0}</p>
+            <p className="text-2xl font-bold mt-1">${(217.99 + (stats?.totalApiCost || 0)).toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">$200 Claude + $17.99 VPS + API</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-400" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Documents</span>
+              <AlertCircle className="h-4 w-4 text-red-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Cancelled</span>
             </div>
-            <p className="text-2xl font-bold mt-1">{stats?.totalDocuments || 0}</p>
+            <p className="text-2xl font-bold mt-1">{stats?.cancelledUsers || 0}</p>
           </CardContent>
         </Card>
         <Card>
@@ -398,20 +400,20 @@ export default function AdminPage() {
             </ScrollArea>
           </Card>
 
-          {/* Quick stats */}
+          {/* Profit/Loss quick calc */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-400" />
-                Cancelled
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Profit / Loss
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">
-                {stats?.cancelledUsers || 0}
+              <p className={cn("text-2xl font-bold", ((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.totalApiCost || 0)) >= 0 ? "text-green-400" : "text-red-400")}>
+                ${((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.totalApiCost || 0)).toFixed(2)}
               </p>
               <p className="text-xs text-muted-foreground">
-                Total API cost: ${(stats?.totalApiCost || 0).toFixed(4)}
+                Revenue - Overhead
               </p>
             </CardContent>
           </Card>
