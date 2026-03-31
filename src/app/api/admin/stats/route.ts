@@ -18,34 +18,50 @@ export async function GET() {
       supabase.from("usage_logs").select("user_id, tokens_used, estimated_cost"),
     ]);
 
+    // Also pull real cost data from VPS events API
+    let vpsCostData = { claudeCost: 0, openrouterCost: 0, totalTokens: 0 };
+    try {
+      const API_URL = process.env.API_URL || "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
+      const API_KEY = process.env.HARV_API_KEY || "";
+      const eventsRes = await fetch(
+        `${API_URL}/api/events/recent?limit=200`,
+        { headers: { "X-API-Key": API_KEY }, next: { revalidate: 60 } }
+      );
+      if (eventsRes.ok) {
+        const events = await eventsRes.json();
+        for (const evt of events) {
+          if (evt.action !== "api_cost") continue;
+          const summary = evt.summary || "";
+          const tokens = evt.tokens || 0;
+          const cost = evt.cost || 0;
+
+          // Determine provider from model name in summary
+          const isClaudeModel = summary.includes("claude-");
+          if (isClaudeModel) {
+            vpsCostData.claudeCost += cost;
+          } else {
+            vpsCostData.openrouterCost += cost;
+          }
+          vpsCostData.totalTokens += tokens;
+        }
+      }
+    } catch {}
+
     // Build plan lookup from profiles
     const planMap: Record<string, string> = {};
     for (const p of profiles.data || []) {
       planMap[p.id] = p.plan || "free";
     }
 
-    // Aggregate usage per user + split costs by provider
+    // Aggregate usage per user from dashboard usage_logs
     const userUsage: Record<string, { tokens: number; cost: number; messages: number }> = {};
-    let totalApiCost = 0;       // ALL usage cost
-    let claudeCost = 0;         // Claude usage (included in $200 flat fee)
-    let openrouterCost = 0;     // OpenRouter usage (real pay-per-use cost)
-    let totalTokens = 0;
+    let dashboardTotalCost = 0;
 
     for (const row of usageByUser.data || []) {
       const uid = row.user_id;
       const tokens = row.tokens_used || 0;
       const cost = Number(row.estimated_cost) || 0;
-      totalApiCost += cost;
-      totalTokens += tokens;
-
-      // Pro/owner/business users use Claude (included in flat fee)
-      // Free users use DeepSeek via OpenRouter (real cost)
-      const userPlan = uid ? (planMap[uid] || "free") : "free";
-      if (userPlan === "pro" || userPlan === "business" || userPlan === "owner") {
-        claudeCost += cost;
-      } else {
-        openrouterCost += cost;
-      }
+      dashboardTotalCost += cost;
 
       if (!uid) continue;
       if (!userUsage[uid]) userUsage[uid] = { tokens: 0, cost: 0, messages: 0 };
@@ -61,6 +77,11 @@ export async function GET() {
       usage_messages: userUsage[p.id]?.messages || 0,
     }));
 
+    // Use VPS data for accurate cost split (falls back to dashboard data)
+    const claudeCost = vpsCostData.claudeCost || 0;
+    const openrouterCost = vpsCostData.openrouterCost || 0;
+    const totalApiCost = claudeCost + openrouterCost;
+
     return NextResponse.json({
       users,
       stats: {
@@ -73,10 +94,10 @@ export async function GET() {
         totalDocuments: docs.count || 0,
         totalProjects: projects.count || 0,
         messagesToday: usageToday.count || 0,
-        totalApiCost,         // all usage combined
+        totalApiCost,
         claudeCost,           // included in $200 flat fee
-        openrouterCost,       // real pay-per-use cost (variable overhead)
-        totalTokens,
+        openrouterCost,       // real pay-per-use cost
+        totalTokens: vpsCostData.totalTokens || 0,
       },
     });
   } catch (err) {
