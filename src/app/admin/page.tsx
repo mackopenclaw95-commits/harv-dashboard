@@ -38,6 +38,8 @@ interface AdminStats {
   totalProjects: number;
   messagesToday: number;
   totalApiCost: number;
+  claudeCost: number;
+  openrouterCost: number;
   totalTokens: number;
 }
 
@@ -188,8 +190,13 @@ export default function AdminPage() {
               <DollarSign className="h-4 w-4 text-yellow-400" />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">API Cost</span>
             </div>
-            <p className="text-2xl font-bold mt-1">${(stats?.totalApiCost || 0).toFixed(4)}</p>
-            <p className="text-[10px] text-muted-foreground/50 mt-0.5">user usage this period</p>
+            <p className="text-2xl font-bold mt-1">${(stats?.openrouterCost || 0).toFixed(4)}</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+              OpenRouter (pay-per-use)
+            </p>
+            <p className="text-[10px] text-muted-foreground/40 mt-0.5">
+              Claude: ${(stats?.claudeCost || 0).toFixed(4)} (included in $200)
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -198,8 +205,8 @@ export default function AdminPage() {
               <Zap className="h-4 w-4 text-red-400" />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Monthly Overhead</span>
             </div>
-            <p className="text-2xl font-bold mt-1">${(217.99 + (stats?.totalApiCost || 0)).toFixed(2)}</p>
-            <p className="text-[10px] text-muted-foreground/50 mt-0.5">$200 Claude + $17.99 VPS + API</p>
+            <p className="text-2xl font-bold mt-1">${(217.99 + (stats?.openrouterCost || 0)).toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">$200 Claude + $17.99 VPS + OpenRouter</p>
           </CardContent>
         </Card>
         <Card>
@@ -409,8 +416,8 @@ export default function AdminPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className={cn("text-2xl font-bold", ((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.totalApiCost || 0)) >= 0 ? "text-green-400" : "text-red-400")}>
-                ${((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.totalApiCost || 0)).toFixed(2)}
+              <p className={cn("text-2xl font-bold", ((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.openrouterCost || 0)) >= 0 ? "text-green-400" : "text-red-400")}>
+                ${((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.openrouterCost || 0)).toFixed(2)}
               </p>
               <p className="text-xs text-muted-foreground">
                 Revenue - Overhead
