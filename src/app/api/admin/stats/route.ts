@@ -56,6 +56,7 @@ export async function GET() {
           // Extract model name from summary: "model_name | X tokens | $Y"
           const model = summary.split("|")[0]?.trim() || "";
           const isClaudeModel = model.startsWith("claude-");
+          const isGoogleModel = model.includes("imagen") || model.includes("gemini");
 
           // Calculate cost from model pricing if VPS cost is 0
           let cost = evt.cost || 0;
