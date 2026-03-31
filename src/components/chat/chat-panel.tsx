@@ -456,13 +456,14 @@ export function ChatPanel({
       onNewMessage?.();
 
       // Log usage with token data
+      const estCost = (tokensIn * 3 + tokensOut * 15) / 1_000_000; // Claude Sonnet pricing
       fetch("/api/usage/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agent_name: agentName || "Harv",
           tokens_used: tokensIn + tokensOut,
-          estimated_cost: 0, // Cost calculated server-side
+          estimated_cost: Math.round(estCost * 1_000_000) / 1_000_000,
         }),
       }).catch(() => {});
     } catch {
