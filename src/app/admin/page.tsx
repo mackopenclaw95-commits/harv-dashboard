@@ -51,6 +51,8 @@ export default function AdminPage() {
   const [events, setEvents] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"joined" | "tokens" | "cost">("joined");
+  const [filterPlan, setFilterPlan] = useState<"all" | "free" | "pro" | "business">("all");
 
   const load = useCallback(async () => {
     try {
@@ -89,13 +91,22 @@ export default function AdminPage() {
     load();
   }, [load]);
 
-  const filteredUsers = searchQuery
-    ? users.filter(
-        (u) =>
-          u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          u.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : users;
+  const filteredUsers = users
+    .filter((u) => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!u.email?.toLowerCase().includes(q) && !u.name?.toLowerCase().includes(q)) return false;
+      }
+      if (filterPlan !== "all" && u.plan !== filterPlan) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const au = a as Profile & { usage_tokens?: number; usage_cost?: number };
+      const bu = b as Profile & { usage_tokens?: number; usage_cost?: number };
+      if (sortBy === "tokens") return (bu.usage_tokens || 0) - (au.usage_tokens || 0);
+      if (sortBy === "cost") return (bu.usage_cost || 0) - (au.usage_cost || 0);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   if (loading) {
     return (
@@ -217,15 +228,54 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Users list */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Users</h2>
+          {/* Filters row */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-lg font-semibold mr-auto">Users</h2>
+            {/* Plan filter */}
+            <div className="flex gap-1">
+              {(["all", "free", "pro", "business"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setFilterPlan(p)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors",
+                    filterPlan === p
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-white/[0.04]"
+                  )}
+                >
+                  {p === "all" ? "All" : p.charAt(0).toUpperCase() + p.slice(1)}
+                </button>
+              ))}
+            </div>
+            {/* Sort */}
+            <div className="flex gap-1">
+              {([
+                { key: "joined", label: "Joined" },
+                { key: "tokens", label: "Tokens" },
+                { key: "cost", label: "Cost" },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setSortBy(key)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors",
+                    sortBy === key
+                      ? "bg-white/[0.08] text-foreground"
+                      : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-white/[0.04]"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users..."
-                className="pl-8 h-8 w-48 text-xs bg-white/[0.03] border-white/[0.06]"
+                placeholder="Search..."
+                className="pl-8 h-8 w-36 text-xs bg-white/[0.03] border-white/[0.06]"
               />
             </div>
           </div>
@@ -233,7 +283,9 @@ export default function AdminPage() {
           <Card>
             <ScrollArea className="max-h-[500px]">
               <div className="divide-y divide-white/[0.06]">
-                {filteredUsers.map((u) => (
+                {filteredUsers.map((u) => {
+                  const uu = u as Profile & { usage_tokens?: number; usage_cost?: number; usage_messages?: number };
+                  return (
                   <Link
                     key={u.id}
                     href={`/admin/users/${u.id}`}
@@ -279,9 +331,19 @@ export default function AdminPage() {
                         {u.email} · joined {timeAgo(u.created_at)}
                       </p>
                     </div>
+                    {/* Usage stats inline */}
+                    <div className="text-right shrink-0 hidden sm:block">
+                      <p className="text-xs font-mono font-medium">
+                        {(uu.usage_tokens || 0).toLocaleString()} <span className="text-[9px] text-muted-foreground/50">tok</span>
+                      </p>
+                      <p className="text-[10px] font-mono text-muted-foreground/60">
+                        ${(uu.usage_cost || 0).toFixed(4)}
+                      </p>
+                    </div>
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
                   </Link>
-                ))}
+                  );
+                })}
                 {filteredUsers.length === 0 && (
                   <div className="px-4 py-8 text-center text-sm text-muted-foreground/50">
                     {searchQuery ? "No matching users" : "No users yet"}

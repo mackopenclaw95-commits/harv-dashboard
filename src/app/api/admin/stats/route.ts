@@ -8,7 +8,7 @@ export async function GET() {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const [profiles, convos, msgs, docs, projects, usageToday, usageAll] = await Promise.all([
+    const [profiles, convos, msgs, docs, projects, usageToday, usageAll, usageByUser] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("conversations").select("id", { count: "exact", head: true }),
       supabase.from("messages").select("id", { count: "exact", head: true }),
@@ -16,9 +16,26 @@ export async function GET() {
       supabase.from("projects").select("id", { count: "exact", head: true }),
       supabase.from("usage_logs").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
       supabase.from("usage_logs").select("tokens_used, estimated_cost"),
+      supabase.from("usage_logs").select("user_id, tokens_used, estimated_cost"),
     ]);
 
-    const users = profiles.data || [];
+    // Aggregate usage per user
+    const userUsage: Record<string, { tokens: number; cost: number; messages: number }> = {};
+    for (const row of usageByUser.data || []) {
+      const uid = row.user_id;
+      if (!uid) continue;
+      if (!userUsage[uid]) userUsage[uid] = { tokens: 0, cost: 0, messages: 0 };
+      userUsage[uid].tokens += row.tokens_used || 0;
+      userUsage[uid].cost += Number(row.estimated_cost) || 0;
+      userUsage[uid].messages += 1;
+    }
+
+    const users = (profiles.data || []).map((p) => ({
+      ...p,
+      usage_tokens: userUsage[p.id]?.tokens || 0,
+      usage_cost: userUsage[p.id]?.cost || 0,
+      usage_messages: userUsage[p.id]?.messages || 0,
+    }));
 
     return NextResponse.json({
       users,
