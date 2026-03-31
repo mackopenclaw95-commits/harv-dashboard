@@ -1,8 +1,13 @@
-import { supabase } from "./supabase";
+import { supabase, createBrowserSupabase } from "./supabase";
 
 async function getUserId(): Promise<string | null> {
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
+  try {
+    const browser = createBrowserSupabase();
+    const { data } = await browser.auth.getUser();
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export interface Conversation {
