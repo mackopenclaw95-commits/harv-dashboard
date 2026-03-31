@@ -36,6 +36,9 @@ interface AdminStats {
   totalMessages: number;
   totalDocuments: number;
   totalProjects: number;
+  messagesToday: number;
+  totalApiCost: number;
+  totalTokens: number;
 }
 
 interface VPSHealth {
@@ -172,10 +175,11 @@ export default function AdminPage() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-400" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Cancelled</span>
+              <TrendingUp className="h-4 w-4 text-green-400" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Revenue (MRR)</span>
             </div>
-            <p className="text-2xl font-bold mt-1">{stats?.cancelledUsers || 0}</p>
+            <p className="text-2xl font-bold mt-1">${((stats?.paidUsers || 0) * 20).toFixed(0)}</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">{stats?.paidUsers || 0} paid users</p>
           </CardContent>
         </Card>
         <Card>
@@ -398,16 +402,16 @@ export default function AdminPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Revenue
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                Cancelled
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">
-                ${((stats?.paidUsers || 0) * 20).toFixed(2)}
+                {stats?.cancelledUsers || 0}
               </p>
               <p className="text-xs text-muted-foreground">
-                Estimated MRR ({stats?.paidUsers || 0} paid users x $20)
+                Total API cost: ${(stats?.totalApiCost || 0).toFixed(4)}
               </p>
             </CardContent>
           </Card>
