@@ -24,8 +24,20 @@ import {
   Clock,
   Zap,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn, timeAgo } from "@/lib/utils";
 import type { Profile } from "@/components/auth-provider";
+
+interface ModelCost {
+  tokens: number;
+  cost: number;
+  calls: number;
+}
 
 interface AdminStats {
   totalUsers: number;
@@ -41,6 +53,7 @@ interface AdminStats {
   claudeCost: number;
   openrouterCost: number;
   totalTokens: number;
+  costByModel: Record<string, ModelCost>;
 }
 
 interface VPSHealth {
@@ -58,6 +71,7 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"joined" | "tokens" | "cost">("joined");
   const [filterPlan, setFilterPlan] = useState<"all" | "free" | "pro" | "business">("all");
+  const [costDetailOpen, setCostDetailOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -184,11 +198,12 @@ export default function AdminPage() {
             <p className="text-[10px] text-muted-foreground/50 mt-0.5">{stats?.paidUsers || 0} paid users</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:ring-1 hover:ring-primary/20 transition-all" onClick={() => setCostDetailOpen(true)}>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-yellow-400" />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">API Cost</span>
+              <span className="text-[9px] text-primary/60 ml-auto">Details →</span>
             </div>
             <p className="text-2xl font-bold mt-1">${(stats?.openrouterCost || 0).toFixed(4)}</p>
             <p className="text-[10px] text-muted-foreground/50 mt-0.5">
@@ -426,6 +441,77 @@ export default function AdminPage() {
           </Card>
         </div>
       </div>
+
+      {/* API Cost Detail Dialog */}
+      <Dialog open={costDetailOpen} onOpenChange={setCostDetailOpen}>
+        <DialogContent className="max-w-md bg-card/95 backdrop-blur-2xl border-white/[0.08]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-yellow-400" />
+              API Cost Breakdown
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-white/[0.03] p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">OpenRouter</p>
+                <p className="text-lg font-bold text-yellow-400">${(stats?.openrouterCost || 0).toFixed(4)}</p>
+                <p className="text-[10px] text-muted-foreground/50">pay-per-use</p>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Claude</p>
+                <p className="text-lg font-bold text-muted-foreground">${(stats?.claudeCost || 0).toFixed(4)}</p>
+                <p className="text-[10px] text-muted-foreground/50">included in $200</p>
+              </div>
+            </div>
+
+            {/* Per-model breakdown */}
+            <div>
+              <p className="text-xs font-semibold mb-2">Cost by Model</p>
+              <div className="space-y-1.5">
+                {stats?.costByModel && Object.entries(stats.costByModel)
+                  .sort(([, a], [, b]) => b.cost - a.cost)
+                  .map(([model, data]) => {
+                    const isIncluded = model.startsWith("claude-");
+                    const shortName = model.split("/").pop() || model;
+                    return (
+                      <div key={model} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">{shortName}</p>
+                          <p className="text-[10px] text-muted-foreground/50">
+                            {data.calls} calls · {data.tokens.toLocaleString()} tokens
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={cn("text-xs font-mono font-medium", isIncluded ? "text-muted-foreground/60" : "text-yellow-400")}>
+                            ${data.cost.toFixed(4)}
+                          </p>
+                          {isIncluded && (
+                            <p className="text-[9px] text-muted-foreground/40">included</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                {(!stats?.costByModel || Object.keys(stats.costByModel).length === 0) && (
+                  <p className="text-xs text-muted-foreground/50 text-center py-4">No API calls recorded</p>
+                )}
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Total (all models)</span>
+              <span className="text-sm font-bold font-mono">${(stats?.totalApiCost || 0).toFixed(4)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Total tokens</span>
+              <span className="text-sm font-bold font-mono">{(stats?.totalTokens || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

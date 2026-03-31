@@ -36,6 +36,7 @@ export async function GET() {
     let claudeCost = 0;
     let openrouterCost = 0;
     let totalTokens = 0;
+    const costByModel: Record<string, { tokens: number; cost: number; calls: number }> = {};
 
     try {
       const API_URL = process.env.API_URL || "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
@@ -66,6 +67,14 @@ export async function GET() {
             claudeCost += cost;
           } else {
             openrouterCost += cost;
+          }
+
+          // Track per-model
+          if (model) {
+            if (!costByModel[model]) costByModel[model] = { tokens: 0, cost: 0, calls: 0 };
+            costByModel[model].tokens += tokens;
+            costByModel[model].cost += cost;
+            costByModel[model].calls += 1;
           }
         }
       }
@@ -107,6 +116,7 @@ export async function GET() {
         claudeCost,
         openrouterCost,
         totalTokens,
+        costByModel,
       },
     });
   } catch (err) {
