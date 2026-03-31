@@ -291,6 +291,22 @@ export function ChatPanel({
     setIsLoading(true);
     setInput("");
 
+    // Check usage limits before sending
+    try {
+      const usageRes = await fetch("/api/usage/check");
+      if (usageRes.ok) {
+        const usage = await usageRes.json();
+        if (!usage.allowed) {
+          toast.error(
+            `Daily limit reached (${usage.used}/${usage.limit} messages). Upgrade to Pro for unlimited.`
+          );
+          isSendingRef.current = false;
+          setIsLoading(false);
+          return;
+        }
+      }
+    } catch {} // If usage check fails, allow the message through
+
     const fileAttachments: Attachment[] = attachedFiles.map((f) => ({
       name: f.name,
       size: f.size,
@@ -434,6 +450,13 @@ export function ChatPanel({
       }
 
       onNewMessage?.();
+
+      // Log usage
+      fetch("/api/usage/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_name: agentName || "Harv" }),
+      }).catch(() => {});
     } catch {
       toast.error("Connection error — is the Harv API running?");
       setMessages((prev) => [

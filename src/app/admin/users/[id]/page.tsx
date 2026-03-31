@@ -42,6 +42,7 @@ export default function AdminUserDetailPage({
   const [conversations, setConversations] = useState<UserConversation[]>([]);
   const [documents, setDocuments] = useState<Record<string, unknown>[]>([]);
   const [projects, setProjects] = useState<Record<string, unknown>[]>([]);
+  const [usage, setUsage] = useState<{ today: number; total: number; totalTokens: number; totalCost: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function AdminUserDetailPage({
           if (data.conversations) setConversations(data.conversations);
           if (data.documents) setDocuments(data.documents);
           if (data.projects) setProjects(data.projects);
+          if (data.usage) setUsage(data.usage);
         }
       } catch {}
       setLoading(false);
@@ -201,6 +203,32 @@ export default function AdminUserDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Usage stats */}
+      {usage && (
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Today</p>
+                <p className="text-xl font-bold mt-0.5">{usage.today} <span className="text-xs font-normal text-muted-foreground">msgs</span></p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">All Time</p>
+                <p className="text-xl font-bold mt-0.5">{usage.total} <span className="text-xs font-normal text-muted-foreground">msgs</span></p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tokens Used</p>
+                <p className="text-xl font-bold mt-0.5">{usage.totalTokens.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">API Cost</p>
+                <p className="text-xl font-bold mt-0.5">${usage.totalCost.toFixed(4)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Data sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
