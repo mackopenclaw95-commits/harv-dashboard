@@ -349,6 +349,7 @@ export function ChatPanel({
           ? {
               message: trimmed,
               agent: agentName,
+              plan: profile?.plan || "free",
               ...(projectContext ? { context: projectContext } : {}),
             }
           : {
@@ -356,6 +357,7 @@ export function ChatPanel({
                 role: m.role,
                 content: m.content,
               })),
+              plan: profile?.plan || "free",
               ...(projectContext ? { context: projectContext } : {}),
             };
 

@@ -1,5 +1,5 @@
 export async function POST(req: Request) {
-  const { messages, context } = await req.json();
+  const { messages, context, plan } = await req.json();
   const lastMessage = messages[messages.length - 1]?.content || "";
 
   const API_BASE =
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
         "X-API-Key": API_KEY,
       },
-      body: JSON.stringify({ message: messageWithContext, stream: true }),
+      body: JSON.stringify({ message: messageWithContext, stream: true, plan: plan || "free" }),
     });
 
     if (
