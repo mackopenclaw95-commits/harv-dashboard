@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Bot, MessageSquare, PanelLeft } from "lucide-react";
+import { ArrowLeft, Bot, Lock, MessageSquare, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +26,8 @@ import {
 import { getProjects, type Project } from "@/lib/supabase-projects";
 import { AGENT_ICONS } from "@/lib/agent-icons";
 import { NO_CHAT_AGENTS } from "@/lib/constants";
+import { isAgentAvailable } from "@/lib/plan-config";
+import { useAuth } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { ConversationWithMeta } from "@/lib/conversation-utils";
@@ -83,6 +85,8 @@ interface AgentsTabProps {
 export function AgentsTab({ projectId }: AgentsTabProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { profile } = useAuth();
+  const userPlan = profile?.plan || "free";
   const selectedAgent = searchParams.get("agent");
 
   const [agents, setAgents] = useState<AgentItem[]>([]);
@@ -415,36 +419,64 @@ export function AgentsTab({ projectId }: AgentsTabProps = {}) {
                     .map((name) => agents.find((a) => a.name === name))
                     .filter(Boolean) as AgentItem[]
                 : [];
+              const locked = !isAgentAvailable(agent.name, userPlan);
 
               return (
                 <div key={agent.name} className="flex flex-col gap-0">
                   {/* Parent agent card */}
                   <button
-                    onClick={() => selectAgent(agent.name)}
+                    onClick={() => {
+                      if (locked) {
+                        toast("Upgrade to Pro or Max to unlock this agent", {
+                          action: { label: "Upgrade", onClick: () => router.push("/settings?tab=billing") },
+                          duration: 5000,
+                        });
+                        return;
+                      }
+                      selectAgent(agent.name);
+                    }}
                     className={cn(
-                      "group flex items-start gap-4 p-5 text-left transition-all duration-300 bg-card/40 backdrop-blur-xl ring-1 ring-white/[0.08] hover:bg-card/60 hover:ring-primary/20 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 flex-1",
+                      "group flex items-start gap-4 p-5 text-left transition-all duration-300 bg-card/40 backdrop-blur-xl ring-1 ring-white/[0.08] flex-1",
+                      locked
+                        ? "opacity-60 cursor-not-allowed"
+                        : "hover:bg-card/60 hover:ring-primary/20 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5",
                       childAgents.length > 0
                         ? "rounded-t-2xl rounded-b-none"
                         : "rounded-2xl"
                     )}
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20 group-hover:ring-primary/30 group-hover:shadow-lg group-hover:shadow-primary/10 transition-all duration-300">
-                      <Icon className="h-5 w-5 text-primary" />
+                    <div className={cn(
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-300",
+                      locked
+                        ? "bg-muted/20 ring-white/[0.08]"
+                        : "bg-primary/10 ring-primary/20 group-hover:ring-primary/30 group-hover:shadow-lg group-hover:shadow-primary/10"
+                    )}>
+                      {locked ? (
+                        <Lock className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <Icon className="h-5 w-5 text-primary" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold truncate">
                           {agent.name}
                         </span>
-                        <span
-                          className={cn(
-                            "h-2 w-2 rounded-full shrink-0",
-                            statusDotColor(agent.status)
-                          )}
-                        />
+                        {locked ? (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-500/30 text-amber-400 bg-amber-500/10">
+                            PRO
+                          </Badge>
+                        ) : (
+                          <span
+                            className={cn(
+                              "h-2 w-2 rounded-full shrink-0",
+                              statusDotColor(agent.status)
+                            )}
+                          />
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {agent.description || "No description"}
+                        {locked ? "Upgrade to Pro to unlock" : (agent.description || "No description")}
                       </p>
                     </div>
                   </button>
@@ -454,24 +486,45 @@ export function AgentsTab({ projectId }: AgentsTabProps = {}) {
                     <div className="rounded-b-2xl bg-white/[0.02] ring-1 ring-white/[0.06] border-t border-white/[0.04] divide-y divide-white/[0.04]">
                       {childAgents.map((child) => {
                         const ChildIcon = AGENT_ICONS[child.name] || Bot;
+                        const childLocked = !isAgentAvailable(child.name, userPlan);
                         return (
                           <button
                             key={child.name}
-                            onClick={() => selectAgent(child.name)}
-                            className="w-full flex items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/[0.04] group/sub"
+                            onClick={() => {
+                              if (childLocked) {
+                                toast("Upgrade to Pro or Max to unlock this agent", {
+                                  action: { label: "Upgrade", onClick: () => router.push("/settings?tab=billing") },
+                                  duration: 5000,
+                                });
+                                return;
+                              }
+                              selectAgent(child.name);
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-5 py-2.5 text-left transition-colors group/sub",
+                              childLocked ? "opacity-50 cursor-not-allowed" : "hover:bg-white/[0.04]"
+                            )}
                           >
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/5 ring-1 ring-primary/10 group-hover/sub:ring-primary/20 transition-colors">
-                              <ChildIcon className="h-3.5 w-3.5 text-primary/70" />
+                              {childLocked ? (
+                                <Lock className="h-3.5 w-3.5 text-muted-foreground/50" />
+                              ) : (
+                                <ChildIcon className="h-3.5 w-3.5 text-primary/70" />
+                              )}
                             </div>
                             <span className="text-xs font-medium text-muted-foreground group-hover/sub:text-foreground transition-colors truncate">
                               {child.name}
                             </span>
-                            <span
-                              className={cn(
-                                "h-1.5 w-1.5 rounded-full shrink-0 ml-auto",
-                                statusDotColor(child.status)
-                              )}
-                            />
+                            {childLocked ? (
+                              <Lock className="h-3 w-3 text-muted-foreground/40 ml-auto shrink-0" />
+                            ) : (
+                              <span
+                                className={cn(
+                                  "h-1.5 w-1.5 rounded-full shrink-0 ml-auto",
+                                  statusDotColor(child.status)
+                                )}
+                              />
+                            )}
                           </button>
                         );
                       })}

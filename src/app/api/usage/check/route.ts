@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { TIER_LIMITS, type TierKey } from "@/lib/stripe";
+import { isAgentAvailable } from "@/lib/plan-config";
 
 export async function GET(req: NextRequest) {
+  const agent = req.nextUrl.searchParams.get("agent");
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -32,8 +34,8 @@ export async function GET(req: NextRequest) {
     const plan = (profile?.plan || "free") as TierKey;
     const tierConfig = TIER_LIMITS[plan] || TIER_LIMITS.free;
 
-    // Owner always gets primary tier, unlimited
-    if (profile?.role === "owner") {
+    // Owner/tester always gets primary tier, unlimited
+    if (profile?.role === "owner" || profile?.role === "tester") {
       return NextResponse.json({
         allowed: true,
         used: 0,
@@ -42,6 +44,18 @@ export async function GET(req: NextRequest) {
         degraded: false,
         model_tier: "primary" as const,
         image_remaining: -1,
+        agent_allowed: true,
+      });
+    }
+
+    // Agent gating — check if agent is available on user's plan
+    if (agent && !isAgentAvailable(agent, plan)) {
+      return NextResponse.json({
+        allowed: false,
+        reason: "agent_locked",
+        agent,
+        plan,
+        agent_allowed: false,
       });
     }
 
@@ -111,6 +125,7 @@ export async function GET(req: NextRequest) {
       image_remaining: imageRemaining,
       weekly_used: weeklyUsed,
       weekly_limit: weeklyLimit,
+      agent_allowed: true,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

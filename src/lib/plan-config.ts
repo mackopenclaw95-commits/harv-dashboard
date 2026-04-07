@@ -24,15 +24,38 @@ export const TIER_LIMITS = {
   },
 } as const;
 
+// Agents available on free plan (Router & Journal are background/auto-included)
+export const FREE_PLAN_AGENTS = new Set([
+  "Harv",
+  "Router",
+  "Journal",
+  "Research",
+  "Email",
+  "Scheduler",
+  "Learning",
+]);
+
+// Agents locked behind pro/max
+export const PRO_ONLY_AGENTS = new Set([
+  "Video Digest",
+  "YouTube Digest",
+  "Media Manager",
+  "Image Gen",
+]);
+
+export function isAgentAvailable(agentName: string, plan: string): boolean {
+  if (plan === "pro" || plan === "max") return true;
+  return FREE_PLAN_AGENTS.has(agentName);
+}
+
 export const PLANS = {
   free: {
     name: "Free",
     price: 0,
     features: [
-      "14-day free trial",
-      "25 premium messages/day",
-      "Standard model after limit",
-      "Basic agents",
+      "25 messages/day (Gemini Flash Lite)",
+      "Standard model after daily limit",
+      "7 core agents (Harv, Research, Email, Scheduler, Learning)",
       "5 projects",
     ],
   },
@@ -40,9 +63,9 @@ export const PLANS = {
     name: "Pro",
     price: 2000,
     features: [
-      "150 premium messages/day",
-      "Unlimited standard messages",
-      "All agents",
+      "150 messages/day (DeepSeek V3.2)",
+      "Unlimited standard messages after limit",
+      "All agents unlocked",
       "Image generation (10/day)",
       "Unlimited projects",
       "Priority support",
@@ -52,7 +75,7 @@ export const PLANS = {
     name: "Max",
     price: 5000,
     features: [
-      "400 premium messages/day (GPT-4.1)",
+      "400 messages/day (GPT-4.1)",
       "Unlimited DeepSeek V3.2 after limit",
       "All agents + Image gen (30/day)",
       "Employee Harvs",

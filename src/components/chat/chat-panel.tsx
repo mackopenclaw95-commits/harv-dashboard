@@ -294,9 +294,19 @@ export function ChatPanel({
     // Check usage limits before sending
     let currentModelTier: "primary" | "fallback" | "blocked" = "primary";
     try {
-      const usageRes = await fetch("/api/usage/check");
+      const agentParam = agentName ? `?agent=${encodeURIComponent(agentName)}` : "";
+      const usageRes = await fetch(`/api/usage/check${agentParam}`);
       if (usageRes.ok) {
         const usage = await usageRes.json();
+        if (usage.reason === "agent_locked") {
+          toast.error(
+            `${agentName} requires a Pro or Max plan. Upgrade to unlock all agents.`,
+            { duration: 5000 }
+          );
+          isSendingRef.current = false;
+          setIsLoading(false);
+          return;
+        }
         if (!usage.allowed) {
           toast.error(
             `Weekly limit reached (${usage.weekly_used}/${usage.weekly_limit}). Resets next week.`

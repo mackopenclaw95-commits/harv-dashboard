@@ -37,9 +37,9 @@ interface HealthStatus { status: string; uptime?: string }
 interface ServiceInfo { name: string; status: "active" | "needs auth" | "checking" | "unknown" }
 
 const DEFAULT_SERVICES: ServiceInfo[] = [
-  { name: "Anthropic (Claude)", status: "active" },
   { name: "OpenRouter", status: "active" },
-  { name: "Ollama (Local)", status: "active" },
+  { name: "OpenAI", status: "active" },
+  { name: "DeepSeek", status: "active" },
   { name: "Google OAuth", status: "active" },
   { name: "Telegram Bot", status: "active" },
   { name: "GitHub CLI", status: "needs auth" },
@@ -61,18 +61,18 @@ const MORE_INTEGRATIONS = [
 const PLANS = [
   {
     id: "free", name: "Free", price: "$0", period: "forever", highlight: false,
-    features: ["5 agents", "100 messages/day", "Basic models (Ollama)", "Community support"],
-    limits: { agents: 5, messages: 100, models: "Basic" },
+    features: ["7 core agents", "25 messages/day (Gemini Flash Lite)", "Standard model after daily limit", "5 projects"],
+    limits: { agents: 7, messages: 25, models: "Basic" },
   },
   {
     id: "pro", name: "Pro", price: "$20", period: "/month", highlight: true,
-    features: ["All agents", "Unlimited messages", "Premium models (Claude, GPT-4o)", "Priority support", "Custom agents", "API access"],
-    limits: { agents: -1, messages: -1, models: "Premium" },
+    features: ["All agents unlocked", "150 messages/day (DeepSeek V3.2)", "Unlimited standard messages", "Image generation (10/day)", "Unlimited projects", "Priority support"],
+    limits: { agents: -1, messages: 150, models: "Premium" },
   },
   {
     id: "max", name: "Max", price: "$50", period: "/month", highlight: false,
-    features: ["Everything in Pro", "White-label options", "Dedicated support", "Custom integrations", "Advanced analytics", "Team collaboration"],
-    limits: { agents: -1, messages: -1, models: "All" },
+    features: ["400 messages/day (GPT-4.1)", "Unlimited DeepSeek V3.2 after limit", "All agents + Image gen (30/day)", "Employee Harvs", "Custom integrations", "Admin dashboard"],
+    limits: { agents: -1, messages: 400, models: "All" },
   },
 ];
 
@@ -601,29 +601,41 @@ function SettingsPage() {
             })}
           </div>
 
-          {/* Payment Method */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold">Payment Method</CardTitle>
-              <CardDescription>Add a payment method to upgrade your plan</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="gap-2 text-xs" onClick={() => toast.info("Stripe integration coming soon")}>
-                <CreditCard className="h-4 w-4" /> Add Payment Method
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Billing History */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold">Billing History</CardTitle>
-              <CardDescription>View past invoices and receipts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground italic">No billing history yet</p>
-            </CardContent>
-          </Card>
+          {/* Manage Subscription */}
+          {currentPlan !== "free" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold">Manage Subscription</CardTitle>
+                <CardDescription>Update payment method, view invoices, or cancel your plan</CardDescription>
+              </CardHeader>
+              <CardContent className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="gap-2 text-xs"
+                  onClick={async () => {
+                    if (!user) return;
+                    try {
+                      const res = await fetch("/api/billing/portal", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: user.id }),
+                      });
+                      const data = await res.json();
+                      if (data.url) {
+                        window.open(data.url, "_blank");
+                      } else {
+                        toast.error(data.error || "Could not open billing portal");
+                      }
+                    } catch {
+                      toast.error("Failed to open billing portal");
+                    }
+                  }}
+                >
+                  <CreditCard className="h-4 w-4" /> Billing Portal
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* ── Tab 4: Usage ── */}

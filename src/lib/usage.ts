@@ -1,10 +1,10 @@
 import { supabase } from "./supabase";
-import { PLANS, type PlanKey } from "./stripe";
+import { TIER_LIMITS as PLAN_TIER_LIMITS, type TierKey } from "./plan-config";
 
-const TIER_LIMITS: Record<string, number> = {
-  free: 50,    // 50 messages/day
-  pro: -1,     // unlimited
-  business: -1, // unlimited
+const DAILY_LIMITS: Record<string, number> = {
+  free: PLAN_TIER_LIMITS.free.primaryMessagesPerDay,
+  pro: PLAN_TIER_LIMITS.pro.primaryMessagesPerDay,
+  max: PLAN_TIER_LIMITS.max.primaryMessagesPerDay,
 };
 
 async function getUserId(): Promise<string | null> {
@@ -36,7 +36,7 @@ export async function checkUsageLimit(plan: string): Promise<{
   limit: number;
   remaining: number;
 }> {
-  const limit = TIER_LIMITS[plan] ?? TIER_LIMITS.free;
+  const limit = DAILY_LIMITS[plan] ?? DAILY_LIMITS.free;
   if (limit === -1) {
     return { allowed: true, used: 0, limit: -1, remaining: -1 };
   }

@@ -37,10 +37,9 @@ export const PLANS = {
     price: 0,
     priceId: null, // No Stripe price — trial is free
     features: [
-      "14-day free trial",
-      "25 premium messages/day",
-      "Standard model after limit",
-      "Basic agents",
+      "25 messages/day (Gemini Flash Lite)",
+      "Standard model after daily limit",
+      "7 core agents (Harv, Research, Email, Scheduler, Learning)",
       "5 projects",
     ],
     limits: { messagesPerDay: 25, projects: 5 },
@@ -50,9 +49,9 @@ export const PLANS = {
     price: 2000, // $20.00 in cents
     priceId: process.env.STRIPE_PRO_PRICE_ID || "price_pro_placeholder",
     features: [
-      "150 premium messages/day",
-      "Unlimited standard messages",
-      "All agents",
+      "150 messages/day (DeepSeek V3.2)",
+      "Unlimited standard messages after limit",
+      "All agents unlocked",
       "Image generation (10/day)",
       "Unlimited projects",
       "Priority support",
@@ -64,7 +63,7 @@ export const PLANS = {
     price: 5000, // $50.00 in cents
     priceId: process.env.STRIPE_MAX_PRICE_ID || process.env.STRIPE_BUSINESS_PRICE_ID || "price_max_placeholder",
     features: [
-      "400 premium messages/day (GPT-4.1)",
+      "400 messages/day (GPT-4.1)",
       "Unlimited DeepSeek V3.2 after limit",
       "All agents + Image gen (30/day)",
       "Employee Harvs",
