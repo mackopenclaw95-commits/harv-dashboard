@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Zap, Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -62,12 +62,8 @@ export function MarketingNav() {
 
         {/* CTA buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/auth/login">Log in</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/auth/signup">Get Started</Link>
-          </Button>
+          <ButtonLink href="/auth/login" variant="ghost" size="sm">Log in</ButtonLink>
+          <ButtonLink href="/auth/signup" size="sm">Get Started</ButtonLink>
         </div>
 
         {/* Mobile menu toggle */}
@@ -96,12 +92,8 @@ export function MarketingNav() {
             </Link>
           ))}
           <div className="flex gap-3 pt-2">
-            <Button variant="ghost" size="sm" asChild className="flex-1">
-              <Link href="/auth/login">Log in</Link>
-            </Button>
-            <Button size="sm" asChild className="flex-1">
-              <Link href="/auth/signup">Get Started</Link>
-            </Button>
+            <ButtonLink href="/auth/login" variant="ghost" size="sm" className="flex-1">Log in</ButtonLink>
+            <ButtonLink href="/auth/signup" size="sm" className="flex-1">Get Started</ButtonLink>
           </div>
         </div>
       )}

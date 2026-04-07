@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { Check, X, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Check, X } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button-link";
 import { PLANS, TIER_LIMITS } from "@/lib/plan-config";
 import type { Metadata } from "next";
 
@@ -95,15 +94,13 @@ export default function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button
+                  <ButtonLink
+                    href="/auth/signup"
                     className="w-full"
                     variant={isPopular ? "default" : "outline"}
-                    asChild
                   >
-                    <Link href="/auth/signup">
-                      {plan.price === 0 ? "Start Free Trial" : "Get Started"}
-                    </Link>
-                  </Button>
+                    {plan.price === 0 ? "Start Free Trial" : "Get Started"}
+                  </ButtonLink>
                 </div>
               );
             }

@@ -1,0 +1,947 @@
+[
+  {
+    "prompt": "Hey what's up",
+    "expected": "Harv",
+    "actual": "Harv",
+    "confidence": "high",
+    "match": true,
+    "category": "general",
+    "raw": "Router LLM: \"Hey what's up\" → Harv [high] (738in/115out tok)\n\nTask:       \"Hey what's up\"\nAgent:      Harv\nConfidence: high\nTokens:     738 in / 115 out\nCost:       $0.000040\nLogged to Routing Decisio"
+  },
+  {
+    "prompt": "Tell me a joke",
+    "expected": "Harv",
+    "actual": "Harv",
+    "confidence": "high",
+    "match": true,
+    "category": "general",
+    "raw": "Router LLM: \"Tell me a joke\" → Harv [high] (736in/312out tok)\n\nTask:       \"Tell me a joke\"\nAgent:      Harv\nConfidence: high\nTokens:     736 in / 312 out\nCost:       $0.000058\nLogged to Routing Decis"
+  },
+  {
+    "prompt": "What can you do?",
+    "expected": "Harv",
+    "actual": "Harv",
+    "confidence": "high",
+    "match": true,
+    "category": "general",
+    "raw": "Router LLM: \"What can you do?\" → Harv [high] (737in/213out tok)\n\nTask:       \"What can you do?\"\nAgent:      Harv\nConfidence: high\nTokens:     737 in / 213 out\nCost:       $0.000049\nLogged to Routing D"
+  },
+  {
+    "prompt": "Thanks for the help",
+    "expected": "Harv",
+    "actual": "Harv",
+    "confidence": "medium",
+    "match": true,
+    "category": "general",
+    "raw": "Router LLM: \"Thanks for the help\" → Harv [medium] (736in/227out tok)\n\nTask:       \"Thanks for the help\"\nAgent:      Harv\nConfidence: medium\nTokens:     736 in / 227 out\nCost:       $0.000050\nLogged to"
+  },
+  {
+    "prompt": "Good morning",
+    "expected": "Harv",
+    "actual": "Harv",
+    "confidence": "high",
+    "match": true,
+    "category": "general",
+    "raw": "Router LLM: \"Good morning\" → Harv [high] (734in/87out tok)\n\nTask:       \"Good morning\"\nAgent:      Harv\nConfidence: high\nTokens:     734 in / 87 out\nCost:       $0.000037\nLogged to Routing Decisions s"
+  },
+  {
+    "prompt": "What did we talk about yesterday?",
+    "expected": "Journal",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": true,
+    "category": "memory",
+    "raw": "Router LLM: \"What did we talk about yesterday?\" → Journal [high] (739in/164out tok)\n\nTask:       \"What did we talk about yesterday?\"\nAgent:      Journal\nConfidence: high\nTokens:     739 in / 164 out\nC"
+  },
+  {
+    "prompt": "Remember that thing about the API keys?",
+    "expected": "Journal",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": true,
+    "category": "memory",
+    "raw": "Router LLM: \"Remember that thing about the API keys?\" → Journal [high] (740in/182out tok)\n\nTask:       \"Remember that thing about the API keys?\"\nAgent:      Journal\nConfidence: high\nTokens:     740 in"
+  },
+  {
+    "prompt": "Save this as a note for later",
+    "expected": "Journal",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": true,
+    "category": "memory",
+    "raw": "Router LLM: \"Save this as a note for later\" → Journal [high] (739in/198out tok)\n\nTask:       \"Save this as a note for later\"\nAgent:      Journal\nConfidence: high\nTokens:     739 in / 198 out\nCost:    "
+  },
+  {
+    "prompt": "What happened last Tuesday?",
+    "expected": "Journal",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": true,
+    "category": "memory",
+    "raw": "Router LLM: \"What happened last Tuesday?\" → Journal [high] (737in/154out tok)\n\nTask:       \"What happened last Tuesday?\"\nAgent:      Journal\nConfidence: high\nTokens:     737 in / 154 out\nCost:       $"
+  },
+  {
+    "prompt": "Log this thought: need to refactor the auth flow",
+    "expected": "Journal",
+    "actual": "Journal",
+    "confidence": "medium",
+    "match": true,
+    "category": "memory",
+    "raw": "Router LLM: \"Log this thought: need to refactor the auth flow\" → Journal [medium] (742in/214out tok)\n\nTask:       \"Log this thought: need to refactor the auth flow\"\nAgent:      Journal\nConfidence: med"
+  },
+  {
+    "prompt": "What's on my calendar tomorrow?",
+    "expected": "Scheduler",
+    "actual": "Scheduler",
+    "confidence": "high",
+    "match": true,
+    "category": "calendar",
+    "raw": "Router LLM: \"What's on my calendar tomorrow?\" → Scheduler [high] (741in/204out tok)\n\nTask:       \"What's on my calendar tomorrow?\"\nAgent:      Scheduler\nConfidence: high\nTokens:     741 in / 204 out\nC"
+  },
+  {
+    "prompt": "Schedule a meeting for Friday at 2pm",
+    "expected": "Scheduler",
+    "actual": "Scheduler",
+    "confidence": "high",
+    "match": true,
+    "category": "calendar",
+    "raw": "Router LLM: \"Schedule a meeting for Friday at 2pm\" → Scheduler [high] (741in/119out tok)\n\nTask:       \"Schedule a meeting for Friday at 2pm\"\nAgent:      Scheduler\nConfidence: high\nTokens:     741 in /"
+  },
+  {
+    "prompt": "Remind me to call the dentist at 3pm",
+    "expected": "Scheduler",
+    "actual": "Scheduler",
+    "confidence": "high",
+    "match": true,
+    "category": "calendar",
+    "raw": "Router LLM: \"Remind me to call the dentist at 3pm\" → Scheduler [high] (743in/90out tok)\n\nTask:       \"Remind me to call the dentist at 3pm\"\nAgent:      Scheduler\nConfidence: high\nTokens:     743 in / "
+  },
+  {
+    "prompt": "Am I free this Saturday?",
+    "expected": "Scheduler",
+    "actual": "Scheduler",
+    "confidence": "high",
+    "match": true,
+    "category": "calendar",
+    "raw": "Router LLM: \"Am I free this Saturday?\" → Scheduler [high] (738in/126out tok)\n\nTask:       \"Am I free this Saturday?\"\nAgent:      Scheduler\nConfidence: high\nTokens:     738 in / 126 out\nCost:       $0."
+  },
+  {
+    "prompt": "Cancel my 4pm appointment",
+    "expected": "Scheduler",
+    "actual": "Scheduler",
+    "confidence": "high",
+    "match": true,
+    "category": "calendar",
+    "raw": "Router LLM: \"Cancel my 4pm appointment\" → Scheduler [high] (738in/84out tok)\n\nTask:       \"Cancel my 4pm appointment\"\nAgent:      Scheduler\nConfidence: high\nTokens:     738 in / 84 out\nCost:       $0."
+  },
+  {
+    "prompt": "Check my email",
+    "expected": "Email",
+    "actual": "Email",
+    "confidence": "high",
+    "match": true,
+    "category": "email",
+    "raw": "Router LLM: \"Check my email\" → Email [high] (735in/125out tok)\n\nTask:       \"Check my email\"\nAgent:      Email\nConfidence: high\nTokens:     735 in / 125 out\nCost:       $0.000041\nLogged to Routing Dec"
+  },
+  {
+    "prompt": "Send an email to john@example.com about the project update",
+    "expected": "Email",
+    "actual": "Email",
+    "confidence": "high",
+    "match": true,
+    "category": "email",
+    "raw": "Router LLM: \"Send an email to john@example.com about the project update\" → Email [high] (743in/140out tok)\n\nTask:       \"Send an email to john@example.com about the project update\"\nAgent:      Email\nC"
+  },
+  {
+    "prompt": "Do I have any unread emails?",
+    "expected": "Email",
+    "actual": "Email",
+    "confidence": "high",
+    "match": true,
+    "category": "email",
+    "raw": "Router LLM: \"Do I have any unread emails?\" → Email [high] (739in/224out tok)\n\nTask:       \"Do I have any unread emails?\"\nAgent:      Email\nConfidence: high\nTokens:     739 in / 224 out\nCost:       $0."
+  },
+  {
+    "prompt": "Draft a reply to the last email from my boss",
+    "expected": "Email",
+    "actual": "Email",
+    "confidence": "high",
+    "match": true,
+    "category": "email",
+    "raw": "Router LLM: \"Draft a reply to the last email from my boss\" → Email [high] (742in/174out tok)\n\nTask:       \"Draft a reply to the last email from my boss\"\nAgent:      Email\nConfidence: high\nTokens:     "
+  },
+  {
+    "prompt": "Archive all newsletters",
+    "expected": "Email",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": false,
+    "category": "email",
+    "raw": "Router LLM: \"Archive all newsletters\" → Journal [high] (735in/117out tok)\n\nTask:       \"Archive all newsletters\"\nAgent:      Journal\nConfidence: high\nTokens:     735 in / 117 out\nCost:       $0.000040"
+  },
+  {
+    "prompt": "Quiz me on JavaScript closures",
+    "expected": "Learning",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": false,
+    "category": "education",
+    "raw": "Router LLM: \"Quiz me on JavaScript closures\" → Fitness [high] (739in/567out tok)\n\nTask:       \"Quiz me on JavaScript closures\"\nAgent:      Fitness\nConfidence: high\nTokens:     739 in / 567 out\nCost:  "
+  },
+  {
+    "prompt": "Explain how TCP/IP works",
+    "expected": "Learning",
+    "actual": "Research",
+    "confidence": "medium",
+    "match": false,
+    "category": "education",
+    "raw": "Router LLM: \"Explain how TCP/IP works\" → Research [medium] (738in/488out tok)\n\nTask:       \"Explain how TCP/IP works\"\nAgent:      Research\nConfidence: medium\nTokens:     738 in / 488 out\nCost:       $"
+  },
+  {
+    "prompt": "Create flashcards for my biology exam",
+    "expected": "Learning",
+    "actual": "Learning",
+    "confidence": "high",
+    "match": true,
+    "category": "education",
+    "raw": "Router LLM: \"Create flashcards for my biology exam\" → Learning [high] (739in/152out tok)\n\nTask:       \"Create flashcards for my biology exam\"\nAgent:      Learning\nConfidence: high\nTokens:     739 in /"
+  },
+  {
+    "prompt": "Help me study for the SIE exam",
+    "expected": "Learning",
+    "actual": "Learning",
+    "confidence": "high",
+    "match": true,
+    "category": "education",
+    "raw": "Router LLM: \"Help me study for the SIE exam\" → Learning [high] (740in/130out tok)\n\nTask:       \"Help me study for the SIE exam\"\nAgent:      Learning\nConfidence: high\nTokens:     740 in / 130 out\nCost:"
+  },
+  {
+    "prompt": "What's the difference between SQL and NoSQL?",
+    "expected": "Learning",
+    "actual": "Research",
+    "confidence": "medium",
+    "match": false,
+    "category": "education",
+    "raw": "Router LLM: \"What's the difference between SQL and NoSQL?\" → Research [medium] (742in/421out tok)\n\nTask:       \"What's the difference between SQL and NoSQL?\"\nAgent:      Research\nConfidence: medium\nTo"
+  },
+  {
+    "prompt": "Plan a weekend trip to Miami",
+    "expected": "Travel",
+    "actual": "Travel",
+    "confidence": "high",
+    "match": true,
+    "category": "travel",
+    "raw": "Router LLM: \"Plan a weekend trip to Miami\" → Travel [high] (738in/131out tok)\n\nTask:       \"Plan a weekend trip to Miami\"\nAgent:      Travel\nConfidence: high\nTokens:     738 in / 131 out\nCost:       $"
+  },
+  {
+    "prompt": "Find cheap flights to New York",
+    "expected": "Travel",
+    "actual": "Travel",
+    "confidence": "high",
+    "match": true,
+    "category": "travel",
+    "raw": "Router LLM: \"Find cheap flights to New York\" → Travel [high] (738in/148out tok)\n\nTask:       \"Find cheap flights to New York\"\nAgent:      Travel\nConfidence: high\nTokens:     738 in / 148 out\nCost:    "
+  },
+  {
+    "prompt": "What's the best time to visit Japan?",
+    "expected": "Travel",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": false,
+    "category": "travel",
+    "raw": "Router LLM: \"What's the best time to visit Japan?\" → Fitness [high] (741in/692out tok)\n\nTask:       \"What's the best time to visit Japan?\"\nAgent:      Fitness\nConfidence: high\nTokens:     741 in / 692"
+  },
+  {
+    "prompt": "Create a 3-day itinerary for Austin Texas",
+    "expected": "Travel",
+    "actual": "Travel",
+    "confidence": "high",
+    "match": true,
+    "category": "travel",
+    "raw": "Router LLM: \"Create a 3-day itinerary for Austin Texas\" → Travel [high] (741in/111out tok)\n\nTask:       \"Create a 3-day itinerary for Austin Texas\"\nAgent:      Travel\nConfidence: high\nTokens:     741 "
+  },
+  {
+    "prompt": "How much would a trip to Cancun cost?",
+    "expected": "Travel",
+    "actual": "Travel",
+    "confidence": "medium",
+    "match": true,
+    "category": "travel",
+    "raw": "Router LLM: \"How much would a trip to Cancun cost?\" → Travel [medium] (742in/789out tok)\n\nTask:       \"How much would a trip to Cancun cost?\"\nAgent:      Travel\nConfidence: medium\nTokens:     742 in /"
+  },
+  {
+    "prompt": "Search for the latest news on AI regulation",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "research",
+    "raw": "Router LLM: \"Search for the latest news on AI regulation\" → Research [high] (740in/134out tok)\n\nTask:       \"Search for the latest news on AI regulation\"\nAgent:      Research\nConfidence: high\nTokens: "
+  },
+  {
+    "prompt": "Compare Tesla vs Rivian stock performance",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "research",
+    "raw": "Router LLM: \"Compare Tesla vs Rivian stock performance\" → Research [high] (741in/116out tok)\n\nTask:       \"Compare Tesla vs Rivian stock performance\"\nAgent:      Research\nConfidence: high\nTokens:     "
+  },
+  {
+    "prompt": "What are the top headlines today?",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "research",
+    "raw": "Router LLM: \"What are the top headlines today?\" → Research [high] (739in/165out tok)\n\nTask:       \"What are the top headlines today?\"\nAgent:      Research\nConfidence: high\nTokens:     739 in / 165 out"
+  },
+  {
+    "prompt": "Fact check: does coffee stunt your growth?",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "research",
+    "raw": "Router LLM: \"Fact check: does coffee stunt your growth?\" → Research [high] (741in/100out tok)\n\nTask:       \"Fact check: does coffee stunt your growth?\"\nAgent:      Research\nConfidence: high\nTokens:   "
+  },
+  {
+    "prompt": "Give me a summary of the latest tech news",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "research",
+    "raw": "Router LLM: \"Give me a summary of the latest tech news\" → Research [high] (741in/90out tok)\n\nTask:       \"Give me a summary of the latest tech news\"\nAgent:      Research\nConfidence: high\nTokens:     7"
+  },
+  {
+    "prompt": "Summarize this YouTube video: https://youtube.com/watch?v=abc123",
+    "expected": "Video Digest",
+    "actual": "Video Digest",
+    "confidence": "high",
+    "match": true,
+    "category": "video",
+    "raw": "Router LLM: \"Summarize this YouTube video: https://youtube.com/watch?v=ab\" → Video Digest [high] (750in/146out tok)\n\nTask:       \"Summarize this YouTube video: https://youtube.com/watch?v=abc123\"\nAgen"
+  },
+  {
+    "prompt": "What's this video about? https://youtu.be/xyz789",
+    "expected": "Video Digest",
+    "actual": "Video Digest",
+    "confidence": "high",
+    "match": true,
+    "category": "video",
+    "raw": "Router LLM: \"What's this video about? https://youtu.be/xyz789\" → Video Digest [high] (747in/100out tok)\n\nTask:       \"What's this video about? https://youtu.be/xyz789\"\nAgent:      Video Digest\nConfide"
+  },
+  {
+    "prompt": "Transcribe this TikTok video",
+    "expected": "Video Digest",
+    "actual": "Video Digest",
+    "confidence": "high",
+    "match": true,
+    "category": "video",
+    "raw": "Router LLM: \"Transcribe this TikTok video\" → Video Digest [high] (738in/121out tok)\n\nTask:       \"Transcribe this TikTok video\"\nAgent:      Video Digest\nConfidence: high\nTokens:     738 in / 121 out\nC"
+  },
+  {
+    "prompt": "Digest this video for me",
+    "expected": "Video Digest",
+    "actual": "Video Digest",
+    "confidence": "high",
+    "match": true,
+    "category": "video",
+    "raw": "Router LLM: \"Digest this video for me\" → Video Digest [high] (737in/119out tok)\n\nTask:       \"Digest this video for me\"\nAgent:      Video Digest\nConfidence: high\nTokens:     737 in / 119 out\nCost:    "
+  },
+  {
+    "prompt": "At 5:30 in this video he talks about React hooks",
+    "expected": "Video Digest",
+    "actual": "Video Digest",
+    "confidence": "high",
+    "match": true,
+    "category": "video",
+    "raw": "Router LLM: \"At 5:30 in this video he talks about React hooks\" → Video Digest [high] (746in/191out tok)\n\nTask:       \"At 5:30 in this video he talks about React hooks\"\nAgent:      Video Digest\nConfide"
+  },
+  {
+    "prompt": "Generate an image of a sunset over the ocean",
+    "expected": "Image Gen",
+    "actual": "Image Gen",
+    "confidence": "high",
+    "match": true,
+    "category": "image",
+    "raw": "Router LLM: \"Generate an image of a sunset over the ocean\" → Image Gen [high] (741in/125out tok)\n\nTask:       \"Generate an image of a sunset over the ocean\"\nAgent:      Image Gen\nConfidence: high\nToke"
+  },
+  {
+    "prompt": "Create a Twitter banner for my profile",
+    "expected": "Image Gen",
+    "actual": "Auto Marketing",
+    "confidence": "high",
+    "match": false,
+    "category": "image",
+    "raw": "Router LLM: \"Create a Twitter banner for my profile\" → Auto Marketing [high] (739in/200out tok)\n\nTask:       \"Create a Twitter banner for my profile\"\nAgent:      Auto Marketing\nConfidence: high\nTokens"
+  },
+  {
+    "prompt": "Draw me a logo for my startup",
+    "expected": "Image Gen",
+    "actual": "Image Gen",
+    "confidence": "high",
+    "match": true,
+    "category": "image",
+    "raw": "Router LLM: \"Draw me a logo for my startup\" → Image Gen [high] (739in/151out tok)\n\nTask:       \"Draw me a logo for my startup\"\nAgent:      Image Gen\nConfidence: high\nTokens:     739 in / 151 out\nCost:"
+  },
+  {
+    "prompt": "Make a profile picture that looks professional",
+    "expected": "Image Gen",
+    "actual": "Image Gen",
+    "confidence": "high",
+    "match": true,
+    "category": "image",
+    "raw": "Router LLM: \"Make a profile picture that looks professional\" → Image Gen [high] (739in/117out tok)\n\nTask:       \"Make a profile picture that looks professional\"\nAgent:      Image Gen\nConfidence: high\n"
+  },
+  {
+    "prompt": "Draft a tweet about our new feature",
+    "expected": "Auto Marketing",
+    "actual": "Auto Marketing",
+    "confidence": "high",
+    "match": true,
+    "category": "marketing",
+    "raw": "Router LLM: \"Draft a tweet about our new feature\" → Auto Marketing [high] (739in/91out tok)\n\nTask:       \"Draft a tweet about our new feature\"\nAgent:      Auto Marketing\nConfidence: high\nTokens:     7"
+  },
+  {
+    "prompt": "Create a social media post for Instagram",
+    "expected": "Auto Marketing",
+    "actual": "Auto Marketing",
+    "confidence": "high",
+    "match": true,
+    "category": "marketing",
+    "raw": "Router LLM: \"Create a social media post for Instagram\" → Auto Marketing [high] (739in/102out tok)\n\nTask:       \"Create a social media post for Instagram\"\nAgent:      Auto Marketing\nConfidence: high\nTo"
+  },
+  {
+    "prompt": "Write a Reddit post about Harv AI",
+    "expected": "Auto Marketing",
+    "actual": "Harv",
+    "confidence": "high",
+    "match": false,
+    "category": "marketing",
+    "raw": "Router LLM: \"Write a Reddit post about Harv AI\" → Harv [high] (740in/209out tok)\n\nTask:       \"Write a Reddit post about Harv AI\"\nAgent:      Harv\nConfidence: high\nTokens:     740 in / 209 out\nCost:  "
+  },
+  {
+    "prompt": "Plan a content strategy for this week",
+    "expected": "Auto Marketing",
+    "actual": "Auto Marketing",
+    "confidence": "high",
+    "match": true,
+    "category": "marketing",
+    "raw": "Router LLM: \"Plan a content strategy for this week\" → Auto Marketing [high] (739in/101out tok)\n\nTask:       \"Plan a content strategy for this week\"\nAgent:      Auto Marketing\nConfidence: high\nTokens: "
+  },
+  {
+    "prompt": "Upload this file to Google Drive",
+    "expected": "Drive",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": false,
+    "category": "drive",
+    "raw": "Router LLM: \"Upload this file to Google Drive\" → Journal [high] (738in/244out tok)\n\nTask:       \"Upload this file to Google Drive\"\nAgent:      Journal\nConfidence: high\nTokens:     738 in / 244 out\nCos"
+  },
+  {
+    "prompt": "List files in my Harv folder",
+    "expected": "Drive",
+    "actual": "Journal",
+    "confidence": "low",
+    "match": false,
+    "category": "drive",
+    "raw": "Router LLM: \"List files in my Harv folder\" → Journal [low] (739in/700out tok)\n\nTask:       \"List files in my Harv folder\"\nAgent:      Journal\nConfidence: low\nTokens:     739 in / 700 out\nCost:       $"
+  },
+  {
+    "prompt": "Read the document called meeting-notes.txt",
+    "expected": "Drive",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": false,
+    "category": "drive",
+    "raw": "Router LLM: \"Read the document called meeting-notes.txt\" → Journal [high] (739in/161out tok)\n\nTask:       \"Read the document called meeting-notes.txt\"\nAgent:      Journal\nConfidence: high\nTokens:     "
+  },
+  {
+    "prompt": "I need to prepare for my trip to Paris and study French",
+    "expected": "Travel",
+    "actual": "Travel",
+    "confidence": "high",
+    "match": true,
+    "category": "ambiguous",
+    "raw": "Router LLM: \"I need to prepare for my trip to Paris and study French\" → Travel [high] (744in/380out tok)\n\nTask:       \"I need to prepare for my trip to Paris and study French\"\nAgent:      Travel\nConfi"
+  },
+  {
+    "prompt": "Email my calendar to my boss",
+    "expected": "Email",
+    "actual": "Email",
+    "confidence": "high",
+    "match": true,
+    "category": "ambiguous",
+    "raw": "Router LLM: \"Email my calendar to my boss\" → Email [high] (738in/1171out tok)\n\nTask:       \"Email my calendar to my boss\"\nAgent:      Email\nConfidence: high\nTokens:     738 in / 1171 out\nCost:       $"
+  },
+  {
+    "prompt": "Search YouTube for cooking tutorials and summarize the best one",
+    "expected": "Video Digest",
+    "actual": "Research",
+    "confidence": "high",
+    "match": false,
+    "category": "ambiguous",
+    "raw": "Router LLM: \"Search YouTube for cooking tutorials and summarize the best \" → Research [high] (742in/284out tok)\n\nTask:       \"Search YouTube for cooking tutorials and summarize the best one\"\nAgent:   "
+  },
+  {
+    "prompt": "What's the weather like in Miami? I might fly down",
+    "expected": "Travel",
+    "actual": "Research",
+    "confidence": "high",
+    "match": false,
+    "category": "ambiguous",
+    "raw": "Router LLM: \"What's the weather like in Miami? I might fly down\" → Research [high] (744in/188out tok)\n\nTask:       \"What's the weather like in Miami? I might fly down\"\nAgent:      Research\nConfidence:"
+  },
+  {
+    "prompt": "Find me a good deal on a laptop",
+    "expected": "Research",
+    "actual": "Shopping",
+    "confidence": "high",
+    "match": false,
+    "category": "ambiguous",
+    "raw": "Router LLM: \"Find me a good deal on a laptop\" → Shopping [high] (740in/145out tok)\n\nTask:       \"Find me a good deal on a laptop\"\nAgent:      Shopping\nConfidence: high\nTokens:     740 in / 145 out\nCos"
+  },
+  {
+    "prompt": "Help me write a blog post about AI trends",
+    "expected": "Auto Marketing",
+    "actual": "Auto Marketing",
+    "confidence": "medium",
+    "match": true,
+    "category": "ambiguous",
+    "raw": "Router LLM: \"Help me write a blog post about AI trends\" → Auto Marketing [medium] (741in/211out tok)\n\nTask:       \"Help me write a blog post about AI trends\"\nAgent:      Auto Marketing\nConfidence: med"
+  },
+  {
+    "prompt": "Remind me about what we discussed regarding the budget",
+    "expected": "Journal",
+    "actual": "Finance",
+    "confidence": "high",
+    "match": false,
+    "category": "ambiguous",
+    "raw": "Router LLM: \"Remind me about what we discussed regarding the budget\" → Finance [high] (742in/130out tok)\n\nTask:       \"Remind me about what we discussed regarding the budget\"\nAgent:      Finance\nConfi"
+  },
+  {
+    "prompt": "Take notes on this meeting and add action items to my calendar",
+    "expected": "Journal",
+    "actual": "ERROR",
+    "confidence": "none",
+    "match": false,
+    "category": "ambiguous",
+    "raw": "spawnSync C:\\WINDOWS\\system32\\cmd.exe ETIMEDOUT"
+  },
+  {
+    "prompt": "What's the score of the Lakers game?",
+    "expected": "Sports",
+    "actual": "Sports",
+    "confidence": "high",
+    "match": true,
+    "category": "sports",
+    "raw": "Router LLM: \"What's the score of the Lakers game?\" → Sports [high] (741in/120out tok)\n\nTask:       \"What's the score of the Lakers game?\"\nAgent:      Sports\nConfidence: high\nTokens:     741 in / 120 o"
+  },
+  {
+    "prompt": "Who won the NFL game last night?",
+    "expected": "Sports",
+    "actual": "Sports",
+    "confidence": "high",
+    "match": true,
+    "category": "sports",
+    "raw": "Router LLM: \"Who won the NFL game last night?\" → Sports [high] (740in/258out tok)\n\nTask:       \"Who won the NFL game last night?\"\nAgent:      Sports\nConfidence: high\nTokens:     740 in / 258 out\nCost:"
+  },
+  {
+    "prompt": "Show me the NBA standings",
+    "expected": "Sports",
+    "actual": "Sports",
+    "confidence": "high",
+    "match": true,
+    "category": "sports",
+    "raw": "Router LLM: \"Show me the NBA standings\" → Sports [high] (737in/107out tok)\n\nTask:       \"Show me the NBA standings\"\nAgent:      Sports\nConfidence: high\nTokens:     737 in / 107 out\nCost:       $0.0000"
+  },
+  {
+    "prompt": "When do the Panthers play next?",
+    "expected": "Sports",
+    "actual": "Sports",
+    "confidence": "high",
+    "match": true,
+    "category": "sports",
+    "raw": "Router LLM: \"When do the Panthers play next?\" → Sports [high] (739in/200out tok)\n\nTask:       \"When do the Panthers play next?\"\nAgent:      Sports\nConfidence: high\nTokens:     739 in / 200 out\nCost:  "
+  },
+  {
+    "prompt": "Give me a recap of March Madness",
+    "expected": "Sports",
+    "actual": "Research",
+    "confidence": "medium",
+    "match": false,
+    "category": "sports",
+    "raw": "Router LLM: \"Give me a recap of March Madness\" → Research [medium] (739in/136out tok)\n\nTask:       \"Give me a recap of March Madness\"\nAgent:      Research\nConfidence: medium\nTokens:     739 in / 136 o"
+  },
+  {
+    "prompt": "Play some chill music",
+    "expected": "Music",
+    "actual": "Music",
+    "confidence": "high",
+    "match": true,
+    "category": "music",
+    "raw": "Router LLM: \"Play some chill music\" → Music [high] (736in/113out tok)\n\nTask:       \"Play some chill music\"\nAgent:      Music\nConfidence: high\nTokens:     736 in / 113 out\nCost:       $0.000040\nLogged "
+  },
+  {
+    "prompt": "Add this song to my playlist",
+    "expected": "Music",
+    "actual": "Music",
+    "confidence": "high",
+    "match": true,
+    "category": "music",
+    "raw": "Router LLM: \"Add this song to my playlist\" → Music [high] (738in/102out tok)\n\nTask:       \"Add this song to my playlist\"\nAgent:      Music\nConfidence: high\nTokens:     738 in / 102 out\nCost:       $0."
+  },
+  {
+    "prompt": "What am I listening to right now?",
+    "expected": "Music",
+    "actual": "Music",
+    "confidence": "high",
+    "match": true,
+    "category": "music",
+    "raw": "Router LLM: \"What am I listening to right now?\" → Music [high] (740in/199out tok)\n\nTask:       \"What am I listening to right now?\"\nAgent:      Music\nConfidence: high\nTokens:     740 in / 199 out\nCost:"
+  },
+  {
+    "prompt": "Recommend some workout music",
+    "expected": "Music",
+    "actual": "Music",
+    "confidence": "high",
+    "match": true,
+    "category": "music",
+    "raw": "Router LLM: \"Recommend some workout music\" → Music [high] (736in/154out tok)\n\nTask:       \"Recommend some workout music\"\nAgent:      Music\nConfidence: high\nTokens:     736 in / 154 out\nCost:       $0."
+  },
+  {
+    "prompt": "What are the odds on Polymarket for the election?",
+    "expected": "Trading",
+    "actual": "Trading",
+    "confidence": "high",
+    "match": true,
+    "category": "trading",
+    "raw": "Router LLM: \"What are the odds on Polymarket for the election?\" → Trading [high] (744in/130out tok)\n\nTask:       \"What are the odds on Polymarket for the election?\"\nAgent:      Trading\nConfidence: hig"
+  },
+  {
+    "prompt": "Show me my paper trading portfolio",
+    "expected": "Trading",
+    "actual": "Trading",
+    "confidence": "high",
+    "match": true,
+    "category": "trading",
+    "raw": "Router LLM: \"Show me my paper trading portfolio\" → Trading [high] (738in/115out tok)\n\nTask:       \"Show me my paper trading portfolio\"\nAgent:      Trading\nConfidence: high\nTokens:     738 in / 115 out"
+  },
+  {
+    "prompt": "Check BTC price",
+    "expected": "Trading",
+    "actual": "Trading",
+    "confidence": "high",
+    "match": true,
+    "category": "trading",
+    "raw": "Router LLM: \"Check BTC price\" → Trading [high] (735in/121out tok)\n\nTask:       \"Check BTC price\"\nAgent:      Trading\nConfidence: high\nTokens:     735 in / 121 out\nCost:       $0.000040\nLogged to Routi"
+  },
+  {
+    "prompt": "Any good Kalshi markets today?",
+    "expected": "Trading",
+    "actual": "Trading",
+    "confidence": "medium",
+    "match": true,
+    "category": "trading",
+    "raw": "Router LLM: \"Any good Kalshi markets today?\" → Trading [medium] (739in/179out tok)\n\nTask:       \"Any good Kalshi markets today?\"\nAgent:      Trading\nConfidence: medium\nTokens:     739 in / 179 out\nCos"
+  },
+  {
+    "prompt": "I spent $45 on groceries at Publix",
+    "expected": "Finance",
+    "actual": "Finance",
+    "confidence": "high",
+    "match": true,
+    "category": "finance",
+    "raw": "Router LLM: \"I spent $45 on groceries at Publix\" → Finance [high] (742in/174out tok)\n\nTask:       \"I spent $45 on groceries at Publix\"\nAgent:      Finance\nConfidence: high\nTokens:     742 in / 174 out"
+  },
+  {
+    "prompt": "What's my budget looking like this month?",
+    "expected": "Finance",
+    "actual": "Finance",
+    "confidence": "high",
+    "match": true,
+    "category": "finance",
+    "raw": "Router LLM: \"What's my budget looking like this month?\" → Finance [high] (741in/165out tok)\n\nTask:       \"What's my budget looking like this month?\"\nAgent:      Finance\nConfidence: high\nTokens:     74"
+  },
+  {
+    "prompt": "Log a $200 car payment",
+    "expected": "Finance",
+    "actual": "Finance",
+    "confidence": "high",
+    "match": true,
+    "category": "finance",
+    "raw": "Router LLM: \"Log a $200 car payment\" → Finance [high] (740in/112out tok)\n\nTask:       \"Log a $200 car payment\"\nAgent:      Finance\nConfidence: high\nTokens:     740 in / 112 out\nCost:       $0.000040\nL"
+  },
+  {
+    "prompt": "How much did I spend on food last week?",
+    "expected": "Finance",
+    "actual": "Finance",
+    "confidence": "high",
+    "match": true,
+    "category": "finance",
+    "raw": "Router LLM: \"How much did I spend on food last week?\" → Finance [high] (742in/362out tok)\n\nTask:       \"How much did I spend on food last week?\"\nAgent:      Finance\nConfidence: high\nTokens:     742 in"
+  },
+  {
+    "prompt": "I ran 3 miles today",
+    "expected": "Fitness",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": true,
+    "category": "fitness",
+    "raw": "Router LLM: \"I ran 3 miles today\" → Fitness [high] (738in/168out tok)\n\nTask:       \"I ran 3 miles today\"\nAgent:      Fitness\nConfidence: high\nTokens:     738 in / 168 out\nCost:       $0.000045\nLogged "
+  },
+  {
+    "prompt": "Log my workout: bench press 225x5, squat 315x3",
+    "expected": "Fitness",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": true,
+    "category": "fitness",
+    "raw": "Router LLM: \"Log my workout: bench press 225x5, squat 315x3\" → Fitness [high] (750in/115out tok)\n\nTask:       \"Log my workout: bench press 225x5, squat 315x3\"\nAgent:      Fitness\nConfidence: high\nToke"
+  },
+  {
+    "prompt": "What's my workout streak?",
+    "expected": "Fitness",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": true,
+    "category": "fitness",
+    "raw": "Router LLM: \"What's my workout streak?\" → Fitness [high] (738in/118out tok)\n\nTask:       \"What's my workout streak?\"\nAgent:      Fitness\nConfidence: high\nTokens:     738 in / 118 out\nCost:       $0.00"
+  },
+  {
+    "prompt": "Pull up my fitness stats",
+    "expected": "Fitness",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": true,
+    "category": "fitness",
+    "raw": "Router LLM: \"Pull up my fitness stats\" → Fitness [high] (737in/152out tok)\n\nTask:       \"Pull up my fitness stats\"\nAgent:      Fitness\nConfidence: high\nTokens:     737 in / 152 out\nCost:       $0.0000"
+  },
+  {
+    "prompt": "Add milk and eggs to my grocery list",
+    "expected": "Shopping",
+    "actual": "Shopping",
+    "confidence": "high",
+    "match": true,
+    "category": "shopping",
+    "raw": "Router LLM: \"Add milk and eggs to my grocery list\" → Shopping [high] (740in/82out tok)\n\nTask:       \"Add milk and eggs to my grocery list\"\nAgent:      Shopping\nConfidence: high\nTokens:     740 in / 82"
+  },
+  {
+    "prompt": "I need to pick up stuff from Walmart",
+    "expected": "Shopping",
+    "actual": "Shopping",
+    "confidence": "high",
+    "match": true,
+    "category": "shopping",
+    "raw": "Router LLM: \"I need to pick up stuff from Walmart\" → Shopping [high] (740in/391out tok)\n\nTask:       \"I need to pick up stuff from Walmart\"\nAgent:      Shopping\nConfidence: high\nTokens:     740 in / 3"
+  },
+  {
+    "prompt": "Find me the best deal on AirPods",
+    "expected": "Shopping",
+    "actual": "Shopping",
+    "confidence": "high",
+    "match": true,
+    "category": "shopping",
+    "raw": "Router LLM: \"Find me the best deal on AirPods\" → Shopping [high] (741in/100out tok)\n\nTask:       \"Find me the best deal on AirPods\"\nAgent:      Shopping\nConfidence: high\nTokens:     741 in / 100 out\nC"
+  },
+  {
+    "prompt": "Create a video of my trip highlights",
+    "expected": "Media Manager",
+    "actual": "Video Digest",
+    "confidence": "high",
+    "match": false,
+    "category": "media",
+    "raw": "Router LLM: \"Create a video of my trip highlights\" → Video Digest [high] (739in/367out tok)\n\nTask:       \"Create a video of my trip highlights\"\nAgent:      Video Digest\nConfidence: high\nTokens:     73"
+  },
+  {
+    "prompt": "Edit this video and add subtitles",
+    "expected": "Media Manager",
+    "actual": "Video Digest",
+    "confidence": "medium",
+    "match": false,
+    "category": "media",
+    "raw": "Router LLM: \"Edit this video and add subtitles\" → Video Digest [medium] (738in/328out tok)\n\nTask:       \"Edit this video and add subtitles\"\nAgent:      Video Digest\nConfidence: medium\nTokens:     738 "
+  },
+  {
+    "prompt": "Make me a profile picture",
+    "expected": "Image Gen",
+    "actual": "Image Gen",
+    "confidence": "medium",
+    "match": true,
+    "category": "media",
+    "raw": "Router LLM: \"Make me a profile picture\" → Image Gen [medium] (737in/116out tok)\n\nTask:       \"Make me a profile picture\"\nAgent:      Image Gen\nConfidence: medium\nTokens:     737 in / 116 out\nCost:    "
+  },
+  {
+    "prompt": "Summarize this video https://youtube.com/watch?v=dQw4w9WgXcQ",
+    "expected": "YouTube Digest",
+    "actual": "Video Digest",
+    "confidence": "medium",
+    "match": false,
+    "category": "youtube",
+    "raw": "Router LLM: \"Summarize this video https://youtube.com/watch?v=dQw4w9WgXcQ\" → Video Digest [medium] (754in/213out tok)\n\nTask:       \"Summarize this video https://youtube.com/watch?v=dQw4w9WgXcQ\"\nAgent:"
+  },
+  {
+    "prompt": "What does this YouTuber talk about? https://youtu.be/abc",
+    "expected": "YouTube Digest",
+    "actual": "Harv",
+    "confidence": "high",
+    "match": false,
+    "category": "youtube",
+    "raw": "Router LLM returned unknown agent \"Videodigest\" — falling back to Harv\nRouter LLM: \"What does this YouTuber talk about? https://youtu.be/abc\" → Harv [high] (747in/182out tok)\n\nTask:       \"What does t"
+  },
+  {
+    "prompt": "Scheudule a meeting tmrw at 10am",
+    "expected": "Scheduler",
+    "actual": "Scheduler",
+    "confidence": "high",
+    "match": true,
+    "category": "misspelling",
+    "raw": "Router LLM: \"Scheudule a meeting tmrw at 10am\" → Scheduler [high] (745in/104out tok)\n\nTask:       \"Scheudule a meeting tmrw at 10am\"\nAgent:      Scheduler\nConfidence: high\nTokens:     745 in / 104 out"
+  },
+  {
+    "prompt": "Cehck my emal inbox",
+    "expected": "Email",
+    "actual": "Email",
+    "confidence": "medium",
+    "match": true,
+    "category": "misspelling",
+    "raw": "Router LLM: \"Cehck my emal inbox\" → Email [medium] (739in/118out tok)\n\nTask:       \"Cehck my emal inbox\"\nAgent:      Email\nConfidence: medium\nTokens:     739 in / 118 out\nCost:       $0.000040\nLogged "
+  },
+  {
+    "prompt": "Whats the scroe of the game",
+    "expected": "Sports",
+    "actual": "Sports",
+    "confidence": "high",
+    "match": true,
+    "category": "misspelling",
+    "raw": "Router LLM: \"Whats the scroe of the game\" → Sports [high] (739in/150out tok)\n\nTask:       \"Whats the scroe of the game\"\nAgent:      Sports\nConfidence: high\nTokens:     739 in / 150 out\nCost:       $0."
+  },
+  {
+    "prompt": "Serach for best laptops 2024",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "misspelling",
+    "raw": "Router LLM: \"Serach for best laptops 2024\" → Research [high] (742in/146out tok)\n\nTask:       \"Serach for best laptops 2024\"\nAgent:      Research\nConfidence: high\nTokens:     742 in / 146 out\nCost:    "
+  },
+  {
+    "prompt": "I spnt 50 bucks on gas",
+    "expected": "Finance",
+    "actual": "Finance",
+    "confidence": "high",
+    "match": true,
+    "category": "misspelling",
+    "raw": "Router LLM: \"I spnt 50 bucks on gas\" → Finance [high] (741in/177out tok)\n\nTask:       \"I spnt 50 bucks on gas\"\nAgent:      Finance\nConfidence: high\nTokens:     741 in / 177 out\nCost:       $0.000046\nL"
+  },
+  {
+    "prompt": "Research the best gym equipment and add it to my shopping list",
+    "expected": "Research",
+    "actual": "Shopping",
+    "confidence": "high",
+    "match": false,
+    "category": "multi-intent",
+    "raw": "Router LLM: \"Research the best gym equipment and add it to my shopping li\" → Shopping [high] (744in/1935out tok)\n\nTask:       \"Research the best gym equipment and add it to my shopping list\"\nAgent:   "
+  },
+  {
+    "prompt": "Check my email and then schedule a follow-up meeting",
+    "expected": "Email",
+    "actual": "Email",
+    "confidence": "high",
+    "match": true,
+    "category": "multi-intent",
+    "raw": "Router LLM: \"Check my email and then schedule a follow-up meeting\" → Email [high] (742in/318out tok)\n\nTask:       \"Check my email and then schedule a follow-up meeting\"\nAgent:      Email\nConfidence: h"
+  },
+  {
+    "prompt": "Find cheap flights and add the trip to my calendar",
+    "expected": "Travel",
+    "actual": "Travel",
+    "confidence": "high",
+    "match": true,
+    "category": "multi-intent",
+    "raw": "Router LLM: \"Find cheap flights and add the trip to my calendar\" → Travel [high] (742in/831out tok)\n\nTask:       \"Find cheap flights and add the trip to my calendar\"\nAgent:      Travel\nConfidence: hig"
+  },
+  {
+    "prompt": "Look up a recipe and add ingredients to shopping list",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "multi-intent",
+    "raw": "Router LLM: \"Look up a recipe and add ingredients to shopping list\" → Research [high] (742in/1227out tok)\n\nTask:       \"Look up a recipe and add ingredients to shopping list\"\nAgent:      Research\nConf"
+  },
+  {
+    "prompt": "Set a timer for 10 minutes",
+    "expected": "Scheduler",
+    "actual": "Scheduler",
+    "confidence": "high",
+    "match": true,
+    "category": "tricky",
+    "raw": "Router LLM: \"Set a timer for 10 minutes\" → Scheduler [high] (740in/232out tok)\n\nTask:       \"Set a timer for 10 minutes\"\nAgent:      Scheduler\nConfidence: high\nTokens:     740 in / 232 out\nCost:      "
+  },
+  {
+    "prompt": "How's the market doing today?",
+    "expected": "Trading",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": false,
+    "category": "tricky",
+    "raw": "Router LLM: \"How's the market doing today?\" → Fitness [high] (739in/1079out tok)\n\nTask:       \"How's the market doing today?\"\nAgent:      Fitness\nConfidence: high\nTokens:     739 in / 1079 out\nCost:  "
+  },
+  {
+    "prompt": "I need to book something for next weekend",
+    "expected": "Travel",
+    "actual": "Travel",
+    "confidence": "medium",
+    "match": true,
+    "category": "tricky",
+    "raw": "Router LLM: \"I need to book something for next weekend\" → Travel [medium] (740in/166out tok)\n\nTask:       \"I need to book something for next weekend\"\nAgent:      Travel\nConfidence: medium\nTokens:     "
+  },
+  {
+    "prompt": "What did Mack ask about last time?",
+    "expected": "Journal",
+    "actual": "Journal",
+    "confidence": "high",
+    "match": true,
+    "category": "tricky",
+    "raw": "Router LLM: \"What did Mack ask about last time?\" → Journal [high] (740in/250out tok)\n\nTask:       \"What did Mack ask about last time?\"\nAgent:      Journal\nConfidence: high\nTokens:     740 in / 250 out"
+  },
+  {
+    "prompt": "Play the video I was watching earlier",
+    "expected": "Video Digest",
+    "actual": "Video Digest",
+    "confidence": "medium",
+    "match": true,
+    "category": "tricky",
+    "raw": "Router LLM: \"Play the video I was watching earlier\" → Video Digest [medium] (739in/601out tok)\n\nTask:       \"Play the video I was watching earlier\"\nAgent:      Video Digest\nConfidence: medium\nTokens: "
+  },
+  {
+    "prompt": "Post the image I generated to Twitter",
+    "expected": "Auto Marketing",
+    "actual": "Auto Marketing",
+    "confidence": "medium",
+    "match": true,
+    "category": "tricky",
+    "raw": "Router LLM: \"Post the image I generated to Twitter\" → Auto Marketing [medium] (739in/230out tok)\n\nTask:       \"Post the image I generated to Twitter\"\nAgent:      Auto Marketing\nConfidence: medium\nToke"
+  },
+  {
+    "prompt": "How much is gas right now?",
+    "expected": "Research",
+    "actual": "Research",
+    "confidence": "high",
+    "match": true,
+    "category": "tricky",
+    "raw": "Router LLM: \"How much is gas right now?\" → Research [high] (739in/324out tok)\n\nTask:       \"How much is gas right now?\"\nAgent:      Research\nConfidence: high\nTokens:     739 in / 324 out\nCost:       $"
+  },
+  {
+    "prompt": "Show me what's trending",
+    "expected": "Research",
+    "actual": "Fitness",
+    "confidence": "high",
+    "match": false,
+    "category": "tricky",
+    "raw": "Router LLM: \"Show me what's trending\" → Fitness [high] (737in/900out tok)\n\nTask:       \"Show me what's trending\"\nAgent:      Fitness\nConfidence: high\nTokens:     737 in / 900 out\nCost:       $0.000110"
+  }
+]

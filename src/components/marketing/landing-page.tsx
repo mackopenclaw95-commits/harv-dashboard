@@ -4,7 +4,6 @@ import {
   Bot,
   Brain,
   BarChart3,
-  MessageSquare,
   Calendar,
   Mail,
   Search,
@@ -14,7 +13,7 @@ import {
   Check,
   Sparkles,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { MarketingNav } from "./marketing-nav";
 import { Footer } from "./footer";
 import { PLANS } from "@/lib/plan-config";
@@ -74,20 +73,18 @@ export function LandingPage() {
             from one dashboard.
           </p>
           <div className="flex items-center justify-center gap-4">
-            <Button size="lg" className="h-12 px-8 text-base gap-2" asChild>
-              <Link href="/auth/signup">
-                Get Started Free
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
+            <ButtonLink href="/auth/signup" size="lg" className="h-12 px-8 text-base gap-2">
+              Get Started Free
+              <ArrowRight className="h-4 w-4" />
+            </ButtonLink>
+            <ButtonLink
+              href="/features"
               variant="outline"
               size="lg"
               className="h-12 px-8 text-base bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]"
-              asChild
             >
-              <Link href="/features">See Features</Link>
-            </Button>
+              See Features
+            </ButtonLink>
           </div>
         </div>
       </section>
@@ -157,12 +154,10 @@ export function LandingPage() {
             ))}
           </div>
           <div className="text-center mt-8">
-            <Button variant="outline" size="sm" className="gap-2 bg-white/[0.03] border-white/[0.08]" asChild>
-              <Link href="/features">
-                View all 20+ agents
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            </Button>
+            <ButtonLink href="/features" variant="outline" size="sm" className="gap-2 bg-white/[0.03] border-white/[0.08]">
+              View all 20+ agents
+              <ArrowRight className="h-3 w-3" />
+            </ButtonLink>
           </div>
         </div>
       </section>
@@ -213,15 +208,13 @@ export function LandingPage() {
                         </li>
                       ))}
                     </ul>
-                    <Button
+                    <ButtonLink
+                      href="/auth/signup"
                       className="w-full"
                       variant={isPopular ? "default" : "outline"}
-                      asChild
                     >
-                      <Link href="/auth/signup">
-                        {plan.price === 0 ? "Start Free Trial" : "Get Started"}
-                      </Link>
-                    </Button>
+                      {plan.price === 0 ? "Start Free Trial" : "Get Started"}
+                    </ButtonLink>
                   </div>
                 );
               }
@@ -239,12 +232,10 @@ export function LandingPage() {
           <p className="text-muted-foreground/70 mb-8">
             Start your free trial today. No credit card required.
           </p>
-          <Button size="lg" className="h-12 px-10 text-base gap-2" asChild>
-            <Link href="/auth/signup">
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <ButtonLink href="/auth/signup" size="lg" className="h-12 px-10 text-base gap-2">
+            Get Started Free
+            <ArrowRight className="h-4 w-4" />
+          </ButtonLink>
         </div>
       </section>
 

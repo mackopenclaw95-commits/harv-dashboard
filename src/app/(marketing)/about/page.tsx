@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { UserPlus, Settings, Zap, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -75,12 +74,10 @@ export default function AboutPage() {
           <p className="text-muted-foreground/70 mb-6">
             Join Harv and let your AI team handle the busy work.
           </p>
-          <Button size="lg" className="h-12 px-8 gap-2" asChild>
-            <Link href="/auth/signup">
-              Start Free Trial
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <ButtonLink href="/auth/signup" size="lg" className="h-12 px-8 gap-2">
+            Start Free Trial
+            <ArrowRight className="h-4 w-4" />
+          </ButtonLink>
         </div>
       </div>
     </div>
