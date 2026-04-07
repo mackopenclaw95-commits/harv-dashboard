@@ -89,7 +89,7 @@ export default function SettingsPageWrapper() {
 }
 
 function SettingsPage() {
-  const { user, profile, signOut, signInWithGoogle } = useAuth();
+  const { user, profile, signOut, signInWithGoogle, refreshProfile } = useAuth();
   const { resetTour } = useTour();
   const { theme, setTheme } = useTheme();
   const searchParams = useSearchParams();
@@ -510,7 +510,12 @@ function SettingsPage() {
                     You&apos;re on the <span className="text-primary font-medium">{PLANS.find(p => p.id === currentPlan)?.name || "Free"}</span> plan
                   </p>
                 </div>
-                <Badge className="bg-primary/15 text-primary border-primary/30">{PLANS.find(p => p.id === currentPlan)?.name || "Free"}</Badge>
+                <div className="flex items-center gap-2">
+                  {profile?.role === "tester" && (
+                    <Badge className="bg-orange-400/15 text-orange-400 border-orange-400/30 text-[9px]">Test Mode</Badge>
+                  )}
+                  <Badge className="bg-primary/15 text-primary border-primary/30">{PLANS.find(p => p.id === currentPlan)?.name || "Free"}</Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -543,28 +548,52 @@ function SettingsPage() {
                     <Button
                       className="w-full text-xs"
                       variant={isCurrent ? "outline" : "default"}
-                      disabled={isCurrent || plan.id === "free"}
+                      disabled={isCurrent}
                       onClick={async () => {
-                        if (!isCurrent && user && plan.id !== "free") {
+                        if (isCurrent || !user) return;
+
+                        // Testers can switch plans instantly
+                        if (profile?.role === "tester") {
                           try {
-                            const res = await fetch("/api/billing/checkout", {
+                            const res = await fetch("/api/billing/test-switch", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ plan: plan.id, userId: user.id }),
+                              body: JSON.stringify({ plan: plan.id }),
                             });
                             const data = await res.json();
-                            if (data.url) {
-                              window.location.href = data.url;
+                            if (data.success) {
+                              setCurrentPlan(plan.id);
+                              toast.success(`Switched to ${plan.name} (test mode)`);
+                              refreshProfile();
                             } else {
-                              toast.error(data.error || "Checkout failed");
+                              toast.error(data.error || "Switch failed");
                             }
                           } catch {
-                            toast.error("Failed to start checkout");
+                            toast.error("Failed to switch plan");
                           }
+                          return;
+                        }
+
+                        // Regular users go through Stripe
+                        if (plan.id === "free") return;
+                        try {
+                          const res = await fetch("/api/billing/checkout", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ plan: plan.id, userId: user.id }),
+                          });
+                          const data = await res.json();
+                          if (data.url) {
+                            window.location.href = data.url;
+                          } else {
+                            toast.error(data.error || "Checkout failed");
+                          }
+                        } catch {
+                          toast.error("Failed to start checkout");
                         }
                       }}
                     >
-                      {isCurrent ? "Current Plan" : "Upgrade"}
+                      {isCurrent ? "Current Plan" : profile?.role === "tester" ? `Switch to ${plan.name}` : "Upgrade"}
                     </Button>
                   </CardContent>
                 </Card>

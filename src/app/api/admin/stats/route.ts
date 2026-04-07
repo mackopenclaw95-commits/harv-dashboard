@@ -173,7 +173,7 @@ export async function GET() {
       stats: {
         totalUsers: users.length,
         activeTrials: users.filter((p) => p.plan_status === "trial").length,
-        paidUsers: users.filter((p) => p.plan_status === "active" && p.plan !== "free" && p.role !== "owner").length,
+        paidUsers: users.filter((p) => p.plan_status === "active" && p.plan !== "free" && p.role !== "owner" && p.role !== "tester").length,
         cancelledUsers: users.filter((p) => p.plan_status === "cancelled").length,
         totalConversations: 0,
         totalMessages: 0,

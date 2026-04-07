@@ -360,6 +360,11 @@ export default function AdminPage() {
                             owner
                           </Badge>
                         )}
+                        {u.role === "tester" && (
+                          <Badge className="text-[9px] px-1.5 bg-orange-400/20 text-orange-400 border-0">
+                            tester
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-[11px] text-muted-foreground/60 truncate">
                         {u.email} · joined {timeAgo(u.created_at)}
