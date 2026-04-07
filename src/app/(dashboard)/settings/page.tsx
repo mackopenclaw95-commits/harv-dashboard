@@ -663,9 +663,10 @@ function SettingsPage() {
             const dailyLimit = tier.primaryMessagesPerDay;
             const weeklyUsed = usageData?.weekly_used ?? 0;
             const weeklyLimit = tier.weeklyBackstop;
-            const imageRemaining = usageData?.image_remaining ?? tier.imagesPerDay;
-            const imagesUsed = tier.imagesPerDay - imageRemaining;
-            const availableAgents = currentPlan === "free" ? FREE_PLAN_AGENTS.size : (agentCount || 0);
+            const rawImageRemaining = usageData?.image_remaining ?? tier.imagesPerDay;
+            // Owner/tester returns -1 for unlimited — treat as 0 used
+            const imagesUsed = rawImageRemaining < 0 ? 0 : Math.max(0, tier.imagesPerDay - rawImageRemaining);
+            const availableAgents = currentPlan === "free" ? FREE_PLAN_AGENTS.size : -1;
             const agentLimit = currentPlan === "free" ? FREE_PLAN_AGENTS.size : -1;
             const modelTier = usageData?.model_tier || "primary";
             const modelName = modelTier === "fallback" ? tier.fallbackModel : tier.primaryModel;
@@ -721,7 +722,7 @@ function SettingsPage() {
                     <div>
                       <div className="flex justify-between text-xs mb-1.5">
                         <span className="text-muted-foreground">Available agents</span>
-                        <span className="text-foreground font-medium">{availableAgents} / {agentLimit === -1 ? "Unlimited" : agentLimit}</span>
+                        <span className="text-foreground font-medium">{agentLimit === -1 ? "Unlimited" : `${availableAgents} / ${agentLimit}`}</span>
                       </div>
                       <div className="h-2.5 rounded-full bg-white/[0.06]">
                         <div className="h-2.5 rounded-full bg-primary/60 transition-all" style={{ width: agentLimit === -1 ? "100%" : `${Math.min((availableAgents / agentLimit) * 100, 100)}%` }} />
