@@ -30,6 +30,7 @@ import {
   getTimezone, setTimezone as saveTimezone,
   resolveTimezone, TIMEZONE_OPTIONS,
 } from "@/lib/preferences";
+import { TIER_LIMITS, FREE_PLAN_AGENTS, type TierKey } from "@/lib/plan-config";
 
 // ─── Types & Constants ──────────────────────────────────
 
@@ -112,6 +113,14 @@ function SettingsPage() {
   const [timezone, setTimezoneState] = useState("auto");
   const [currentTime, setCurrentTime] = useState("");
 
+  // Usage data from /api/usage/check
+  const [usageData, setUsageData] = useState<{
+    used: number; limit: number; remaining: number;
+    weekly_used: number; weekly_limit: number;
+    image_remaining: number; degraded: boolean;
+    model_tier: string;
+  } | null>(null);
+
   // Kachow Easter egg
   const [personality, setPersonality] = useState("default");
   const [personalityLoading, setPersonalityLoading] = useState(true);
@@ -128,6 +137,7 @@ function SettingsPage() {
     loadAgentCount();
     loadServices();
     loadPersonality();
+    loadUsageData();
     setGoogleConnected(isGoogleConnected());
     setHarvApiKey(localStorage.getItem("harv-api-key"));
     setCurrentPlan(profile?.plan || "free");
@@ -183,6 +193,13 @@ function SettingsPage() {
     try {
       const res = await fetch("/api/proxy?path=/api/agents/list");
       if (res.ok) { const d = await res.json(); setAgentCount((d.agents || []).length); }
+    } catch { /* keep null */ }
+  }
+
+  async function loadUsageData() {
+    try {
+      const res = await fetch("/api/usage/check");
+      if (res.ok) { const d = await res.json(); setUsageData(d); }
     } catch { /* keep null */ }
   }
 
@@ -640,100 +657,130 @@ function SettingsPage() {
 
         {/* ── Tab 4: Usage ── */}
         <TabsContent value={4} className="space-y-6">
-          {/* Current Plan Summary */}
-          <Card>
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold">Current Plan</p>
-                  <p className="text-xs text-muted-foreground">
-                    You&apos;re on the <span className="text-primary font-medium">{PLANS.find(p => p.id === currentPlan)?.name || "Free"}</span> plan
-                  </p>
-                </div>
-                <Badge className="bg-primary/15 text-primary border-primary/30">{PLANS.find(p => p.id === currentPlan)?.name || "Free"}</Badge>
-              </div>
-            </CardContent>
-          </Card>
+          {(() => {
+            const tier = TIER_LIMITS[(currentPlan as TierKey) || "free"] || TIER_LIMITS.free;
+            const dailyUsed = usageData?.used ?? 0;
+            const dailyLimit = tier.primaryMessagesPerDay;
+            const weeklyUsed = usageData?.weekly_used ?? 0;
+            const weeklyLimit = tier.weeklyBackstop;
+            const imageRemaining = usageData?.image_remaining ?? tier.imagesPerDay;
+            const imagesUsed = tier.imagesPerDay - imageRemaining;
+            const availableAgents = currentPlan === "free" ? FREE_PLAN_AGENTS.size : (agentCount || 0);
+            const agentLimit = currentPlan === "free" ? FREE_PLAN_AGENTS.size : -1;
+            const modelTier = usageData?.model_tier || "primary";
+            const modelName = modelTier === "fallback" ? tier.fallbackModel : tier.primaryModel;
 
-          {/* Usage Meters */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <Activity className="h-4 w-4 text-purple-400" />
-                Usage This Period
-              </CardTitle>
-              <CardDescription>Track your consumption against plan limits</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">Messages today</span>
-                  <span className="text-foreground font-medium">0 / {currentPlan === "free" ? "100" : "Unlimited"}</span>
-                </div>
-                <div className="h-2.5 rounded-full bg-white/[0.06]">
-                  <div className="h-2.5 rounded-full bg-primary/60 transition-all w-0" />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">Active agents</span>
-                  <span className="text-foreground font-medium">{agentCount || "..."} / {currentPlan === "free" ? "5" : "Unlimited"}</span>
-                </div>
-                <div className="h-2.5 rounded-full bg-white/[0.06]">
-                  <div className="h-2.5 rounded-full bg-primary/60 transition-all" style={{ width: agentCount ? `${Math.min((agentCount / (currentPlan === "free" ? 5 : 50)) * 100, 100)}%` : "0%" }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">API calls today</span>
-                  <span className="text-foreground font-medium">0 / {currentPlan === "free" ? "500" : "Unlimited"}</span>
-                </div>
-                <div className="h-2.5 rounded-full bg-white/[0.06]">
-                  <div className="h-2.5 rounded-full bg-primary/60 transition-all w-0" />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-muted-foreground">Storage used</span>
-                  <span className="text-foreground font-medium">0 MB / {currentPlan === "free" ? "100 MB" : currentPlan === "pro" ? "5 GB" : "Unlimited"}</span>
-                </div>
-                <div className="h-2.5 rounded-full bg-white/[0.06]">
-                  <div className="h-2.5 rounded-full bg-primary/60 transition-all w-0" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            return (
+              <>
+                {/* Current Plan Summary */}
+                <Card>
+                  <CardContent className="pt-5 pb-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">Current Plan</p>
+                        <p className="text-xs text-muted-foreground">
+                          You&apos;re on the <span className="text-primary font-medium">{PLANS.find(p => p.id === currentPlan)?.name || "Free"}</span> plan
+                        </p>
+                      </div>
+                      <Badge className="bg-primary/15 text-primary border-primary/30">{PLANS.find(p => p.id === currentPlan)?.name || "Free"}</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
 
-          {/* Cost Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <CreditCard className="h-4 w-4 text-emerald-400" />
-                Cost Breakdown
-              </CardTitle>
-              <CardDescription>Estimated costs for the current billing period</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>
-                  <p className="text-muted-foreground">Model tier</p>
-                  <p className="font-semibold text-lg">{PLANS.find(p => p.id === currentPlan)?.limits.models || "Basic"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Est. monthly cost</p>
-                  <p className="font-semibold text-lg">{PLANS.find(p => p.id === currentPlan)?.price || "$0"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Tokens used</p>
-                  <p className="font-medium">0</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">API cost</p>
-                  <p className="font-medium">$0.00</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                {/* Usage Meters */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                      <Activity className="h-4 w-4 text-purple-400" />
+                      Usage This Period
+                    </CardTitle>
+                    <CardDescription>Track your consumption against plan limits</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {/* Messages today */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-muted-foreground">Messages today</span>
+                        <span className="text-foreground font-medium">{dailyUsed} / {dailyLimit}</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-white/[0.06]">
+                        <div className="h-2.5 rounded-full bg-primary/60 transition-all" style={{ width: `${Math.min((dailyUsed / dailyLimit) * 100, 100)}%` }} />
+                      </div>
+                    </div>
+                    {/* Weekly messages */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-muted-foreground">Messages this week</span>
+                        <span className="text-foreground font-medium">{weeklyUsed} / {weeklyLimit}</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-white/[0.06]">
+                        <div className="h-2.5 rounded-full bg-primary/60 transition-all" style={{ width: `${Math.min((weeklyUsed / weeklyLimit) * 100, 100)}%` }} />
+                      </div>
+                    </div>
+                    {/* Available agents */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-muted-foreground">Available agents</span>
+                        <span className="text-foreground font-medium">{availableAgents} / {agentLimit === -1 ? "Unlimited" : agentLimit}</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-white/[0.06]">
+                        <div className="h-2.5 rounded-full bg-primary/60 transition-all" style={{ width: agentLimit === -1 ? "100%" : `${Math.min((availableAgents / agentLimit) * 100, 100)}%` }} />
+                      </div>
+                    </div>
+                    {/* Image generation */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-muted-foreground">Images today</span>
+                        <span className="text-foreground font-medium">
+                          {tier.imagesPerDay === 0 ? "Not available" : `${imagesUsed} / ${tier.imagesPerDay}`}
+                        </span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-white/[0.06]">
+                        <div className="h-2.5 rounded-full bg-primary/60 transition-all" style={{ width: tier.imagesPerDay === 0 ? "0%" : `${Math.min((imagesUsed / tier.imagesPerDay) * 100, 100)}%` }} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Model Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                      <Cpu className="h-4 w-4 text-emerald-400" />
+                      Current Model
+                    </CardTitle>
+                    <CardDescription>AI model used for your messages</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">Active model</p>
+                        <p className="font-semibold text-lg capitalize">{modelName}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Status</p>
+                        <p className="font-semibold text-lg">
+                          {usageData?.degraded ? (
+                            <span className="text-amber-400">Degraded</span>
+                          ) : (
+                            <span className="text-emerald-400">Primary</span>
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Subscription</p>
+                        <p className="font-medium">{PLANS.find(p => p.id === currentPlan)?.price || "$0"}{currentPlan !== "free" ? "/mo" : ""}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Fallback model</p>
+                        <p className="font-medium capitalize">{tier.fallbackModel}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
         </TabsContent>
 
         {/* ── Tab 5: Account ── */}
