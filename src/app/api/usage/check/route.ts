@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-
-const TIER_LIMITS: Record<string, number> = {
-  free: 50,
-  pro: -1,
-  business: -1,
-};
+import { TIER_LIMITS, type TierKey } from "@/lib/stripe";
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,36 +29,88 @@ export async function GET(req: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    const plan = profile?.plan || "free";
+    const plan = (profile?.plan || "free") as TierKey;
+    const tierConfig = TIER_LIMITS[plan] || TIER_LIMITS.free;
 
-    // Owner always allowed
+    // Owner always gets primary tier, unlimited
     if (profile?.role === "owner") {
-      return NextResponse.json({ allowed: true, used: 0, limit: -1, remaining: -1 });
+      return NextResponse.json({
+        allowed: true,
+        used: 0,
+        limit: -1,
+        remaining: -1,
+        degraded: false,
+        model_tier: "primary" as const,
+        image_remaining: -1,
+      });
     }
 
-    const limit = TIER_LIMITS[plan] ?? TIER_LIMITS.free;
-    if (limit === -1) {
-      return NextResponse.json({ allowed: true, used: 0, limit: -1, remaining: -1 });
-    }
-
-    // Count today's usage
+    // Count today's messages
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const { count } = await supabase
+    const { count: todayCount } = await supabase
       .from("usage_logs")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .gte("created_at", todayStart.toISOString());
 
-    const used = count || 0;
-    const allowed = used < limit;
+    const used = todayCount || 0;
+    const primaryLimit = tierConfig.primaryMessagesPerDay;
+
+    // Weekly backstop check
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - 7);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const { count: weekCount } = await supabase
+      .from("usage_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", weekStart.toISOString());
+
+    const weeklyUsed = weekCount || 0;
+    const weeklyLimit = tierConfig.weeklyBackstop;
+    const weeklyExceeded = weeklyLimit > 0 && weeklyUsed >= weeklyLimit;
+
+    // Image generation count today
+    const { count: imageCount } = await supabase
+      .from("usage_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("agent_name", "Image Gen")
+      .gte("created_at", todayStart.toISOString());
+
+    const imagesUsed = imageCount || 0;
+    const imageLimit = tierConfig.imagesPerDay;
+    const imageRemaining = imageLimit <= 0 ? 0 : Math.max(0, imageLimit - imagesUsed);
+
+    // Determine model tier
+    let modelTier: "primary" | "fallback" | "blocked";
+    let degraded = false;
+
+    if (weeklyExceeded) {
+      // Weekly backstop hit — block completely
+      modelTier = "blocked";
+      degraded = true;
+    } else if (used >= primaryLimit) {
+      // Past daily primary limit — degrade to fallback model
+      modelTier = "fallback";
+      degraded = true;
+    } else {
+      modelTier = "primary";
+    }
 
     return NextResponse.json({
-      allowed,
+      allowed: modelTier !== "blocked",
       used,
-      limit,
-      remaining: Math.max(0, limit - used),
+      limit: primaryLimit,
+      remaining: Math.max(0, primaryLimit - used),
+      degraded,
+      model_tier: modelTier,
+      image_remaining: imageRemaining,
+      weekly_used: weeklyUsed,
+      weekly_limit: weeklyLimit,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

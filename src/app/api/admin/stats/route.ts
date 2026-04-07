@@ -4,8 +4,11 @@ import { createServiceClient } from "@/lib/supabase";
 // Model pricing per million tokens (matching OpenRouter rates)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   "deepseek/deepseek-chat": { input: 0.32, output: 0.89 },
+  "deepseek/deepseek-v3.2": { input: 0.26, output: 0.38 },
   "x-ai/grok-4.1-fast": { input: 0.05, output: 0.10 },
   "qwen/qwen3-8b": { input: 0.04, output: 0.09 },
+  "google/gemini-2.0-flash-lite-001": { input: 0.075, output: 0.30 },
+  "openai/gpt-4.1": { input: 2.0, output: 8.0 },
   "claude-sonnet-4-20250514": { input: 3.0, output: 15.0 },
   "claude-haiku-4-5-20251001": { input: 0.80, output: 4.0 },
 };
@@ -26,18 +29,46 @@ export async function GET() {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    // Backfill: create profile rows for any auth users missing one
+    try {
+      const { data: { users: authUsers } } = await supabase.auth.admin.listUsers();
+      if (authUsers && authUsers.length > 0) {
+        const { data: existingProfiles } = await supabase
+          .from("profiles")
+          .select("id");
+        const existingIds = new Set((existingProfiles || []).map((p) => p.id));
+
+        const missing = authUsers.filter((u) => !existingIds.has(u.id));
+        if (missing.length > 0) {
+          const trialEnd = new Date();
+          trialEnd.setDate(trialEnd.getDate() + 7);
+
+          const rows = missing.map((u) => ({
+            id: u.id,
+            email: u.email,
+            name: u.user_metadata?.name || u.user_metadata?.full_name || null,
+            avatar_url: u.user_metadata?.avatar_url || null,
+            role: "user",
+            plan: "free",
+            plan_status: "trial",
+            trial_ends_at: trialEnd.toISOString(),
+            onboarded: false,
+          }));
+
+          await supabase.from("profiles").insert(rows);
+        }
+      }
+    } catch (err) {
+      console.error("[admin/stats] Profile backfill error:", err);
+    }
+
     const [profiles, usageToday, usageByUser] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("usage_logs").select("id", { count: "exact", head: true }).gte("created_at", todayStart.toISOString()),
       supabase.from("usage_logs").select("user_id, tokens_used, estimated_cost"),
     ]);
 
-    // Pull real cost data from VPS events API
-    let claudeCost = 0;
-    let openrouterCost = 0;
-    let totalTokens = 0;
-    const costByModel: Record<string, { tokens: number; cost: number; calls: number }> = {};
-
+    // --- Sync new api_cost events from VPS into Supabase ---
     try {
       const API_URL = process.env.API_URL || "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
       const API_KEY = process.env.HARV_API_KEY || "";
@@ -47,39 +78,75 @@ export async function GET() {
       if (eventsRes.ok) {
         const json = await eventsRes.json();
         const events = json.events || json || [];
-        for (const evt of events) {
-          if (evt.action !== "api_cost") continue;
-          const summary = String(evt.summary || "");
-          const tokens = evt.tokens || 0;
-          totalTokens += tokens;
+        const costEvents = events.filter((evt: Record<string, unknown>) => evt.action === "api_cost");
 
-          // Extract model name from summary: "model_name | X tokens | $Y"
-          const model = summary.split("|")[0]?.trim() || "";
-          const isClaudeModel = model.startsWith("claude-");
-          const isGoogleModel = model.includes("imagen") || model.includes("gemini");
+        if (costEvents.length > 0) {
+          // Upsert new api_cost events into Supabase (dedup by vps_event_id)
+          const rows = costEvents.map((evt: Record<string, unknown>) => {
+            const summary = String(evt.summary || "");
+            const model = summary.split("|")[0]?.trim() || "";
+            const tokens = (evt.tokens as number) || 0;
+            let cost = (evt.cost as number) || 0;
+            if (cost === 0 && tokens > 0) {
+              cost = estimateCost(model, tokens);
+            }
+            return {
+              vps_event_id: evt.id as number,
+              model,
+              tokens,
+              cost,
+              agent: String(evt.agent || ""),
+              summary,
+              event_timestamp: evt.timestamp as string,
+            };
+          });
 
-          // Calculate cost from model pricing if VPS cost is 0
-          let cost = evt.cost || 0;
-          if (cost === 0 && tokens > 0) {
-            cost = estimateCost(model, tokens);
-          }
-
-          if (isClaudeModel) {
-            claudeCost += cost;
-          } else {
-            openrouterCost += cost;
-          }
-
-          // Track per-model
-          if (model) {
-            if (!costByModel[model]) costByModel[model] = { tokens: 0, cost: 0, calls: 0 };
-            costByModel[model].tokens += tokens;
-            costByModel[model].cost += cost;
-            costByModel[model].calls += 1;
-          }
+          await supabase
+            .from("api_cost_events")
+            .upsert(rows, { onConflict: "vps_event_id", ignoreDuplicates: true });
         }
+      } else {
+        console.error("[admin/stats] VPS events API returned", eventsRes.status);
       }
-    } catch {}
+    } catch (err) {
+      console.error("[admin/stats] Failed to sync VPS events:", err);
+    }
+
+    // --- Read ALL costs from Supabase (persistent, survives VPS event rotation) ---
+    let claudeCost = 0;
+    let openrouterCost = 0;
+    let totalTokens = 0;
+    let lastCostEvent: string | null = null;
+    const costByModel: Record<string, { tokens: number; cost: number; calls: number }> = {};
+
+    const { data: costRows } = await supabase
+      .from("api_cost_events")
+      .select("model, tokens, cost, event_timestamp")
+      .order("event_timestamp", { ascending: false });
+
+    for (const row of costRows || []) {
+      const model = row.model || "";
+      const tokens = row.tokens || 0;
+      const cost = Number(row.cost) || 0;
+
+      if (!lastCostEvent) lastCostEvent = row.event_timestamp;
+
+      totalTokens += tokens;
+
+      const isClaudeModel = model.startsWith("claude-");
+      if (isClaudeModel) {
+        claudeCost += cost;
+      } else {
+        openrouterCost += cost;
+      }
+
+      if (model) {
+        if (!costByModel[model]) costByModel[model] = { tokens: 0, cost: 0, calls: 0 };
+        costByModel[model].tokens += tokens;
+        costByModel[model].cost += cost;
+        costByModel[model].calls += 1;
+      }
+    }
 
     // Aggregate usage per user from dashboard usage_logs
     const userUsage: Record<string, { tokens: number; cost: number; messages: number }> = {};
@@ -118,6 +185,7 @@ export async function GET() {
         openrouterCost,
         totalTokens,
         costByModel,
+        lastCostEvent,
       },
     });
   } catch (err) {

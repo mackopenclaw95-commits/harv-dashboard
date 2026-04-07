@@ -44,10 +44,13 @@ export function getColorClass(color: string): string {
 
 /** Get all projects sorted by most recently updated */
 export async function getProjects(): Promise<Project[]> {
-  const { data, error } = await supabase
+  const uid = await getUserId();
+  let q = supabase
     .from("projects")
     .select("*")
     .order("updated_at", { ascending: false });
+  if (uid) q = q.eq("user_id", uid);
+  const { data, error } = await q;
 
   if (error) throw error;
   return data || [];
@@ -100,12 +103,15 @@ export async function getProjectStats(projectId: string): Promise<ProjectStats> 
 export async function getProjectConversations(
   projectId: string
 ): Promise<(Conversation & { message_count: number; last_message?: string })[]> {
-  const { data, error } = await supabase
+  const uid = await getUserId();
+  let q = supabase
     .from("conversations")
     .select("*, messages(count)")
     .eq("project_id", projectId)
     .eq("status", "active")
     .order("updated_at", { ascending: false });
+  if (uid) q = q.eq("user_id", uid);
+  const { data, error } = await q;
 
   if (error) return [];
 

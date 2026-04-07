@@ -1,0 +1,207 @@
+/* Obsidian Glass theme overrides for driver.js */
+/* Design: Light overlay, popover in blank space, glow highlights elements */
+
+/* ── Animations ── */
+@keyframes tourNavPulse {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.78 0.145 192 / 0%); }
+  25% { box-shadow: 0 0 20px 6px oklch(0.78 0.145 192 / 50%); }
+  50% { box-shadow: 0 0 30px 10px oklch(0.78 0.145 192 / 30%); }
+  75% { box-shadow: 0 0 20px 6px oklch(0.78 0.145 192 / 50%); }
+}
+
+/* Applied to sidebar nav links during transition steps */
+.tour-nav-pulse {
+  animation: tourNavPulse 1.5s ease-in-out infinite !important;
+  border-radius: 0.5rem !important;
+}
+
+@keyframes tourPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes tourGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.145 192 / 20%),
+      0 12px 48px oklch(0 0 0 / 40%),
+      0 0 20px oklch(0.78 0.145 192 / 0%);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.145 192 / 30%),
+      0 12px 48px oklch(0 0 0 / 40%),
+      0 0 30px oklch(0.78 0.145 192 / 12%);
+  }
+}
+
+@keyframes tourOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Popover — positioned in blank space, glass card ── */
+.driver-popover {
+  background: oklch(0.11 0.02 265 / 95%) !important;
+  border: 1px solid oklch(0.78 0.145 192 / 25%) !important;
+  border-radius: 1rem !important;
+  box-shadow:
+    0 0 0 1px oklch(0.78 0.145 192 / 10%),
+    0 12px 48px oklch(0 0 0 / 40%),
+    0 4px 12px oklch(0 0 0 / 25%) !important;
+  color: oklch(0.95 0 0) !important;
+  max-width: 400px !important;
+  min-width: 300px !important;
+  padding: 1.25rem 1.5rem !important;
+  backdrop-filter: blur(24px) !important;
+  animation: tourPopIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+             tourGlow 3s ease-in-out 0.5s infinite !important;
+}
+
+.driver-popover * {
+  font-family: "Outfit", sans-serif !important;
+}
+
+/* ── Title ── */
+.driver-popover-title {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  color: oklch(0.95 0 0) !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* ── Description ── */
+.driver-popover-description {
+  font-size: 0.85rem !important;
+  color: oklch(0.75 0 0) !important;
+  line-height: 1.65 !important;
+  margin-top: 0.5rem !important;
+  white-space: pre-line !important;
+}
+
+/* ── Progress text ── */
+.driver-popover-progress-text {
+  font-size: 0.6875rem !important;
+  color: oklch(0.5 0 0) !important;
+}
+
+/* ── Primary button (Next / Done) ── */
+.driver-popover-next-btn {
+  background: oklch(0.78 0.145 192) !important;
+  color: oklch(0.15 0.02 192) !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  padding: 0.5rem 1.25rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.driver-popover-next-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px oklch(0.78 0.145 192 / 30%) !important;
+}
+
+.driver-popover-next-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* ── Secondary button (Previous) ── */
+.driver-popover-prev-btn {
+  background: transparent !important;
+  color: oklch(0.6 0 0) !important;
+  border: 1px solid oklch(1 0 0 / 10%) !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1.25rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.driver-popover-prev-btn:hover {
+  background: oklch(1 0 0 / 5%) !important;
+  color: oklch(0.8 0 0) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Close button ── */
+.driver-popover-close-btn {
+  color: oklch(0.5 0 0) !important;
+  transition: all 0.2s ease !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: oklch(0.8 0 0) !important;
+  transform: rotate(90deg) !important;
+}
+
+/* ── Arrow ── */
+.driver-popover-arrow-side-left .driver-popover-arrow,
+.driver-popover-arrow-side-right .driver-popover-arrow,
+.driver-popover-arrow-side-top .driver-popover-arrow,
+.driver-popover-arrow-side-bottom .driver-popover-arrow {
+  border-color: oklch(0.11 0.02 265 / 95%) !important;
+}
+
+/* ── Overlay — light dim, highlighted area does the heavy lifting ── */
+.driver-overlay {
+  background: oklch(0 0 0 / 40%) !important;
+  animation: tourOverlayIn 0.3s ease-out !important;
+}
+
+/* ── Highlighted element — no outline, glow overlay handles the border ── */
+.driver-active-element {
+  border-radius: 0.75rem !important;
+  outline: none !important;
+}
+
+
+/* Glow overlay — outer radiance only, no fill that dims content */
+#harv-tour-glow {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: none;
+  border-radius: 0.75rem;
+  background: transparent;
+  box-shadow:
+    0 0 50px 14px oklch(0.78 0.145 192 / 50%),
+    0 0 120px 30px oklch(0.78 0.145 192 / 25%),
+    0 0 200px 50px oklch(0.78 0.145 192 / 10%);
+  transition:
+    top 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    left 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
+}
+
+
+/* ── Footer ── */
+.driver-popover-footer {
+  margin-top: 0.75rem !important;
+}
+
+.driver-popover-navigation-btns {
+  gap: 0.25rem !important;
+}
+
+/* ── Extra offset to push popover away from element ── */
+.driver-popover.tour-popover-lifted {
+  margin-bottom: 30px !important;
+}
+
+/* ── Smooth transitions between steps ── */
+.driver-popover,
+.driver-overlay {
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}

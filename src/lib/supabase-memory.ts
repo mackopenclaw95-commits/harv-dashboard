@@ -1,4 +1,21 @@
-import { supabase } from "./supabase";
+import { supabase, createBrowserSupabase } from "./supabase";
+
+async function getUserId(): Promise<string | null> {
+  try {
+    const browser = createBrowserSupabase();
+    const { data } = await browser.auth.getUser();
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function isOwnerUser(): Promise<boolean> {
+  const uid = await getUserId();
+  if (!uid) return false;
+  const { data } = await supabase.from("profiles").select("role").eq("id", uid).single();
+  return data?.role === "owner" || data?.role === "admin";
+}
 
 export interface MemoryEntry {
   id: string;
@@ -14,6 +31,9 @@ export async function searchMemoryEntries(
   query?: string,
   limit = 30
 ): Promise<MemoryEntry[]> {
+  // Memory entries are owner-only (created by VPS backend, no user_id)
+  if (!(await isOwnerUser())) return [];
+
   let q = supabase
     .from("memory_entries")
     .select("id, content, metadata, agent_name, created_at")
@@ -34,6 +54,8 @@ export async function getMemoryStats(): Promise<{
   total_entries: number;
   agents: string[];
 }> {
+  if (!(await isOwnerUser())) return { total_entries: 0, agents: [] };
+
   const { count, error } = await supabase
     .from("memory_entries")
     .select("*", { count: "exact", head: true });
@@ -60,6 +82,8 @@ export async function getMemoryByAgent(
   agentName: string,
   limit = 20
 ): Promise<MemoryEntry[]> {
+  if (!(await isOwnerUser())) return [];
+
   const { data, error } = await supabase
     .from("memory_entries")
     .select("id, content, metadata, agent_name, created_at")

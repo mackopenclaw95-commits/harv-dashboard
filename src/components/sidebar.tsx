@@ -25,12 +25,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/components/auth-provider";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/team", label: "Meet the Team", icon: Users2 },
   { href: "/crons", label: "Automations", icon: Zap },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/documents", label: "Files", icon: FolderOpen },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/journal", label: "Journal", icon: FileText },
@@ -68,8 +68,8 @@ export function Sidebar() {
   }, []);
 
   return (
-    <aside className="flex h-full w-16 flex-col items-center border-r bg-background py-4 md:w-56">
-      <Link href="/" className="mb-8 flex items-center gap-2 px-4">
+    <aside data-tour="sidebar" className="flex h-full w-16 flex-col items-center border-r bg-background py-4 md:w-56">
+      <Link href="/dashboard" className="mb-8 flex items-center gap-2 px-4">
         <Zap className="h-6 w-6 text-primary" />
         <span className="hidden text-lg font-bold md:inline">Harv</span>
       </Link>
@@ -87,6 +87,7 @@ export function Sidebar() {
               <Link
                 key={href}
                 href={href}
+                data-tour={href === "/" ? "dashboard" : href.slice(1)}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   active

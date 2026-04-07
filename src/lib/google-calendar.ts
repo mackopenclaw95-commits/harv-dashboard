@@ -26,12 +26,34 @@ interface TokenData {
   expires_at: number;
 }
 
-const TOKEN_KEY = "harv-google-tokens";
+const TOKEN_KEY_BASE = "harv-google-tokens";
+let _currentUserId: string | null = null;
+
+// Immediately remove old shared token key so no user inherits another's tokens
+if (typeof window !== "undefined") {
+  localStorage.removeItem(TOKEN_KEY_BASE);
+}
+
+/** Set the user-scoped token key (call after auth is known). */
+export function setTokenUserId(userId: string): void {
+  if (typeof window === "undefined") return;
+  _currentUserId = userId;
+}
+
+/** Get the current user's token key. Returns null if no user set yet. */
+function getUserTokenKey(): string | null {
+  if (typeof window === "undefined") return null;
+  if (_currentUserId) return `${TOKEN_KEY_BASE}-${_currentUserId}`;
+  // No user ID set yet — don't fall back to shared key
+  return null;
+}
 
 /** Check if user has connected Google Calendar. */
 export function isGoogleConnected(): boolean {
   if (typeof window === "undefined") return false;
-  const stored = localStorage.getItem(TOKEN_KEY);
+  const key = getUserTokenKey();
+  if (!key) return false;
+  const stored = localStorage.getItem(key);
   if (!stored) return false;
   try {
     const tokens: TokenData = JSON.parse(stored);
@@ -44,7 +66,9 @@ export function isGoogleConnected(): boolean {
 /** Get stored tokens. */
 function getTokens(): TokenData | null {
   if (typeof window === "undefined") return null;
-  const stored = localStorage.getItem(TOKEN_KEY);
+  const key = getUserTokenKey();
+  if (!key) return null;
+  const stored = localStorage.getItem(key);
   if (!stored) return null;
   try {
     return JSON.parse(stored);
@@ -55,12 +79,16 @@ function getTokens(): TokenData | null {
 
 /** Store tokens. */
 export function storeTokens(tokens: TokenData): void {
-  localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+  const key = getUserTokenKey();
+  if (!key) return;
+  localStorage.setItem(key, JSON.stringify(tokens));
 }
 
 /** Clear tokens (disconnect). */
 export function disconnectGoogle(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  const key = getUserTokenKey();
+  if (!key) return;
+  localStorage.removeItem(key);
 }
 
 /** Build the Google OAuth consent URL. */

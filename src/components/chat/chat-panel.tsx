@@ -292,17 +292,22 @@ export function ChatPanel({
     setInput("");
 
     // Check usage limits before sending
+    let currentModelTier: "primary" | "fallback" | "blocked" = "primary";
     try {
       const usageRes = await fetch("/api/usage/check");
       if (usageRes.ok) {
         const usage = await usageRes.json();
         if (!usage.allowed) {
           toast.error(
-            `Daily limit reached (${usage.used}/${usage.limit} messages). Upgrade to Pro for unlimited.`
+            `Weekly limit reached (${usage.weekly_used}/${usage.weekly_limit}). Resets next week.`
           );
           isSendingRef.current = false;
           setIsLoading(false);
           return;
+        }
+        currentModelTier = usage.model_tier || "primary";
+        if (usage.degraded) {
+          toast("Using standard model — daily premium limit reached", { duration: 3000 });
         }
       }
     } catch {} // If usage check fails, allow the message through
@@ -350,6 +355,7 @@ export function ChatPanel({
               message: trimmed,
               agent: agentName,
               plan: profile?.plan || "free",
+              model_tier: currentModelTier,
               ...(projectContext ? { context: projectContext } : {}),
             }
           : {
@@ -358,6 +364,7 @@ export function ChatPanel({
                 content: m.content,
               })),
               plan: profile?.plan || "free",
+              model_tier: currentModelTier,
               ...(projectContext ? { context: projectContext } : {}),
             };
 
@@ -546,7 +553,7 @@ export function ChatPanel({
               className="hidden"
               onChange={handleFileSelect}
             />
-            <div className="relative rounded-2xl ring-1 ring-white/[0.08] bg-card/50 backdrop-blur-2xl shadow-xl shadow-black/15 focus-within:ring-primary/30 focus-within:shadow-primary/5 transition-all duration-300">
+            <div data-tour="chat-input-area" className="relative rounded-2xl ring-1 ring-white/[0.08] bg-card/50 backdrop-blur-2xl shadow-xl shadow-black/15 focus-within:ring-primary/30 focus-within:shadow-primary/5 transition-all duration-300">
               {attachedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-2 px-5 pt-4">
                   {attachedFiles.map((file, i) => (
@@ -588,6 +595,7 @@ export function ChatPanel({
                   type="button"
                   size="icon"
                   variant="ghost"
+                  data-tour="chat-attach"
                   onClick={() => fileInputRef.current?.click()}
                   className="h-8 w-8 rounded-lg hover:bg-white/[0.06] text-muted-foreground hover:text-foreground"
                   disabled={isLoading}
@@ -598,6 +606,7 @@ export function ChatPanel({
                   type="submit"
                   size="icon"
                   variant="ghost"
+                  data-tour="chat-send"
                   disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
                   className="h-8 w-8 rounded-lg hover:bg-primary/10"
                 >
@@ -746,12 +755,13 @@ export function ChatPanel({
               ))}
             </div>
           )}
-          <div className="rounded-xl ring-1 ring-white/[0.08] bg-card/40 backdrop-blur-xl p-1.5 focus-within:ring-primary/25 transition-all duration-200">
+          <div data-tour="chat-input-area" className="rounded-xl ring-1 ring-white/[0.08] bg-card/40 backdrop-blur-xl p-1.5 focus-within:ring-primary/25 transition-all duration-200">
             <form onSubmit={handleSubmit} className="flex items-end gap-1.5">
               <Button
                 type="button"
                 size="icon"
                 variant="ghost"
+                data-tour="chat-attach"
                 onClick={() => fileInputRef.current?.click()}
                 className="shrink-0 h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg"
                 disabled={isLoading}
@@ -771,6 +781,7 @@ export function ChatPanel({
               <Button
                 type="submit"
                 size="icon"
+                data-tour="chat-send"
                 disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
                 className="shrink-0 h-9 w-9 rounded-lg"
               >

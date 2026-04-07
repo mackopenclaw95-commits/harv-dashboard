@@ -27,8 +27,10 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getSession();
 
   // Public routes that don't require auth
-  const publicPaths = ["/auth/login", "/auth/signup", "/auth/callback"];
-  const isPublic = publicPaths.some((p) => req.nextUrl.pathname.startsWith(p));
+  const publicPaths = ["/auth/login", "/auth/signup", "/auth/callback", "/features", "/pricing", "/about"];
+  const isPublic =
+    req.nextUrl.pathname === "/" ||
+    publicPaths.some((p) => req.nextUrl.pathname.startsWith(p));
 
   // API routes handle their own auth
   const isApi = req.nextUrl.pathname.startsWith("/api/");
@@ -37,7 +39,7 @@ export async function middleware(req: NextRequest) {
   const SKIP_AUTH = process.env.SKIP_AUTH === "true";
   if (!session && !isPublic && !isApi && !SKIP_AUTH) {
     const loginUrl = new URL("/auth/login", req.url);
-    loginUrl.searchParams.set("next", req.nextUrl.pathname);
+    loginUrl.searchParams.set("next", req.nextUrl.pathname === "/" ? "/dashboard" : req.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
 

@@ -33,38 +33,39 @@ export async function getOrCreateConversation(
   agentName: string
 ): Promise<string> {
   // Find most recent conversation for this agent (within last 24h)
+  const uid = await getUserId();
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   // Try with status filter first, fall back without it if column doesn't exist
   let existing: { id: string } | null = null;
-  const { data: d1, error: e1 } = await supabase
+  let q1 = supabase
     .from("conversations")
     .select("id")
     .eq("agent_name", agentName)
     .eq("status", "active")
     .gte("updated_at", cutoff)
     .order("updated_at", { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
+  if (uid) q1 = q1.eq("user_id", uid);
+  const { data: d1, error: e1 } = await q1.single();
 
   if (!e1) {
     existing = d1;
   } else if (e1.code !== "PGRST116") {
-    // PGRST116 = no rows found, any other error might mean column doesn't exist
-    const { data: d2 } = await supabase
+    let q2 = supabase
       .from("conversations")
       .select("id")
       .eq("agent_name", agentName)
       .gte("updated_at", cutoff)
       .order("updated_at", { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
+    if (uid) q2 = q2.eq("user_id", uid);
+    const { data: d2 } = await q2.single();
     existing = d2;
   }
 
   if (existing) return existing.id;
 
   // Create new conversation
-  const uid = await getUserId();
   const { data: created, error } = await supabase
     .from("conversations")
     .insert({ agent_name: agentName, user_id: uid })
@@ -160,11 +161,15 @@ export async function getRecentConversations(
   status: "active" | "archived" | "all" = "active",
   projectId?: string
 ): Promise<(Conversation & { message_count: number; last_message?: string })[]> {
+  const uid = await getUserId();
+
   let query = supabase
     .from("conversations")
     .select("*, messages(count)")
     .order("updated_at", { ascending: false })
     .limit(limit);
+
+  if (uid) query = query.eq("user_id", uid);
 
   if (agentName) {
     query = query.eq("agent_name", agentName);
@@ -190,6 +195,7 @@ export async function getRecentConversations(
       .order("updated_at", { ascending: false })
       .limit(limit);
 
+    if (uid) retryQuery = retryQuery.eq("user_id", uid);
     if (agentName) {
       retryQuery = retryQuery.eq("agent_name", agentName);
     }
@@ -232,22 +238,29 @@ export async function getRecentConversations(
 export async function getAgentConversations(
   agentName: string
 ): Promise<Conversation[]> {
-  const { data, error } = await supabase
+  const uid = await getUserId();
+  let query = supabase
     .from("conversations")
     .select("*")
     .eq("agent_name", agentName)
     .order("updated_at", { ascending: false });
 
+  if (uid) query = query.eq("user_id", uid);
+
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
 
 /** Get agent names that have conversations, sorted by most recent */
 export async function getAgentsWithConversations(): Promise<string[]> {
-  const { data, error } = await supabase
+  const uid = await getUserId();
+  let query = supabase
     .from("conversations")
     .select("agent_name, updated_at")
     .order("updated_at", { ascending: false });
+  if (uid) query = query.eq("user_id", uid);
+  const { data, error } = await query;
 
   if (error) throw error;
 
@@ -271,12 +284,15 @@ export async function searchMessages(
   (ChatMessage & { conversation: Conversation })[]
 > {
   // Use ilike for simple search (works without FTS setup too)
-  const { data, error } = await supabase
+  const uid = await getUserId();
+  let q = supabase
     .from("messages")
     .select("*, conversation:conversations(*)")
     .ilike("content", `%${query}%`)
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (uid) q = q.eq("user_id", uid);
+  const { data, error } = await q;
 
   if (error) throw error;
   return (data || []).map((m) => ({
@@ -336,13 +352,16 @@ export async function moveToProject(
 /** Clean up empty conversations older than 5 minutes */
 export async function cleanupEmptyConversations(): Promise<number> {
   const cutoff = new Date(Date.now() - 60 * 1000).toISOString(); // 1 minute grace period
+  const uid = await getUserId();
 
   // Find conversations with 0 messages older than 5 min
-  const { data: convos } = await supabase
+  let q = supabase
     .from("conversations")
     .select("id, messages(count)")
     .lt("created_at", cutoff)
     .eq("status", "active");
+  if (uid) q = q.eq("user_id", uid);
+  const { data: convos } = await q;
 
   if (!convos) return 0;
 
@@ -369,10 +388,11 @@ export async function getChatStats(): Promise<{
   total_conversations: number;
   total_messages: number;
 }> {
-  const [convRes, msgRes] = await Promise.all([
-    supabase.from("conversations").select("*", { count: "exact", head: true }),
-    supabase.from("messages").select("*", { count: "exact", head: true }),
-  ]);
+  const uid = await getUserId();
+  let convQ = supabase.from("conversations").select("*", { count: "exact", head: true });
+  let msgQ = supabase.from("messages").select("*", { count: "exact", head: true });
+  if (uid) { convQ = convQ.eq("user_id", uid); msgQ = msgQ.eq("user_id", uid); }
+  const [convRes, msgRes] = await Promise.all([convQ, msgQ]);
 
   return {
     total_conversations: convRes.count || 0,

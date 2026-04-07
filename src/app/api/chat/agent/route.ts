@@ -1,5 +1,5 @@
 export async function POST(req: Request) {
-  const { message, agent, context, plan } = await req.json();
+  const { message, agent, context, plan, model_tier } = await req.json();
 
   const API_BASE =
     process.env.API_URL ||
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
         "X-API-Key": API_KEY,
       },
-      body: JSON.stringify({ message: messageWithContext, agent, stream: true, plan: plan || "free" }),
+      body: JSON.stringify({ message: messageWithContext, agent, stream: true, plan: plan || "free", model_tier: model_tier || "primary" }),
     });
 
     if (

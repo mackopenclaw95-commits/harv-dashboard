@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
 import { Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/components/auth-provider";
-import { PersonalityProvider } from "@/components/personality-provider";
-import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
-import { NotificationProvider } from "@/components/notification-provider";
 
 const outfit = Outfit({
   variable: "--font-sans",
@@ -20,8 +15,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Harv Dashboard",
-  description: "AI Assistant Command Center",
+  title: "Harv AI — Your AI-Powered Command Center",
+  description:
+    "Meet your AI team. Harv manages your digital life with specialized agents for research, finance, scheduling, and more.",
 };
 
 export default function RootLayout({
@@ -35,24 +31,18 @@ export default function RootLayout({
       className={`${outfit.variable} ${jetbrainsMono.variable} h-full`}
       suppressHydrationWarning
     >
-      <body className="flex h-screen overflow-hidden bg-background text-foreground">
+      <body className="bg-background text-foreground">
         <ThemeProvider>
-          <AuthProvider>
-            <div
-              className="fixed inset-0 -z-10 overflow-hidden"
-              aria-hidden="true"
-            >
-              <div className="orb orb-1" />
-              <div className="orb orb-2" />
-              <div className="orb orb-3" />
-            </div>
-            <PersonalityProvider />
-            <KeyboardShortcuts />
-            <NotificationProvider />
-            <Sidebar />
-            <main className="relative flex-1 overflow-auto">{children}</main>
-            <Toaster richColors theme="dark" />
-          </AuthProvider>
+          <div
+            className="fixed inset-0 -z-10 overflow-hidden"
+            aria-hidden="true"
+          >
+            <div className="orb orb-1" />
+            <div className="orb orb-2" />
+            <div className="orb orb-3" />
+          </div>
+          {children}
+          <Toaster richColors theme="dark" />
         </ThemeProvider>
       </body>
     </html>

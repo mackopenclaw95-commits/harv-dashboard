@@ -1,4 +1,17 @@
-import { supabase } from "./supabase";
+import { supabase, createBrowserSupabase } from "./supabase";
+
+async function isOwnerUser(): Promise<boolean> {
+  try {
+    const browser = createBrowserSupabase();
+    const { data } = await browser.auth.getUser();
+    const uid = data.user?.id;
+    if (!uid) return false;
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", uid).single();
+    return profile?.role === "owner" || profile?.role === "admin";
+  } catch {
+    return false;
+  }
+}
 
 export interface JournalEntry {
   id: string;
@@ -19,6 +32,8 @@ export async function getJournalEntries(
   endDate?: string,
   limit = 30
 ): Promise<JournalEntry[]> {
+  if (!(await isOwnerUser())) return [];
+
   let query = supabase
     .from("journal_entries")
     .select("*")
@@ -37,6 +52,8 @@ export async function getJournalEntries(
 export async function getJournalByDate(
   date: string
 ): Promise<JournalEntry | null> {
+  if (!(await isOwnerUser())) return null;
+
   const { data, error } = await supabase
     .from("journal_entries")
     .select("*")
@@ -51,6 +68,8 @@ export async function getJournalByDate(
 
 /** Search journal entries by text across summary, accomplishments, key_info. */
 export async function searchJournal(query: string): Promise<JournalEntry[]> {
+  if (!(await isOwnerUser())) return [];
+
   const { data, error } = await supabase
     .from("journal_entries")
     .select("*")
@@ -70,6 +89,8 @@ export async function getJournalStats(): Promise<{
   totalCost: number;
   agentsUsed: string[];
 }> {
+  if (!(await isOwnerUser())) return { totalEntries: 0, totalCost: 0, agentsUsed: [] };
+
   const { data, error, count } = await supabase
     .from("journal_entries")
     .select("total_cost_usd, agents_used", { count: "exact" });

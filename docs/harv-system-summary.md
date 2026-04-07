@@ -1,6 +1,6 @@
 # Harv AI System — Complete Project Summary
 
-Last updated: 2026-03-25
+Last updated: 2026-03-31
 
 ---
 
@@ -274,24 +274,45 @@ Both `/chat` and `/agents/[name]` chat pages support file uploads:
 Mack → Harv (main brain) → Router → Specialized Agents
 ```
 
-### LLM Models
+### LLM Models (Current)
 
-| Model | Provider | Used By | Cost |
-|-------|----------|---------|------|
-| claude-sonnet-4-6 | Anthropic | Harv brain | ~$0.01/call |
-| deepseek-v3 | OpenRouter | Finance, Learning, Research, Sports, Music, Trading, YouTube, Marketing | ~$0.0003-0.0016/call |
-| minimax-m2.1 | OpenRouter | Journal, Scheduler, Email, Travel | ~$0.0001-0.0004/call |
-| qwen3-8b | OpenRouter | Router (task classification) | ~$0.00001/call |
-| qwen2.5:0.5b | Ollama (local) | Fitness, Shopping, Guardian | FREE |
+| Model | Provider | Used By | Cost/M tokens (in/out) |
+|-------|----------|---------|----------------------|
+| claude-haiku-4-5 | Anthropic | Harv brain | $1.00/$5.00 |
+| deepseek-chat-v3 | OpenRouter | Finance, Learning, Sports, Music, Trading | Free |
+| deepseek-chat | OpenRouter | Video Digest, YouTube Digest, Auto Marketing | $0.32/$0.89 |
+| minimax-m2.1 | OpenRouter | Journal, Scheduler, Email | ~$0.06/$0.06 |
+| x-ai/grok-4.1-fast | OpenRouter | Research | $0.05/$0.10 |
+| qwen3-8b | OpenRouter | Router (task classification) | Free |
+| qwen2.5:0.5b | Ollama (local) | Fitness, Shopping, Guardian, Medic, Heartbeat | FREE |
+| imagen-4.0-fast | Gemini | Image Gen | $0.003/image |
 
-### Active Agents
-- **Scribe** — Google Sheets/Drive read/write
-- **Router** — Task classification and dispatch
-- **Auto Marketing** — Social media draft agent
-- **YouTube Digest** — Video summarization
+### Tiered Model Plan (Dashboard configured, VPS pending)
+
+| Tier | Primary Model | Fallback Model | Daily Premium Limit |
+|------|--------------|----------------|-------------------|
+| Free ($0) | Gemini Flash Lite ($0.075/$0.30) | Qwen 8B free | 25 |
+| Pro ($20) | DeepSeek V3.2 ($0.26/$0.38) | Gemini Flash Lite | 150 |
+| Max ($50) | GPT-4.1 ($2.00/$8.00) | DeepSeek V3.2 | 400 |
+
+ChatGPT-style degradation: when daily premium limit hit, model degrades to fallback (unlimited). Weekly backstops: Free 100, Pro 750, Max 2000.
+
+### Active Agents (24 total)
+- **Harv** — Main brain, Cars 1 personality
+- **Router** — Task classification and dispatch (qwen3-8b)
+- **Journal** — Daily compressed summaries (minimax)
+- **Research** — Web research (grok-4.1-fast)
+- **Finance/Trading/Music/Sports/Learning** — Domain agents (deepseek free)
+- **Video/YouTube Digest** — Video summarization (deepseek)
+- **Image Gen** — Image generation (Gemini Imagen 4.0)
+- **Scheduler/Email** — Productivity (minimax)
+- **Auto Marketing** — Social media drafts (deepseek)
+- **Guardian/Medic/Heartbeat** — Background system agents (ollama free)
+- **Fitness/Shopping** — Lifestyle agents (ollama free)
+- **Ledger/Drive** — Tool agents (no LLM)
 
 ### Pending Agents
-- Postman (Gmail), Archivist (long-term memory), Analyst (data analysis)
+- Postman (Gmail), Archivist (long-term memory), Analyst (data analysis), TikTok Digest, Twitter Digest, Video Gen, Video Editor
 
 ---
 
@@ -329,7 +350,37 @@ SUPABASE_SERVICE_ROLE_KEY=<redacted>
 
 ---
 
-## Recent Changes (2026-03-25 Session 2)
+## Recent Changes (2026-03-31)
+
+### API Cost Fix
+- **Root cause**: VPS events API caps at 50 results, Guardian scans flood out `api_cost` events
+- **Fix**: New `api_cost_events` Supabase table persists costs permanently, synced from VPS on each admin page load
+- **Files**: `src/app/api/admin/stats/route.ts`, `docs/supabase-api-cost-events.sql`
+
+### Usage Limits + Model Degradation (ChatGPT-style)
+- Replaced simple 50/day free limit with full tier system
+- Three tiers: Free (25 premium/day), Pro (150/day), Max (400/day)
+- After daily limit: model degrades to cheaper fallback (never hard-blocked for paid tiers)
+- Weekly backstops prevent abuse: Free 100, Pro 750, Max 2000
+- Image generation limits per tier: Free 0, Pro 10/day, Max 30/day
+- Dashboard sends `model_tier` to VPS backend (VPS needs update to use it)
+- **Files**: `src/app/api/usage/check/route.ts`, `src/lib/stripe.ts`, `src/components/chat/chat-panel.tsx`, both chat routes
+
+### Plan Rename: Business → Max
+- Consumer-friendly naming matching Claude/ChatGPT
+- Updated across: billing page, admin hub, admin user detail, stripe config
+- Stripe checkout/webhook flow works seamlessly with new "max" plan key
+
+### New Supabase Tables
+- `api_cost_events` — Persistent API cost tracking (survives VPS event rotation)
+- `usage_logs` — Per-user message/token/cost tracking (existing, now used for degradation)
+
+### Model Pricing Additions
+- Added to admin stats: Gemini Flash Lite, DeepSeek V3.2, GPT-4.1
+
+---
+
+## Previous Changes (2026-03-25 Session 2)
 
 ### Dashboard
 - **Agent hierarchy restructure:** Media Manager (parent of Image Gen, Video Gen, Video Editor), Research (parent of Product Research, Market Research, Data Viz)
@@ -355,8 +406,10 @@ SUPABASE_SERVICE_ROLE_KEY=<redacted>
 - Router accuracy 72.4% → 79.7% on 59-prompt test suite
 
 ### Business Model
-- Blended pricing: Free demo (time-limited) → Starter ($20/mo) → Pro ($50/mo) → BYOK unlock
-- Admin/Dev dashboard separate from user dashboard (future)
+- **Free** ($0): 14-day trial, 25 premium messages/day, degrades to worst model after
+- **Pro** ($20/mo): 150 premium messages/day (DeepSeek V3.2), unlimited standard, all agents, 10 images/day
+- **Max** ($50/mo): 400 premium messages/day (GPT-4.1), unlimited DeepSeek V3.2, 30 images/day, admin dashboard
+- Target margins: ~75% on Pro ($14-17 profit), ~75% on Max ($35-42 profit)
 - Demo timeline: when it's ready, quality over speed
 
 ---

@@ -70,12 +70,15 @@ export async function getDocuments(opts?: {
 }): Promise<{ documents: Document[]; total: number }> {
   const limit = opts?.limit || 50;
   const offset = opts?.offset || 0;
+  const uid = await getUserId();
 
   let q = supabase
     .from("documents")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  if (uid) q = q.eq("user_id", uid);
 
   if (opts?.query) {
     q = q.or(
@@ -103,9 +106,12 @@ export async function getDocumentStats(): Promise<{
   byType: Record<string, number>;
   agents: string[];
 }> {
-  const { data, error } = await supabase
+  const uid = await getUserId();
+  let q = supabase
     .from("documents")
     .select("file_type, agent_name");
+  if (uid) q = q.eq("user_id", uid);
+  const { data, error } = await q;
 
   if (error) throw error;
 
@@ -150,11 +156,14 @@ export async function deleteDocument(doc: Document): Promise<void> {
 export async function getDocumentsByProject(
   projectId: string
 ): Promise<Document[]> {
-  const { data, error } = await supabase
+  const uid = await getUserId();
+  let q = supabase
     .from("documents")
     .select("*")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
+  if (uid) q = q.eq("user_id", uid);
+  const { data, error } = await q;
 
   if (error) return [];
   return data || [];

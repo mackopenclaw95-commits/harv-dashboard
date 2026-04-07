@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { createBrowserSupabase } from "@/lib/supabase";
+import { setTokenUserId } from "@/lib/google-calendar";
 import type { User, Session } from "@supabase/supabase-js";
 
 export interface Profile {
@@ -70,8 +71,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("*")
       .eq("id", userId)
       .single();
-    if (data) setProfile(data);
-    return data;
+
+    if (data) {
+      setProfile(data);
+      return data;
+    }
+
+    // No profile row yet — create one via server endpoint
+    try {
+      const res = await fetch("/api/auth/ensure-profile", { method: "POST" });
+      if (res.ok) {
+        const { profile: newProfile } = await res.json();
+        if (newProfile) {
+          setProfile(newProfile);
+          return newProfile;
+        }
+      }
+    } catch {}
+
+    return null;
   }
 
   useEffect(() => {
@@ -79,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        setTokenUserId(s.user.id);
         loadProfile(s.user.id).finally(() => setIsLoading(false));
       } else {
         setIsLoading(false);
@@ -91,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        setTokenUserId(s.user.id);
         loadProfile(s.user.id);
       } else {
         setProfile(null);
