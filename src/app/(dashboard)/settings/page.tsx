@@ -107,7 +107,7 @@ function SettingsPage() {
   const [mounted, setMounted] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [harvApiKey, setHarvApiKey] = useState<string | null>(null);
-  const [currentPlan, setCurrentPlan] = useState("free");
+  const [currentPlan, setCurrentPlan] = useState(profile?.plan || "free");
   const [notifSounds, setNotifSounds] = useState(true);
   const [timezone, setTimezoneState] = useState("auto");
   const [currentTime, setCurrentTime] = useState("");
@@ -119,6 +119,7 @@ function SettingsPage() {
   const [kachowBuffer, setKachowBuffer] = useState("");
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => { if (profile?.plan) setCurrentPlan(profile.plan); }, [profile?.plan]);
 
   // ─── Data loading ─────────────────────────────────────
 
@@ -129,7 +130,7 @@ function SettingsPage() {
     loadPersonality();
     setGoogleConnected(isGoogleConnected());
     setHarvApiKey(localStorage.getItem("harv-api-key"));
-    setCurrentPlan(localStorage.getItem("harv-plan") || "free");
+    setCurrentPlan(profile?.plan || "free");
     setNotifSounds(getNotificationSounds());
     setTimezoneState(getTimezone());
   }, []);
@@ -542,10 +543,24 @@ function SettingsPage() {
                     <Button
                       className="w-full text-xs"
                       variant={isCurrent ? "outline" : "default"}
-                      disabled={isCurrent}
-                      onClick={() => {
-                        if (!isCurrent) {
-                          toast.info("Billing coming soon — currently in beta");
+                      disabled={isCurrent || plan.id === "free"}
+                      onClick={async () => {
+                        if (!isCurrent && user && plan.id !== "free") {
+                          try {
+                            const res = await fetch("/api/billing/checkout", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ plan: plan.id, userId: user.id }),
+                            });
+                            const data = await res.json();
+                            if (data.url) {
+                              window.location.href = data.url;
+                            } else {
+                              toast.error(data.error || "Checkout failed");
+                            }
+                          } catch {
+                            toast.error("Failed to start checkout");
+                          }
                         }
                       }}
                     >
