@@ -26,6 +26,12 @@ import { isGoogleConnected, getGoogleAuthUrl, disconnectGoogle } from "@/lib/goo
 import { useTour } from "@/components/tour/use-tour";
 import { cn } from "@/lib/utils";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   getNotificationSounds, setNotificationSounds as saveNotifSounds,
   getTimezone, setTimezone as saveTimezone,
   resolveTimezone, TIMEZONE_OPTIONS,
@@ -109,6 +115,17 @@ function SettingsPage() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [harvApiKey, setHarvApiKey] = useState<string | null>(null);
   const [currentPlan, setCurrentPlan] = useState(profile?.plan || "free");
+  const [planChangeDialog, setPlanChangeDialog] = useState<{
+    open: boolean;
+    loading: boolean;
+    plan: string;
+    planName: string;
+    type: "upgrade" | "downgrade";
+    amount: number;
+    consumedPercent: number;
+    timePercent: number;
+    costPercent: number;
+  } | null>(null);
   const [notifSounds, setNotifSounds] = useState(true);
   const [timezone, setTimezoneState] = useState("auto");
   const [currentTime, setCurrentTime] = useState("");
@@ -616,7 +633,7 @@ function SettingsPage() {
                           return;
                         }
 
-                        // Paid plan change: get estimate first
+                        // Paid plan change: get estimate first, show dialog
                         if (profile?.stripe_subscription_id) {
                           try {
                             const estRes = await fetch("/api/billing/estimate", {
@@ -635,43 +652,16 @@ function SettingsPage() {
                               return;
                             }
 
-                            // Show confirmation toast with amount
-                            const action = isUpgrade ? "Upgrade" : "Downgrade";
-                            const amountLabel = isUpgrade
-                              ? `Pay $${est.amount.toFixed(2)}`
-                              : est.amount > 0 ? `Refund $${est.amount.toFixed(2)}` : "No refund";
-                            const confirmMsg = `${action} to ${plan.name}? ${amountLabel} (${Math.round(est.consumedPercent * 100)}% consumed)`;
-
-                            toast(confirmMsg, {
-                              duration: 15000,
-                              action: {
-                                label: `Confirm ${action}`,
-                                onClick: async () => {
-                                  const endpoint = isUpgrade ? "/api/billing/upgrade" : "/api/billing/downgrade";
-                                  try {
-                                    const res = await fetch(endpoint, {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ plan: plan.id, userId: user.id }),
-                                    });
-                                    const data = await res.json();
-                                    if (data.success) {
-                                      setCurrentPlan(plan.id);
-                                      const amtMsg = isUpgrade
-                                        ? `Charged $${data.charged?.toFixed(2) || "0"}`
-                                        : data.refunded > 0 ? `Refunded $${data.refunded?.toFixed(2)}` : "No refund";
-                                      toast.success(`${action}d to ${plan.name}! ${amtMsg}`);
-                                      refreshProfile();
-                                    } else if (data.error === "cooldown") {
-                                      toast.error(data.message);
-                                    } else {
-                                      toast.error(data.detail || data.error || `${action} failed`);
-                                    }
-                                  } catch {
-                                    toast.error(`Failed to ${action.toLowerCase()}`);
-                                  }
-                                },
-                              },
+                            setPlanChangeDialog({
+                              open: true,
+                              loading: false,
+                              plan: plan.id,
+                              planName: plan.name,
+                              type: isUpgrade ? "upgrade" : "downgrade",
+                              amount: est.amount,
+                              consumedPercent: est.consumedPercent,
+                              timePercent: est.timePercent,
+                              costPercent: est.costPercent,
                             });
                           } catch {
                             toast.error("Failed to estimate plan change");
@@ -749,6 +739,97 @@ function SettingsPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Plan Change Confirmation Dialog */}
+          <Dialog open={!!planChangeDialog?.open} onOpenChange={(open) => { if (!open) setPlanChangeDialog(null); }}>
+            <DialogContent className="max-w-sm bg-card/95 backdrop-blur-2xl border-white/[0.08]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {planChangeDialog?.type === "upgrade" ? (
+                    <Zap className="h-5 w-5 text-primary" />
+                  ) : (
+                    <CreditCard className="h-5 w-5 text-amber-400" />
+                  )}
+                  {planChangeDialog?.type === "upgrade" ? "Upgrade" : "Downgrade"} to {planChangeDialog?.planName}
+                </DialogTitle>
+              </DialogHeader>
+              {planChangeDialog && (
+                <div className="space-y-4">
+                  {/* Amount */}
+                  <div className="rounded-lg bg-white/[0.03] p-4 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+                      {planChangeDialog.type === "upgrade" ? "You'll be charged" : planChangeDialog.amount > 0 ? "You'll be refunded" : "No refund"}
+                    </p>
+                    <p className="text-3xl font-bold text-primary">
+                      ${planChangeDialog.amount.toFixed(2)}
+                    </p>
+                  </div>
+
+                  {/* Breakdown */}
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Time consumed</span>
+                      <span className="font-medium text-foreground">{Math.round(planChangeDialog.timePercent * 100)}%</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Cost consumed</span>
+                      <span className="font-medium text-foreground">{Math.round(planChangeDialog.costPercent * 100)}%</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground border-t border-white/[0.06] pt-2">
+                      <span>Consumed (higher of two)</span>
+                      <span className="font-semibold text-primary">{Math.round(planChangeDialog.consumedPercent * 100)}%</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 text-xs"
+                      onClick={() => setPlanChangeDialog(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1 text-xs"
+                      disabled={planChangeDialog.loading}
+                      onClick={async () => {
+                        if (!user) return;
+                        setPlanChangeDialog((prev) => prev ? { ...prev, loading: true } : null);
+                        const endpoint = planChangeDialog.type === "upgrade" ? "/api/billing/upgrade" : "/api/billing/downgrade";
+                        try {
+                          const res = await fetch(endpoint, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ plan: planChangeDialog.plan, userId: user.id }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setCurrentPlan(planChangeDialog.plan);
+                            const amtMsg = planChangeDialog.type === "upgrade"
+                              ? `Charged $${data.charged?.toFixed(2) || "0"}`
+                              : data.refunded > 0 ? `Refunded $${data.refunded?.toFixed(2)}` : "";
+                            toast.success(`${planChangeDialog.type === "upgrade" ? "Upgraded" : "Downgraded"} to ${planChangeDialog.planName}! ${amtMsg}`);
+                            refreshProfile();
+                          } else if (data.error === "cooldown") {
+                            toast.error(data.message);
+                          } else {
+                            toast.error(data.detail || data.error || "Failed");
+                          }
+                        } catch {
+                          toast.error("Failed to change plan");
+                        } finally {
+                          setPlanChangeDialog(null);
+                        }
+                      }}
+                    >
+                      {planChangeDialog.loading ? "Processing..." : `Confirm ${planChangeDialog.type === "upgrade" ? "Upgrade" : "Downgrade"}`}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* ── Tab 4: Usage ── */}
