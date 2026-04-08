@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 };
 
 const COMPARISON = [
+  { feature: "Trial period", free: "7 days", pro: "—", max: "—" },
   { feature: "Premium messages / day", free: "25", pro: "150", max: "400" },
-  { feature: "Standard messages", free: "After limit", pro: "Unlimited", max: "Unlimited" },
   { feature: "Primary AI model", free: "Gemini Flash Lite", pro: "DeepSeek V3.2", max: "GPT-4.1" },
   { feature: "Fallback model", free: "Qwen3 8B", pro: "Gemini Flash Lite", max: "DeepSeek V3.2" },
   { feature: "Image generation", free: false, pro: "10 / day", max: "30 / day" },
@@ -25,7 +25,7 @@ const COMPARISON = [
 const FAQ = [
   {
     q: "What happens after the free trial?",
-    a: "After 14 days, your account switches to the free tier with 25 premium messages per day. You can upgrade anytime to get more.",
+    a: "After 7 days, you'll need to upgrade to Pro or Max to keep using Harv. No credit card required to start your trial.",
   },
   {
     q: "Can I change plans?",

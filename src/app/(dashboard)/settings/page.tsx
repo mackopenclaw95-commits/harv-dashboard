@@ -62,7 +62,7 @@ const MORE_INTEGRATIONS = [
 const PLANS = [
   {
     id: "free", name: "Free", price: "$0", period: "forever", highlight: false,
-    features: ["7 core agents", "25 messages/day (Gemini Flash Lite)", "Standard model after daily limit", "5 projects"],
+    features: ["7-day free trial", "25 messages/day (Gemini Flash Lite)", "7 core agents", "5 projects"],
     limits: { agents: 7, messages: 25, models: "Basic" },
   },
   {

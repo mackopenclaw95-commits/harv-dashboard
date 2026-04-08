@@ -298,6 +298,18 @@ export function ChatPanel({
       const usageRes = await fetch(`/api/usage/check${agentParam}`);
       if (usageRes.ok) {
         const usage = await usageRes.json();
+        if (usage.reason === "trial_expired") {
+          toast.error(
+            "Your free trial has ended. Upgrade to Pro to keep using Harv.",
+            {
+              duration: 8000,
+              action: { label: "Upgrade", onClick: () => window.location.href = "/settings?tab=billing" },
+            }
+          );
+          isSendingRef.current = false;
+          setIsLoading(false);
+          return;
+        }
         if (usage.reason === "agent_locked") {
           toast.error(
             `${agentName} requires a Pro or Max plan. Upgrade to unlock all agents.`,

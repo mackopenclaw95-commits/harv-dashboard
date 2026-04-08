@@ -53,8 +53,8 @@ export const PLANS = {
     name: "Free",
     price: 0,
     features: [
+      "7-day free trial",
       "25 messages/day (Gemini Flash Lite)",
-      "Standard model after daily limit",
       "7 core agents (Harv, Research, Email, Scheduler, Learning)",
       "5 projects",
     ],

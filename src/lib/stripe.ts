@@ -37,8 +37,8 @@ export const PLANS = {
     price: 0,
     priceId: null, // No Stripe price — trial is free
     features: [
+      "7-day free trial",
       "25 messages/day (Gemini Flash Lite)",
-      "Standard model after daily limit",
       "7 core agents (Harv, Research, Email, Scheduler, Learning)",
       "5 projects",
     ],

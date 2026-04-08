@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     // Get user's plan
     const { data: profile } = await supabase
       .from("profiles")
-      .select("plan, role")
+      .select("plan, role, plan_status, trial_ends_at")
       .eq("id", user.id)
       .single();
 
@@ -56,6 +56,34 @@ export async function GET(req: NextRequest) {
         agent,
         plan,
         agent_allowed: false,
+      });
+    }
+
+    // Trial expiry check — free users with expired trial are blocked
+    if (plan === "free" && profile?.plan_status === "trial" && profile?.trial_ends_at) {
+      const trialEnd = new Date(profile.trial_ends_at);
+      if (new Date() > trialEnd) {
+        // Auto-update plan_status to expired
+        await supabase
+          .from("profiles")
+          .update({ plan_status: "expired" })
+          .eq("id", user.id);
+
+        return NextResponse.json({
+          allowed: false,
+          reason: "trial_expired",
+          plan,
+          trial_ended: profile.trial_ends_at,
+        });
+      }
+    }
+
+    // Expired free users are blocked until they upgrade
+    if (plan === "free" && profile?.plan_status === "expired") {
+      return NextResponse.json({
+        allowed: false,
+        reason: "trial_expired",
+        plan,
       });
     }
 
