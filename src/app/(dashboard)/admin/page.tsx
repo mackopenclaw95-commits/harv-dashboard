@@ -655,7 +655,7 @@ export default function AdminPage() {
 
       {/* User Detail Modal */}
       <Dialog open={!!userDetailId} onOpenChange={(open) => { if (!open) { setUserDetailId(null); setUserDetail(null); } }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border-white/[0.08]">
+        <DialogContent className="w-[90vw] max-w-6xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border-white/[0.08]">
           {userDetailLoading ? (
             <div className="space-y-4 py-4">
               <Skeleton className="h-12 w-48" />
