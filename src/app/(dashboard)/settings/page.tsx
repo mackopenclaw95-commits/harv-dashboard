@@ -592,49 +592,121 @@ function SettingsPage() {
                         }
 
                         // Regular users go through Stripe
-                        if (plan.id === "free") return;
+                        // Determine if upgrade or downgrade
+                        const planRank: Record<string, number> = { free: 0, pro: 1, max: 2 };
+                        const isUpgrade = (planRank[plan.id] ?? 0) > (planRank[currentPlan] ?? 0);
 
-                        // If user already has a subscription, use upgrade (prorated)
-                        if (profile?.stripe_subscription_id && currentPlan !== "free") {
+                        // Free → paid: standard Stripe checkout
+                        if (currentPlan === "free" && plan.id !== "free") {
                           try {
-                            const res = await fetch("/api/billing/upgrade", {
+                            const res = await fetch("/api/billing/checkout", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ plan: plan.id, userId: user.id }),
                             });
                             const data = await res.json();
-                            if (data.success) {
-                              setCurrentPlan(plan.id);
-                              toast.success(`Upgraded to ${plan.name}! Prorated charges applied.`);
-                              refreshProfile();
+                            if (data.url) {
+                              window.location.href = data.url;
                             } else {
-                              toast.error(data.detail || data.error || "Upgrade failed");
+                              toast.error(data.detail || data.error || "Checkout failed");
                             }
                           } catch {
-                            toast.error("Failed to upgrade");
+                            toast.error("Failed to start checkout");
                           }
                           return;
                         }
 
-                        // New subscription — go through Stripe checkout
-                        try {
-                          const res = await fetch("/api/billing/checkout", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ plan: plan.id, userId: user.id }),
-                          });
-                          const data = await res.json();
-                          if (data.url) {
-                            window.location.href = data.url;
-                          } else {
-                            toast.error(data.detail || data.error || "Checkout failed");
+                        // Paid plan change: get estimate first
+                        if (profile?.stripe_subscription_id) {
+                          try {
+                            const estRes = await fetch("/api/billing/estimate", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ newPlan: plan.id, userId: user.id }),
+                            });
+                            const est = await estRes.json();
+
+                            if (est.error === "cooldown") {
+                              toast.error(est.message);
+                              return;
+                            }
+                            if (est.error) {
+                              toast.error(est.detail || est.error);
+                              return;
+                            }
+
+                            // Show confirmation toast with amount
+                            const action = isUpgrade ? "Upgrade" : "Downgrade";
+                            const amountLabel = isUpgrade
+                              ? `Pay $${est.amount.toFixed(2)}`
+                              : est.amount > 0 ? `Refund $${est.amount.toFixed(2)}` : "No refund";
+                            const confirmMsg = `${action} to ${plan.name}? ${amountLabel} (${Math.round(est.consumedPercent * 100)}% consumed)`;
+
+                            toast(confirmMsg, {
+                              duration: 15000,
+                              action: {
+                                label: `Confirm ${action}`,
+                                onClick: async () => {
+                                  const endpoint = isUpgrade ? "/api/billing/upgrade" : "/api/billing/downgrade";
+                                  try {
+                                    const res = await fetch(endpoint, {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ plan: plan.id, userId: user.id }),
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                      setCurrentPlan(plan.id);
+                                      const amtMsg = isUpgrade
+                                        ? `Charged $${data.charged?.toFixed(2) || "0"}`
+                                        : data.refunded > 0 ? `Refunded $${data.refunded?.toFixed(2)}` : "No refund";
+                                      toast.success(`${action}d to ${plan.name}! ${amtMsg}`);
+                                      refreshProfile();
+                                    } else if (data.error === "cooldown") {
+                                      toast.error(data.message);
+                                    } else {
+                                      toast.error(data.detail || data.error || `${action} failed`);
+                                    }
+                                  } catch {
+                                    toast.error(`Failed to ${action.toLowerCase()}`);
+                                  }
+                                },
+                              },
+                            });
+                          } catch {
+                            toast.error("Failed to estimate plan change");
                           }
-                        } catch {
-                          toast.error("Failed to start checkout");
+                          return;
+                        }
+
+                        // Fallback: no subscription, try checkout
+                        if (plan.id !== "free") {
+                          try {
+                            const res = await fetch("/api/billing/checkout", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ plan: plan.id, userId: user.id }),
+                            });
+                            const data = await res.json();
+                            if (data.url) {
+                              window.location.href = data.url;
+                            } else {
+                              toast.error(data.detail || data.error || "Checkout failed");
+                            }
+                          } catch {
+                            toast.error("Failed to start checkout");
+                          }
                         }
                       }}
                     >
-                      {isCurrent ? "Current Plan" : profile?.role === "tester" ? `Switch to ${plan.name}` : plan.id === "free" ? "Downgrade" : "Upgrade"}
+                      {isCurrent
+                        ? "Current Plan"
+                        : profile?.role === "tester"
+                          ? `Switch to ${plan.name}`
+                          : (({ free: 0, pro: 1, max: 2 } as Record<string, number>)[plan.id] ?? 0) > (({ free: 0, pro: 1, max: 2 } as Record<string, number>)[currentPlan] ?? 0)
+                            ? "Upgrade"
+                            : "Downgrade"
+                      }
                     </Button>
                   </CardContent>
                 </Card>

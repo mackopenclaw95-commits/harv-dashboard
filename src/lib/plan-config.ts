@@ -87,3 +87,8 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS;
 export type TierKey = keyof typeof TIER_LIMITS;
+
+// ─── Proration ─────────────────────────────────────────
+export const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, max: 2 };
+export const PLAN_PRICES_USD: Record<string, number> = { free: 0, pro: 20, max: 50 };
+export const DOWNGRADE_COOLDOWN_DAYS = 7;
