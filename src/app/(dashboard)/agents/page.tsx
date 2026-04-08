@@ -323,7 +323,7 @@ interface InlineMessage {
   content: string;
 }
 
-function AgentCard({ agent, onViewDetails, childAgents, planModel }: { agent: Agent; onViewDetails?: (agent: Agent) => void; childAgents?: Agent[]; planModel?: string }) {
+function AgentCard({ agent, onViewDetails, childAgents, harvPlanModel }: { agent: Agent; onViewDetails?: (agent: Agent) => void; childAgents?: Agent[]; harvPlanModel?: string }) {
   const [expanded, setExpanded] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
 
@@ -340,7 +340,7 @@ function AgentCard({ agent, onViewDetails, childAgents, planModel }: { agent: Ag
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const Icon = AGENT_ICONS[agent.name] || Bot;
   const le = agent.last_event;
-  const modelShort = planModel || simplifyModel(agent.model);
+  const modelShort = (agent.name === "Harv" && harvPlanModel) ? harvPlanModel : simplifyModel(agent.model);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -434,7 +434,7 @@ function AgentCard({ agent, onViewDetails, childAgents, planModel }: { agent: Ag
             <div>
               <div className="space-y-2 mt-3 pt-3 border-t border-white/[0.06]">
                 {childAgents.map((child) => (
-                  <SubAgentCard key={child.name} agent={child} planModel={planModel} />
+                  <SubAgentCard key={child.name} agent={child} />
                 ))}
               </div>
             </div>
@@ -522,7 +522,7 @@ function AgentCard({ agent, onViewDetails, childAgents, planModel }: { agent: Ag
 
 // ─── SubAgentCard ───────────────────────────────────────
 
-function SubAgentCard({ agent, planModel }: { agent: Agent; planModel?: string }) {
+function SubAgentCard({ agent }: { agent: Agent }) {
   const Icon = AGENT_ICONS[agent.name] || Bot;
   const isPlanned = agent.status.toUpperCase() === "PLANNED";
 
@@ -563,9 +563,9 @@ function SubAgentCard({ agent, planModel }: { agent: Agent; planModel?: string }
 
 // ─── SubAgentGroup (collapsible sub-agents) ─────────────
 
-function SubAgentGroup({ agent, childAgents, onViewDetails, planModel }: { agent: Agent; childAgents: Agent[]; onViewDetails?: (agent: Agent) => void; planModel?: string }) {
+function SubAgentGroup({ agent, childAgents, onViewDetails, harvPlanModel }: { agent: Agent; childAgents: Agent[]; onViewDetails?: (agent: Agent) => void; harvPlanModel?: string }) {
   return (
-    <AgentCard agent={agent} onViewDetails={onViewDetails} childAgents={childAgents} planModel={planModel} />
+    <AgentCard agent={agent} onViewDetails={onViewDetails} childAgents={childAgents} harvPlanModel={harvPlanModel} />
   );
 }
 
@@ -583,7 +583,7 @@ function AgentSection({
   onToggle,
   onViewDetails,
   gridTourId,
-  planModel,
+  harvPlanModel,
 }: {
   title: string;
   icon: React.ElementType;
@@ -596,7 +596,7 @@ function AgentSection({
   onToggle: () => void;
   onViewDetails?: (agent: Agent) => void;
   gridTourId?: string;
-  planModel?: string;
+  harvPlanModel?: string;
 }) {
   // Sub-agent names to exclude from top-level grid
   const subAgentNames = new Set(Object.values(SUB_AGENT_MAP).flat());
@@ -635,10 +635,10 @@ function AgentSection({
                   .map((name) => allAgents.find((a) => a.name === name))
                   .filter(Boolean) as Agent[];
                 return (
-                  <SubAgentGroup key={agent.name} agent={agent} childAgents={childAgents} onViewDetails={onViewDetails} planModel={planModel} />
+                  <SubAgentGroup key={agent.name} agent={agent} childAgents={childAgents} onViewDetails={onViewDetails} harvPlanModel={harvPlanModel} />
                 );
               }
-              return <AgentCard key={agent.name} agent={agent} onViewDetails={onViewDetails} planModel={planModel} />;
+              return <AgentCard key={agent.name} agent={agent} onViewDetails={onViewDetails} harvPlanModel={harvPlanModel} />;
             })}
           </div>
         </div>
@@ -676,7 +676,7 @@ function dotColor(status: string) {
 
 // ─── Universal Agent Details Modal ──────────────────────
 
-function AgentDetailsModal({ agent, onClose, planModel }: { agent: Agent | null; onClose: () => void; planModel?: string }) {
+function AgentDetailsModal({ agent, onClose, harvPlanModel }: { agent: Agent | null; onClose: () => void; harvPlanModel?: string }) {
   const [events, setEvents] = useState<{ agent: string; action: string; status: string; summary: string; timestamp: string; cost: number; tokens: number; duration_seconds: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatMessages, setChatMessages] = useState<InlineMessage[]>([]);
@@ -764,7 +764,7 @@ function AgentDetailsModal({ agent, onClose, planModel }: { agent: Agent | null;
         {/* Agent info bar */}
         <div className="flex items-center gap-4 px-5 py-2.5 border-b border-white/[0.06] text-[10px] text-muted-foreground">
           <span>Provider: <span className="text-foreground capitalize">{agent.provider}</span></span>
-          <span>Model: <span className="text-foreground">{planModel || simplifyModel(agent.model)}</span></span>
+          <span>Model: <span className="text-foreground">{(agent.name === agentName && agentName === "Harv" && harvPlanModel) ? harvPlanModel : simplifyModel(agent.model)}</span></span>
           <span>Tag: <span className="text-foreground">{agent.tier === "BACKGROUND" ? "SYSTEM" : agent.tier}</span></span>
           {agent.cost_per_call > 0 && <span>Cost: <span className="text-foreground">${agent.cost_per_call.toFixed(5)}</span></span>}
         </div>
@@ -905,7 +905,8 @@ function AgentDetailsModal({ agent, onClose, planModel }: { agent: Agent | null;
 export default function AgentsPage() {
   const { profile } = useAuth();
   const userPlan = (profile?.plan || "free") as TierKey;
-  const planModel = simplifyModel(TIER_LIMITS[userPlan]?.primaryModel || TIER_LIMITS.free.primaryModel);
+  // Only Harv uses the plan-based model — other agents keep their specialized models
+  const harvPlanModel = simplifyModel(TIER_LIMITS[userPlan]?.primaryModel || TIER_LIMITS.free.primaryModel);
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1170,7 +1171,7 @@ export default function AgentsPage() {
             onToggle={() => toggleSection("agents")}
             onViewDetails={(a) => setDetailsAgent(a)}
             gridTourId="agents-grid"
-            planModel={planModel}
+            harvPlanModel={harvPlanModel}
           />
           {toolGroup.length > 0 && (
             <AgentSection
@@ -1184,7 +1185,7 @@ export default function AgentsPage() {
               isCollapsed={collapsed.tools}
               onToggle={() => toggleSection("tools")}
               onViewDetails={(a) => setDetailsAgent(a)}
-              planModel={planModel}
+              harvPlanModel={harvPlanModel}
             />
           )}
           <AgentSection
@@ -1198,7 +1199,7 @@ export default function AgentsPage() {
             isCollapsed={collapsed.background}
             onToggle={() => toggleSection("background")}
             onViewDetails={(a) => setDetailsAgent(a)}
-            planModel={planModel}
+            harvPlanModel={harvPlanModel}
           />
 
           {/* Coming Soon — Business */}
@@ -1316,7 +1317,7 @@ export default function AgentsPage() {
       )}
 
       {/* Universal agent details modal */}
-      <AgentDetailsModal agent={detailsAgent} onClose={() => setDetailsAgent(null)} planModel={planModel} />
+      <AgentDetailsModal agent={detailsAgent} onClose={() => setDetailsAgent(null)} harvPlanModel={harvPlanModel} />
 
       {/* New Agent Templates Modal */}
       {showNewAgent && (
