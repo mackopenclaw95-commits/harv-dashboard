@@ -595,11 +595,11 @@ export default function AdminPage() {
               </div>
             </ScrollArea>
 
-            {/* Footer */}
-            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Monthly overhead</span>
-              <span className="text-sm font-bold font-mono">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</span>
-            </div>
+          </div>
+          {/* Footer — outside scroll area */}
+          <div className="pt-3 mt-1 border-t border-white/[0.06] flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Monthly overhead</span>
+            <span className="text-sm font-bold font-mono">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</span>
           </div>
         </DialogContent>
       </Dialog>
