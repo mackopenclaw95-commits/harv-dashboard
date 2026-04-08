@@ -61,6 +61,8 @@ import { cn, timeAgo } from "@/lib/utils";
 import { saveAgentMessage } from "@/lib/chat-history";
 import { getRoutingMessage } from "@/lib/constants";
 import { toast } from "sonner";
+import { useAuth } from "@/components/auth-provider";
+import { TIER_LIMITS, type TierKey } from "@/lib/plan-config";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -321,7 +323,7 @@ interface InlineMessage {
   content: string;
 }
 
-function AgentCard({ agent, onViewDetails, childAgents }: { agent: Agent; onViewDetails?: (agent: Agent) => void; childAgents?: Agent[] }) {
+function AgentCard({ agent, onViewDetails, childAgents, planModel }: { agent: Agent; onViewDetails?: (agent: Agent) => void; childAgents?: Agent[]; planModel?: string }) {
   const [expanded, setExpanded] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
 
@@ -338,7 +340,7 @@ function AgentCard({ agent, onViewDetails, childAgents }: { agent: Agent; onView
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const Icon = AGENT_ICONS[agent.name] || Bot;
   const le = agent.last_event;
-  const modelShort = simplifyModel(agent.model);
+  const modelShort = planModel || simplifyModel(agent.model);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -432,7 +434,7 @@ function AgentCard({ agent, onViewDetails, childAgents }: { agent: Agent; onView
             <div>
               <div className="space-y-2 mt-3 pt-3 border-t border-white/[0.06]">
                 {childAgents.map((child) => (
-                  <SubAgentCard key={child.name} agent={child} />
+                  <SubAgentCard key={child.name} agent={child} planModel={planModel} />
                 ))}
               </div>
             </div>
@@ -520,7 +522,7 @@ function AgentCard({ agent, onViewDetails, childAgents }: { agent: Agent; onView
 
 // ─── SubAgentCard ───────────────────────────────────────
 
-function SubAgentCard({ agent }: { agent: Agent }) {
+function SubAgentCard({ agent, planModel }: { agent: Agent; planModel?: string }) {
   const Icon = AGENT_ICONS[agent.name] || Bot;
   const isPlanned = agent.status.toUpperCase() === "PLANNED";
 
@@ -561,9 +563,9 @@ function SubAgentCard({ agent }: { agent: Agent }) {
 
 // ─── SubAgentGroup (collapsible sub-agents) ─────────────
 
-function SubAgentGroup({ agent, childAgents, onViewDetails }: { agent: Agent; childAgents: Agent[]; onViewDetails?: (agent: Agent) => void }) {
+function SubAgentGroup({ agent, childAgents, onViewDetails, planModel }: { agent: Agent; childAgents: Agent[]; onViewDetails?: (agent: Agent) => void; planModel?: string }) {
   return (
-    <AgentCard agent={agent} onViewDetails={onViewDetails} childAgents={childAgents} />
+    <AgentCard agent={agent} onViewDetails={onViewDetails} childAgents={childAgents} planModel={planModel} />
   );
 }
 
@@ -581,6 +583,7 @@ function AgentSection({
   onToggle,
   onViewDetails,
   gridTourId,
+  planModel,
 }: {
   title: string;
   icon: React.ElementType;
@@ -593,6 +596,7 @@ function AgentSection({
   onToggle: () => void;
   onViewDetails?: (agent: Agent) => void;
   gridTourId?: string;
+  planModel?: string;
 }) {
   // Sub-agent names to exclude from top-level grid
   const subAgentNames = new Set(Object.values(SUB_AGENT_MAP).flat());
@@ -631,10 +635,10 @@ function AgentSection({
                   .map((name) => allAgents.find((a) => a.name === name))
                   .filter(Boolean) as Agent[];
                 return (
-                  <SubAgentGroup key={agent.name} agent={agent} childAgents={childAgents} onViewDetails={onViewDetails} />
+                  <SubAgentGroup key={agent.name} agent={agent} childAgents={childAgents} onViewDetails={onViewDetails} planModel={planModel} />
                 );
               }
-              return <AgentCard key={agent.name} agent={agent} onViewDetails={onViewDetails} />;
+              return <AgentCard key={agent.name} agent={agent} onViewDetails={onViewDetails} planModel={planModel} />;
             })}
           </div>
         </div>
@@ -672,7 +676,7 @@ function dotColor(status: string) {
 
 // ─── Universal Agent Details Modal ──────────────────────
 
-function AgentDetailsModal({ agent, onClose }: { agent: Agent | null; onClose: () => void }) {
+function AgentDetailsModal({ agent, onClose, planModel }: { agent: Agent | null; onClose: () => void; planModel?: string }) {
   const [events, setEvents] = useState<{ agent: string; action: string; status: string; summary: string; timestamp: string; cost: number; tokens: number; duration_seconds: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatMessages, setChatMessages] = useState<InlineMessage[]>([]);
@@ -760,7 +764,7 @@ function AgentDetailsModal({ agent, onClose }: { agent: Agent | null; onClose: (
         {/* Agent info bar */}
         <div className="flex items-center gap-4 px-5 py-2.5 border-b border-white/[0.06] text-[10px] text-muted-foreground">
           <span>Provider: <span className="text-foreground capitalize">{agent.provider}</span></span>
-          <span>Model: <span className="text-foreground">{simplifyModel(agent.model)}</span></span>
+          <span>Model: <span className="text-foreground">{planModel || simplifyModel(agent.model)}</span></span>
           <span>Tag: <span className="text-foreground">{agent.tier === "BACKGROUND" ? "SYSTEM" : agent.tier}</span></span>
           {agent.cost_per_call > 0 && <span>Cost: <span className="text-foreground">${agent.cost_per_call.toFixed(5)}</span></span>}
         </div>
@@ -899,6 +903,10 @@ function AgentDetailsModal({ agent, onClose }: { agent: Agent | null; onClose: (
 // ─── Main Page ──────────────────────────────────────────
 
 export default function AgentsPage() {
+  const { profile } = useAuth();
+  const userPlan = (profile?.plan || "free") as TierKey;
+  const planModel = simplifyModel(TIER_LIMITS[userPlan]?.primaryModel || TIER_LIMITS.free.primaryModel);
+
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1162,6 +1170,7 @@ export default function AgentsPage() {
             onToggle={() => toggleSection("agents")}
             onViewDetails={(a) => setDetailsAgent(a)}
             gridTourId="agents-grid"
+            planModel={planModel}
           />
           {toolGroup.length > 0 && (
             <AgentSection
@@ -1175,6 +1184,7 @@ export default function AgentsPage() {
               isCollapsed={collapsed.tools}
               onToggle={() => toggleSection("tools")}
               onViewDetails={(a) => setDetailsAgent(a)}
+              planModel={planModel}
             />
           )}
           <AgentSection
@@ -1188,6 +1198,7 @@ export default function AgentsPage() {
             isCollapsed={collapsed.background}
             onToggle={() => toggleSection("background")}
             onViewDetails={(a) => setDetailsAgent(a)}
+            planModel={planModel}
           />
 
           {/* Coming Soon — Business */}
@@ -1305,7 +1316,7 @@ export default function AgentsPage() {
       )}
 
       {/* Universal agent details modal */}
-      <AgentDetailsModal agent={detailsAgent} onClose={() => setDetailsAgent(null)} />
+      <AgentDetailsModal agent={detailsAgent} onClose={() => setDetailsAgent(null)} planModel={planModel} />
 
       {/* New Agent Templates Modal */}
       {showNewAgent && (
