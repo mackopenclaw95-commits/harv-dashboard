@@ -593,6 +593,30 @@ function SettingsPage() {
 
                         // Regular users go through Stripe
                         if (plan.id === "free") return;
+
+                        // If user already has a subscription, use upgrade (prorated)
+                        if (profile?.stripe_subscription_id && currentPlan !== "free") {
+                          try {
+                            const res = await fetch("/api/billing/upgrade", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ plan: plan.id, userId: user.id }),
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setCurrentPlan(plan.id);
+                              toast.success(`Upgraded to ${plan.name}! Prorated charges applied.`);
+                              refreshProfile();
+                            } else {
+                              toast.error(data.detail || data.error || "Upgrade failed");
+                            }
+                          } catch {
+                            toast.error("Failed to upgrade");
+                          }
+                          return;
+                        }
+
+                        // New subscription — go through Stripe checkout
                         try {
                           const res = await fetch("/api/billing/checkout", {
                             method: "POST",
@@ -603,14 +627,14 @@ function SettingsPage() {
                           if (data.url) {
                             window.location.href = data.url;
                           } else {
-                            toast.error(data.error || "Checkout failed");
+                            toast.error(data.detail || data.error || "Checkout failed");
                           }
                         } catch {
                           toast.error("Failed to start checkout");
                         }
                       }}
                     >
-                      {isCurrent ? "Current Plan" : profile?.role === "tester" ? `Switch to ${plan.name}` : "Upgrade"}
+                      {isCurrent ? "Current Plan" : profile?.role === "tester" ? `Switch to ${plan.name}` : plan.id === "free" ? "Downgrade" : "Upgrade"}
                     </Button>
                   </CardContent>
                 </Card>
