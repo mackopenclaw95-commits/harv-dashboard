@@ -689,7 +689,7 @@ export default function AdminPage() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{userDetail.profile.email}</p>
                   </div>
-                  <div className="shrink-0">
+                  <div className="shrink-0 mr-8">
                     {userDetail.profile.plan_status !== "cancelled" ? (
                       <Button variant="outline" size="sm" className="gap-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => userDetailId && toggleUserStatus(userDetailId, "ban")}>
                         <Ban className="h-3 w-3" /> Suspend
