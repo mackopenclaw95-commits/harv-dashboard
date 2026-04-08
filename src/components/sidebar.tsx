@@ -41,7 +41,7 @@ const NAV_ITEMS = [
 ];
 
 const ADMIN_ITEMS = [
-  { href: "/admin", label: "Admin Hub", icon: Shield },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
