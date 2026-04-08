@@ -36,9 +36,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Could not find subscription item" }, { status: 400 });
     }
 
-    const sub = subscription as unknown as { current_period_start: number };
-    const periodStart = new Date(sub.current_period_start * 1000);
-    const daysSincePeriodStart = (Date.now() - periodStart.getTime()) / 86400000;
+    const raw = (subscription as Record<string, unknown>).current_period_start;
+    const periodStart = typeof raw === "number"
+      ? new Date(raw > 1e12 ? raw : raw * 1000)
+      : new Date(String(raw));
+    const daysSincePeriodStart = isNaN(periodStart.getTime()) ? 0 : (Date.now() - periodStart.getTime()) / 86400000;
 
     // Get total API cost this billing period
     const { data: costData } = await supabase
