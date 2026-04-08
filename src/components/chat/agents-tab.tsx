@@ -156,13 +156,15 @@ export function AgentsTab({ projectId }: AgentsTabProps = {}) {
 
     async function init() {
       try {
-        const convos = await loadConversations(selectedAgent!);
+        // Parallelize independent calls
+        const [convos, currentId] = await Promise.all([
+          loadConversations(selectedAgent!),
+          getOrCreateConversation(selectedAgent!),
+        ]);
         if (cancelled) return;
-        const currentId = await getOrCreateConversation(selectedAgent!);
-        if (cancelled) return;
-        // Auto-link to project if one is active
+        // Auto-link to project if one is active (fire and forget)
         if (projectIdRef.current) {
-          await moveToProject(currentId, projectIdRef.current);
+          moveToProject(currentId, projectIdRef.current).catch(() => {});
         }
         setActiveConversationId(currentId);
         if (!convos.some((c: { id: string }) => c.id === currentId)) {

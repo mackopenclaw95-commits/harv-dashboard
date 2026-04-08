@@ -104,13 +104,15 @@ export default function ProjectDetailPage({
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [allDocs, setAllDocs] = useState<Document[]>([]);
 
-  // Load project
+  // Load project + chats + files in parallel
   useEffect(() => {
     async function load() {
       try {
         const [proj, st] = await Promise.all([
           getProjectById(id),
           getProjectStats(id),
+          loadChats(),
+          loadFiles(),
         ]);
         if (!proj) {
           toast.error("Project not found");
@@ -130,6 +132,7 @@ export default function ProjectDetailPage({
       }
     }
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, router]);
 
   // Load chats
@@ -158,10 +161,7 @@ export default function ProjectDetailPage({
     }
   }, [id]);
 
-  useEffect(() => {
-    loadChats();
-    loadFiles();
-  }, [loadChats, loadFiles]);
+  // loadChats and loadFiles are now called in the main load effect above
 
   // Handlers
   async function handleSaveOverview() {
