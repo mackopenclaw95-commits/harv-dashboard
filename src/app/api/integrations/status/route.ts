@@ -86,16 +86,18 @@ export async function POST(req: NextRequest) {
     }
 
     if (data && data.length > 0) {
-      // Also look up the user's plan
+      // Also look up the user's profile
       const { data: profile } = await serviceClient
         .from("profiles")
-        .select("plan")
+        .select("plan, name, email")
         .eq("id", data[0].user_id)
         .single();
       return NextResponse.json({
         linked: true,
         user_id: data[0].user_id,
         plan: profile?.plan || "free",
+        name: profile?.name || null,
+        email: profile?.email || null,
       });
     }
 
