@@ -655,7 +655,7 @@ export default function AdminPage() {
 
       {/* User Detail Modal */}
       <Dialog open={!!userDetailId} onOpenChange={(open) => { if (!open) { setUserDetailId(null); setUserDetail(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border-white/[0.08]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border-white/[0.08]">
           {userDetailLoading ? (
             <div className="space-y-4 py-4">
               <Skeleton className="h-12 w-48" />
@@ -739,7 +739,7 @@ export default function AdminPage() {
                 {/* Conversations */}
                 <div>
                   <p className="text-xs font-semibold flex items-center gap-1.5 mb-2"><MessageSquare className="h-3.5 w-3.5 text-primary" /> Conversations ({userDetail.conversations?.length || 0})</p>
-                  <ScrollArea className="max-h-40">
+                  <ScrollArea className="max-h-52">
                     <div className="space-y-1">
                       {(userDetail.conversations || []).map((c) => (
                         <div key={c.id} className="px-2 py-1.5 rounded-lg hover:bg-white/[0.03] text-[11px]">
@@ -760,7 +760,7 @@ export default function AdminPage() {
                 {/* Files */}
                 <div>
                   <p className="text-xs font-semibold flex items-center gap-1.5 mb-2"><FileText className="h-3.5 w-3.5 text-blue-400" /> Files ({userDetail.documents?.length || 0})</p>
-                  <ScrollArea className="max-h-40">
+                  <ScrollArea className="max-h-52">
                     <div className="space-y-1">
                       {(userDetail.documents || []).map((d) => (
                         <div key={String(d.id)} className="px-2 py-1.5 rounded-lg hover:bg-white/[0.03] text-[11px]">
@@ -778,7 +778,7 @@ export default function AdminPage() {
                 {/* Projects */}
                 <div>
                   <p className="text-xs font-semibold flex items-center gap-1.5 mb-2"><FolderKanban className="h-3.5 w-3.5 text-yellow-400" /> Projects ({userDetail.projects?.length || 0})</p>
-                  <ScrollArea className="max-h-40">
+                  <ScrollArea className="max-h-52">
                     <div className="space-y-1">
                       {(userDetail.projects || []).map((p) => (
                         <div key={String(p.id)} className="px-2 py-1.5 rounded-lg hover:bg-white/[0.03] text-[11px]">
