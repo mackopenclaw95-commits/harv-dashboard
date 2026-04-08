@@ -78,7 +78,9 @@ export async function GET() {
       if (eventsRes.ok) {
         const json = await eventsRes.json();
         const events = json.events || json || [];
-        const costEvents = events.filter((evt: Record<string, unknown>) => evt.action === "api_cost");
+        const costEvents = events.filter((evt: Record<string, unknown>) =>
+          evt.action === "api_cost" && !String(evt.summary || "").startsWith("claude-")
+        );
 
         if (costEvents.length > 0) {
           // Upsert new api_cost events into Supabase (dedup by vps_event_id)
@@ -122,6 +124,7 @@ export async function GET() {
     const { data: costRows } = await supabase
       .from("api_cost_events")
       .select("model, tokens, cost, event_timestamp")
+      .not("model", "like", "claude-%")
       .order("event_timestamp", { ascending: false });
 
     for (const row of costRows || []) {
