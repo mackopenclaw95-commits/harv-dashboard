@@ -37,6 +37,56 @@ import {
   resolveTimezone, TIMEZONE_OPTIONS,
 } from "@/lib/preferences";
 import { TIER_LIMITS, FREE_PLAN_AGENTS, type TierKey } from "@/lib/plan-config";
+import {
+  getSidebarOrder, setSidebarOrder, DEFAULT_SIDEBAR_ORDER,
+} from "@/lib/sidebar-order";
+import {
+  ChevronUp as ChevronUpIcon, ChevronDown as ChevronDownIcon,
+} from "lucide-react";
+
+// ─── Sidebar Reorder Component ─────────────────────────
+
+function SidebarReorder() {
+  const [order, setOrder] = useState<string[]>(() => getSidebarOrder());
+
+  function move(index: number, dir: -1 | 1) {
+    const next = [...order];
+    const target = index + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setOrder(next);
+    setSidebarOrder(next);
+    window.dispatchEvent(new Event("sidebar-order-change"));
+  }
+
+  function reset() {
+    setOrder(DEFAULT_SIDEBAR_ORDER);
+    setSidebarOrder(DEFAULT_SIDEBAR_ORDER);
+    window.dispatchEvent(new Event("sidebar-order-change"));
+    toast.success("Sidebar order reset");
+  }
+
+  return (
+    <div className="space-y-1">
+      {order.map((label, i) => (
+        <div key={label} className="flex items-center justify-between rounded-lg bg-white/[0.02] ring-1 ring-white/[0.06] px-3 py-2">
+          <span className="text-sm font-medium">{label}</span>
+          <div className="flex items-center gap-0.5">
+            <button disabled={i === 0} onClick={() => move(i, -1)} className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+              <ChevronUpIcon className="h-3.5 w-3.5" />
+            </button>
+            <button disabled={i === order.length - 1} onClick={() => move(i, 1)} className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors">
+              <ChevronDownIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      ))}
+      <button onClick={reset} className="text-[11px] text-muted-foreground hover:text-primary transition-colors mt-2">
+        Reset to default
+      </button>
+    </div>
+  );
+}
 
 // ─── Types & Constants ──────────────────────────────────
 
@@ -52,18 +102,6 @@ const DEFAULT_SERVICES: ServiceInfo[] = [
   { name: "GitHub CLI", status: "needs auth" },
 ];
 
-const PRIMARY_INTEGRATIONS = [
-  { name: "Google", icon: Globe, description: "Calendar, Gmail, Drive", hasAuth: true },
-  { name: "GitHub", icon: Code, description: "Repos, issues, PRs", hasAuth: false },
-];
-
-const MORE_INTEGRATIONS = [
-  { name: "Telegram", icon: MessageSquare, description: "Bot notifications & chat commands" },
-  { name: "Discord", icon: MessageSquare, description: "Server bots & webhook notifications" },
-  { name: "Slack", icon: MessageSquare, description: "Workspace messaging & alerts" },
-  { name: "Twitter/X", icon: Globe, description: "Automated posting & analytics" },
-  { name: "WhatsApp", icon: MessageSquare, description: "Message forwarding & commands" },
-];
 
 const PLANS = [
   {
@@ -270,6 +308,7 @@ function SettingsPage() {
   function generateApiKey() {
     const key = `harv_sk_${crypto.randomUUID().replace(/-/g, "").slice(0, 32)}`;
     localStorage.setItem("harv-api-key", key);
+    localStorage.setItem("harv-api-key-created", new Date().toLocaleDateString());
     setHarvApiKey(key);
     toast.success("API key generated");
   }
@@ -397,139 +436,161 @@ function SettingsPage() {
               <p className="text-xs text-muted-foreground">Current time: <span className="font-mono text-foreground">{currentTime}</span></p>
             </CardContent>
           </Card>
+
+          {/* Sidebar Order */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <Cpu className="h-4 w-4 text-purple-400" />
+                Sidebar Order
+              </CardTitle>
+              <CardDescription>Drag tabs up or down to reorder your navigation</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SidebarReorder />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Tab 1: Integrations ── */}
-        <TabsContent value={1} className="space-y-8">
-          <div>
-            <h3 className="text-sm font-semibold mb-4">Connected Services</h3>
-            <div data-tour="settings-integrations" className="grid gap-4 sm:grid-cols-2">
-              {PRIMARY_INTEGRATIONS.map((integ) => {
-                const isGoogle = integ.name === "Google";
-                const connected = isGoogle ? googleConnected : false;
-                return (
-                  <Card key={integ.name}>
-                    <CardContent className="pt-5 pb-5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] ring-1 ring-white/[0.08]">
-                            <integ.icon className="h-4.5 w-4.5 text-foreground/70" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{integ.name}</p>
-                            <p className="text-xs text-muted-foreground">{integ.description}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={cn("text-[10px]", connected ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground")}>
-                            {connected ? "Connected" : "Not connected"}
-                          </Badge>
-                          {isGoogle ? (
-                            connected ? (
-                              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => { disconnectGoogle(); setGoogleConnected(false); toast.success("Google disconnected"); }}>
-                                Disconnect
-                              </Button>
-                            ) : (
-                              <Button size="sm" className="text-xs h-7" onClick={() => { window.location.href = getGoogleAuthUrl(); }}>
-                                Connect
-                              </Button>
-                            )
-                          ) : (
-                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => toast.info(`${integ.name} integration coming soon`)}>
-                              Connect
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold mb-4">Available Integrations</h3>
-            <div className="space-y-2">
-              {MORE_INTEGRATIONS.map((integ) => (
-                <div key={integ.name} className="flex items-center justify-between rounded-xl bg-white/[0.02] ring-1 ring-white/[0.06] px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <integ.icon className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">{integ.name}</p>
-                      <p className="text-xs text-muted-foreground">{integ.description}</p>
-                    </div>
+        <TabsContent value={1} className="space-y-6">
+          {/* Quick Google connect/disconnect */}
+          <Card>
+            <CardContent className="pt-5 pb-5">
+              <div data-tour="settings-integrations" className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] ring-1 ring-white/[0.08]">
+                    <Globe className="h-4.5 w-4.5 text-foreground/70" />
                   </div>
-                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => toast.info(`${integ.name} — coming soon`)}>
-                    Connect
-                  </Button>
+                  <div>
+                    <p className="text-sm font-medium">Google</p>
+                    <p className="text-xs text-muted-foreground">Calendar, Gmail, Drive</p>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={cn("text-[10px]", googleConnected ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground")}>
+                    {googleConnected ? "Connected" : "Not connected"}
+                  </Badge>
+                  {googleConnected ? (
+                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => { disconnectGoogle(); setGoogleConnected(false); toast.success("Google disconnected"); }}>
+                      Disconnect
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="text-xs h-7" onClick={() => { window.location.href = getGoogleAuthUrl(); }}>
+                      Connect
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Link to full integrations page */}
+          <Card className="bg-primary/5 ring-1 ring-primary/15 hover:ring-primary/25 transition-all">
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Manage All Integrations</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Connect and manage Google, Telegram, GitHub, Spotify, and more</p>
+                </div>
+                <Button size="sm" className="text-xs h-7" onClick={() => window.location.href = "/integrations"}>
+                  <Link2 className="h-3 w-3 mr-1" />
+                  Open
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Tab 2: API Keys ── */}
         <TabsContent value={2} className="space-y-6">
-          {/* Your API Key */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <Key className="h-4 w-4 text-primary" />
-                Your API Key
-              </CardTitle>
-              <CardDescription>Use this key to connect Harv to external apps and services</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!harvApiKey ? (
-                <Button onClick={generateApiKey} className="gap-2">
-                  <Key className="h-4 w-4" /> Generate API Key
+          {currentPlan !== "max" ? (
+            /* Locked state for non-Max users */
+            <Card className="bg-card/50 backdrop-blur-xl">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-500/10 ring-1 ring-yellow-500/20 mb-4">
+                  <Key className="h-7 w-7 text-yellow-400" />
+                </div>
+                <h3 className="text-base font-semibold mb-1">API Keys — Max Plan</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mb-4">
+                  Generate API keys to connect Harv programmatically. Available on the Max plan.
+                </p>
+                <Button size="sm" onClick={() => window.location.href = "/settings?tab=billing"}>
+                  <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+                  Upgrade to Max
                 </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Input readOnly value={`${harvApiKey.slice(0, 12)}${"•".repeat(16)}${harvApiKey.slice(-4)}`} className="font-mono text-sm" />
-                  <Button size="icon" variant="outline" onClick={() => { navigator.clipboard.writeText(harvApiKey); toast.success("Copied to clipboard"); }}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="outline" onClick={generateApiKey}>
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Backend Service Keys */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <Shield className="h-4 w-4 text-amber-400" />
-                Backend Service Keys
-              </CardTitle>
-              <CardDescription>Status of API keys configured on your backend</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {servicesLoading ? (
-                <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}</div>
-              ) : (
-                <div className="space-y-2">
-                  {services.map((svc) => (
-                    <div key={svc.name} className="flex items-center justify-between py-1.5">
-                      <span className="text-sm">{svc.name}</span>
-                      <Badge variant="outline" className={cn("text-[10px]",
-                        svc.status === "active" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : svc.status === "needs auth" ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                        : "bg-muted text-muted-foreground"
-                      )}>
-                        {svc.status}
-                      </Badge>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Your API Key */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Key className="h-4 w-4 text-primary" />
+                    Your API Key
+                  </CardTitle>
+                  <CardDescription>Use this key to connect Harv to external apps and services</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!harvApiKey ? (
+                    <Button onClick={generateApiKey} className="gap-2">
+                      <Key className="h-4 w-4" /> Generate API Key
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Input readOnly value={`${harvApiKey.slice(0, 12)}${"•".repeat(16)}${harvApiKey.slice(-4)}`} className="font-mono text-sm" />
+                        <Button size="icon" variant="outline" onClick={() => { navigator.clipboard.writeText(harvApiKey); toast.success("Copied to clipboard"); }}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="outline" onClick={generateApiKey} title="Regenerate key">
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="outline" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => { localStorage.removeItem("harv-api-key"); setHarvApiKey(""); toast.success("API key revoked"); }} title="Revoke key">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Created: {localStorage.getItem("harv-api-key-created") || "Unknown"}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  )}
+                </CardContent>
+              </Card>
 
+              {/* Backend Service Keys */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Shield className="h-4 w-4 text-amber-400" />
+                    Backend Service Keys
+                  </CardTitle>
+                  <CardDescription>Status of API keys configured on your backend</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {servicesLoading ? (
+                    <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {services.map((svc) => (
+                        <div key={svc.name} className="flex items-center justify-between py-1.5">
+                          <span className="text-sm">{svc.name}</span>
+                          <Badge variant="outline" className={cn("text-[10px]",
+                            svc.status === "active" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                            : svc.status === "needs auth" ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                            : "bg-muted text-muted-foreground"
+                          )}>
+                            {svc.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* ── Tab 3: Billing ── */}

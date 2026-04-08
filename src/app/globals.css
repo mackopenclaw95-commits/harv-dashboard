@@ -305,3 +305,21 @@ nextjs-portal { display: none !important; }
   scrollbar-width: thin;
   scrollbar-color: oklch(1 0 0 / 10%) transparent;
 }
+
+/* ─── Micro-interactions ─── */
+
+/* Button press effect */
+.dark button[class*="bg-primary"]:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Badge smooth transitions */
+.dark [data-slot="badge"] {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Smooth focus rings */
+.dark *:focus-visible {
+  transition: outline-offset 0.15s ease, outline-color 0.15s ease;
+}

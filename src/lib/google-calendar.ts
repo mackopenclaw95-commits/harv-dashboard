@@ -77,11 +77,16 @@ function getTokens(): TokenData | null {
   }
 }
 
-/** Store tokens. */
+/** Store tokens (also saves connected_at timestamp). */
 export function storeTokens(tokens: TokenData): void {
   const key = getUserTokenKey();
   if (!key) return;
   localStorage.setItem(key, JSON.stringify(tokens));
+  // Save connected_at if not already set
+  const metaKey = `${key}-meta`;
+  if (!localStorage.getItem(metaKey)) {
+    localStorage.setItem(metaKey, JSON.stringify({ connected_at: new Date().toISOString() }));
+  }
 }
 
 /** Clear tokens (disconnect). */
@@ -89,6 +94,20 @@ export function disconnectGoogle(): void {
   const key = getUserTokenKey();
   if (!key) return;
   localStorage.removeItem(key);
+  localStorage.removeItem(`${key}-meta`);
+}
+
+/** Get connection info for display. */
+export function getGoogleConnectionInfo(): { connectedAt: string | null; scopes: string[] } {
+  const key = getUserTokenKey();
+  if (!key) return { connectedAt: null, scopes: [] };
+  try {
+    const meta = localStorage.getItem(`${key}-meta`);
+    const connectedAt = meta ? JSON.parse(meta).connected_at : null;
+    return { connectedAt, scopes: ["Calendar", "Gmail", "Drive"] };
+  } catch {
+    return { connectedAt: null, scopes: [] };
+  }
 }
 
 /** Build the Google OAuth consent URL. */

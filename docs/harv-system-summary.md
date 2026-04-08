@@ -1,6 +1,6 @@
 # Harv AI System — Complete Project Summary
 
-Last updated: 2026-03-31
+Last updated: 2026-04-07
 
 ---
 
@@ -43,14 +43,14 @@ Harv is a personal AI assistant ecosystem built by Mack West. It consists of a F
            ├───────────────────────►  Google Sheets (Mission Control)
            │                          Task queue, agent registry, logs
            │
-           ├───────────────────────►  Anthropic API (Claude Sonnet 4.6)
-           │                          Main conversational AI
-           │
            ├───────────────────────►  OpenRouter API
-           │                          DeepSeek, MiniMax, Qwen3 for agents
+           │                          All LLM models (Gemini, DeepSeek, GPT-4.1, MiniMax)
            │
-           └───────────────────────►  Ollama (local on VPS)
-                                      Qwen 2.5:0.5b for free tasks
+           ├───────────────────────►  OpenAI API
+           │                          GPT-4.1 (max tier)
+           │
+           └───────────────────────►  DeepSeek API
+                                      DeepSeek V3.2 (pro tier)
 ```
 
 ---
@@ -149,7 +149,7 @@ Harv is a personal AI assistant ecosystem built by Mack West. It consists of a F
 
 | File | Purpose |
 |------|---------|
-| `/root/harv/lib/harv_brain.py` (~628 lines) | Core AI brain — Claude conversation loop, tool execution, session history, Supabase memory persistence |
+| `/root/harv/lib/harv_brain.py` (~628 lines) | Core AI brain — OpenRouter conversation loop, tool execution, session history, Supabase memory persistence |
 | `/root/harv/scripts/harv_api.py` | Flask HTTP API wrapper (runs as systemd service) |
 | `/root/harv/lib/harv_lib.py` | Shared utilities — Google Sheets client, logging, config |
 | `/root/harv/telegram_bot.py` | Telegram interface |
@@ -157,6 +157,7 @@ Harv is a personal AI assistant ecosystem built by Mack West. It consists of a F
 | `/root/harv/core.json` | Master config — paths, Google IDs, LLM settings, agent registry |
 | `/root/harv/.env` | Environment variables (API keys, Supabase creds) |
 | `/root/harv/lib/feedback.py` | Outcome tracking and pattern recognition |
+| `/root/harv/scripts/daily_summary.py` | Daily summary cron — uses MiniMax M2.1 via OpenRouter |
 | `/root/harv/agents/` | Individual agent implementations |
 
 ### API Endpoints (Flask, 127.0.0.1:8765)
@@ -175,10 +176,10 @@ Harv is a personal AI assistant ecosystem built by Mack West. It consists of a F
 1. `chat_with_harv(session_id, user_text)` is the entry point
 2. Maintains in-memory session history (max 20 turns per session, lost on restart)
 3. Builds system prompt with owner info, VPS details, agent hierarchy
-4. Runs agentic loop (up to 10 iterations): sends to Claude, processes tool calls, loops
+4. Runs agentic loop (up to 10 iterations): sends to LLM via OpenRouter, processes tool calls, loops
 5. Tools available: `queue_task` (write to Google Sheets + run Router), `get_queue_status`
 6. After each exchange, saves to Supabase `memory_entries` via background thread
-7. Supports Anthropic (Claude) and OpenRouter providers — model routing based on prefix
+7. All models routed via OpenRouter — no more Anthropic provider
 
 ### Systemd Service
 
@@ -224,10 +225,11 @@ Restart: systemctl restart harv-api
 | `/crons` | Cron job monitoring |
 | `/documents` | File manager — grid/list view, search, type/agent filters, upload, download, delete |
 | `/memory` | Two tabs: "Chat History" (conversations) + "Knowledge Base" (memory entries) |
+| `/integrations` | Integration hub — connect Google, Telegram, GitHub, Spotify, etc. with waitlist |
 | `/calendar` | Google Calendar — month grid + agenda view, OAuth connect/disconnect, event details |
 | `/journal` | Daily journal summaries — auto-generated at 3am EST, search, date filter |
-| `/analytics` | API costs, usage metrics, projections |
-| `/settings` | System config, health check, personality toggle, service status |
+| `/analytics` | API costs, usage metrics, projections (owner/admin only) |
+| `/settings` | System config, health check, personality toggle, service status, billing portal |
 | `/onboarding` | First-time setup — personality choice, Google connect, permissions |
 
 ### Key Files
@@ -274,41 +276,55 @@ Both `/chat` and `/agents/[name]` chat pages support file uploads:
 Mack → Harv (main brain) → Router → Specialized Agents
 ```
 
-### LLM Models (Current)
+### LLM Models (Current — All on OpenRouter, no Anthropic/Ollama)
 
 | Model | Provider | Used By | Cost/M tokens (in/out) |
 |-------|----------|---------|----------------------|
-| claude-haiku-4-5 | Anthropic | Harv brain | $1.00/$5.00 |
-| deepseek-chat-v3 | OpenRouter | Finance, Learning, Sports, Music, Trading | Free |
-| deepseek-chat | OpenRouter | Video Digest, YouTube Digest, Auto Marketing | $0.32/$0.89 |
-| minimax-m2.1 | OpenRouter | Journal, Scheduler, Email | ~$0.06/$0.06 |
+| gemini-flash-lite | OpenRouter | Free tier primary, Harv (free users) | $0.075/$0.30 |
+| deepseek-v3.2 | OpenRouter | Pro tier primary, Finance, Learning, Sports, Music, Trading | $0.26/$0.38 |
+| gpt-4.1 | OpenRouter | Max tier primary | $2.00/$8.00 |
+| minimax-m2.1 | OpenRouter | Journal, Scheduler, Email, Daily Summary | ~$0.06/$0.06 |
 | x-ai/grok-4.1-fast | OpenRouter | Research | $0.05/$0.10 |
 | qwen3-8b | OpenRouter | Router (task classification) | Free |
-| qwen2.5:0.5b | Ollama (local) | Fitness, Shopping, Guardian, Medic, Heartbeat | FREE |
 | imagen-4.0-fast | Gemini | Image Gen | $0.003/image |
 
-### Tiered Model Plan (Dashboard configured, VPS pending)
+### Tiered Model Plan (LIVE — dashboard + Stripe integrated)
 
-| Tier | Primary Model | Fallback Model | Daily Premium Limit |
-|------|--------------|----------------|-------------------|
-| Free ($0) | Gemini Flash Lite ($0.075/$0.30) | Qwen 8B free | 25 |
-| Pro ($20) | DeepSeek V3.2 ($0.26/$0.38) | Gemini Flash Lite | 150 |
-| Max ($50) | GPT-4.1 ($2.00/$8.00) | DeepSeek V3.2 | 400 |
+| Tier | Primary Model | Fallback Model | Daily Premium Limit | Weekly Backstop |
+|------|--------------|----------------|-------------------|-----------------|
+| Free ($0) | Gemini Flash Lite ($0.075/$0.30) | Qwen 8B free | 25 | 100 |
+| Pro ($20) | DeepSeek V3.2 ($0.26/$0.38) | Gemini Flash Lite | 150 | 750 |
+| Max ($50) | GPT-4.1 ($2.00/$8.00) | DeepSeek V3.2 | 400 | 2000 |
 
-ChatGPT-style degradation: when daily premium limit hit, model degrades to fallback (unlimited). Weekly backstops: Free 100, Pro 750, Max 2000.
+ChatGPT-style degradation: when daily premium limit hit, model degrades to fallback (unlimited). Weekly backstops prevent abuse.
+
+### Agent Gating
+
+| Tier | Available Agents |
+|------|-----------------|
+| Free | Harv, Router, Journal, Research, Email, Scheduler, Learning (7 agents) |
+| Pro/Max | All agents unlocked |
+
+Locked agents show lock icon + PRO badge on agents page. Chat panel blocks with upgrade toast.
 
 ### Active Agents (24 total)
-- **Harv** — Main brain, Cars 1 personality
+
+**Free tier agents (7):**
+- **Harv** — Main brain, Cars 1 personality (plan-based model: Gemini Flash Lite / DeepSeek V3.2 / GPT-4.1)
 - **Router** — Task classification and dispatch (qwen3-8b)
-- **Journal** — Daily compressed summaries (minimax)
+- **Journal** — Daily compressed summaries (minimax-m2.1)
 - **Research** — Web research (grok-4.1-fast)
-- **Finance/Trading/Music/Sports/Learning** — Domain agents (deepseek free)
+- **Email** — Email drafting (minimax)
+- **Scheduler** — Productivity (minimax)
+- **Learning** — Educational content (deepseek)
+
+**Pro/Max tier agents (locked for free users):**
+- **Finance/Trading/Music/Sports** — Domain agents (deepseek)
 - **Video/YouTube Digest** — Video summarization (deepseek)
 - **Image Gen** — Image generation (Gemini Imagen 4.0)
-- **Scheduler/Email** — Productivity (minimax)
 - **Auto Marketing** — Social media drafts (deepseek)
-- **Guardian/Medic/Heartbeat** — Background system agents (ollama free)
-- **Fitness/Shopping** — Lifestyle agents (ollama free)
+- **Guardian/Medic/Heartbeat** — Background system agents
+- **Fitness/Shopping** — Lifestyle agents
 - **Ledger/Drive** — Tool agents (no LLM)
 
 ### Pending Agents
@@ -339,7 +355,7 @@ SUPABASE_SERVICE_ROLE_KEY=<redacted>
 
 ### VPS (/root/harv/.env)
 ```
-ANTHROPIC_API_KEY=<redacted>
+OPENROUTER_API_KEY=<redacted>
 TELEGRAM_BOT_TOKEN=<redacted>
 TELEGRAM_ALLOWED_IDS=<redacted>
 TWILIO_ACCOUNT_SID=<redacted>
@@ -350,33 +366,109 @@ SUPABASE_SERVICE_ROLE_KEY=<redacted>
 
 ---
 
-## Recent Changes (2026-03-31)
+## Recent Changes (2026-04-08) — P2 Sprint
+
+### Standalone Integrations Page
+- New `/integrations` route with full integration management
+- Connected services (Telegram, WhatsApp) at top with green status
+- Google OAuth connect/disconnect functional
+- Coming soon integrations (Notion, Spotify, GitHub, Discord, Slack, etc.) with "Notify Me" waitlist
+- Grouped by category: Productivity, Communication, Social, Developer
+- Settings integrations tab simplified to compact Google + "Manage All Integrations" link
+- Added to sidebar as 8th core nav item (Link2 icon)
+
+### API Keys — Max Plan Gate
+- API Keys tab now locked for non-Max users with upgrade CTA
+- Max users get generate/copy/regenerate/revoke flow with created date
+- Revoke button added alongside regenerate
+
+### Dashboard Customization
+- 3 new stat card options: Calendar, Files, Projects (10 total, pick 2-4)
+- Quick Access section now configurable — Customize button, show/hide links (min 3)
+- 3 new quick links: Calendar, Integrations, Projects (9 total)
+- Sidebar tab reorder in Settings > General — up/down arrows, persists to localStorage
+
+### Planned Agents Upgrade
+- Enhanced PlannedAgentCard with capability bullets, ETA badge, "Notify Me" waitlist
+- 7 planned agents with rich descriptions: TikTok Digest, Twitter Digest, Video Gen, Video Editor, Product Research, Market Research, Data Viz
+- Research agent detail modal shows multi-model pipeline: Grok (search) -> Kimi K2 (analysis) -> DeepSeek (fallback)
+
+### Code Cleanup
+- Consolidated duplicated agent constants: agent-data.ts is now single source of truth
+- Removed ~100 lines of duplicated constants from agents/page.tsx
+- constants.ts now re-exports from agent-data.ts
+- Fixed COMING_SOON_AGENTS discrepancy (added Travel, Auto Marketing)
+- New integrations module: src/lib/integrations.ts
+- New sidebar order utility: src/lib/sidebar-order.ts
+
+### UI Polish
+- Global micro-interactions: button press scale, badge transitions, focus rings
+- Onboarding tour updated with Integrations phase (8 phases total)
+
+### Key New Files
+- `src/app/(dashboard)/integrations/page.tsx` — Integrations hub
+- `src/lib/integrations.ts` — Integration registry and helpers
+- `src/lib/sidebar-order.ts` — Sidebar reorder persistence
+
+---
+
+## Previous Changes (2026-04-07)
+
+### P0 Sprint Complete — Full Model Migration
+- **All models now on OpenRouter** — removed Anthropic (Claude) and Ollama entirely
+- Services list: OpenRouter, OpenAI, DeepSeek (no more Anthropic, Ollama)
+- Daily summary script switched from Claude Haiku to MiniMax M2.1 (OpenRouter)
+- Removed all Claude/$200 Anthropic plan references from admin cost cards
+
+### Stripe LIVE Mode
+- All 5 live Stripe keys configured in .env.local and Vercel env vars
+- Webhook configured for live mode
+- Billing portal button for paid users (returns to /settings?tab=billing)
+
+### Usage Limits Synced with Plan Config
+- Fixed hardcoded 50/day — now pulls real limits from plan-config.ts
+- Daily/weekly backstop enforcement working end-to-end
+- Usage tab shows real data from /api/usage/check with correct per-plan limits
+
+### Agent Gating (Free Plan Lock)
+- FREE_PLAN_AGENTS: Harv, Router, Journal, Research, Email, Scheduler, Learning
+- Locked agents show lock icon + PRO badge + upgrade toast on agents page
+- Chat panel blocks locked agents with toast notification
+
+### Admin Hub Redesign
+- Sidebar: Admin Hub is expandable dropdown with "Dashboard" and "Analytics" sub-items
+- Analytics page only visible to owner/admin (auth race condition fixed)
+- Cost breakdown dialog: 3 tabs (By Model, By Agent, Daily) with summary row
+
+### Agent Model Display
+- Only Harv shows the plan-based model (Gemini Flash Lite / DeepSeek V3.2 / GPT-4.1)
+- Other agents keep their specialized backend models in display
+
+### Claude Event Cleanup
+- Deleted old Claude cost events from Supabase
+- Filtered sync to prevent re-import of stale Claude events
+
+---
+
+## Previous Changes (2026-03-31)
 
 ### API Cost Fix
 - **Root cause**: VPS events API caps at 50 results, Guardian scans flood out `api_cost` events
 - **Fix**: New `api_cost_events` Supabase table persists costs permanently, synced from VPS on each admin page load
-- **Files**: `src/app/api/admin/stats/route.ts`, `docs/supabase-api-cost-events.sql`
 
 ### Usage Limits + Model Degradation (ChatGPT-style)
-- Replaced simple 50/day free limit with full tier system
 - Three tiers: Free (25 premium/day), Pro (150/day), Max (400/day)
 - After daily limit: model degrades to cheaper fallback (never hard-blocked for paid tiers)
 - Weekly backstops prevent abuse: Free 100, Pro 750, Max 2000
 - Image generation limits per tier: Free 0, Pro 10/day, Max 30/day
-- Dashboard sends `model_tier` to VPS backend (VPS needs update to use it)
-- **Files**: `src/app/api/usage/check/route.ts`, `src/lib/stripe.ts`, `src/components/chat/chat-panel.tsx`, both chat routes
 
 ### Plan Rename: Business → Max
 - Consumer-friendly naming matching Claude/ChatGPT
-- Updated across: billing page, admin hub, admin user detail, stripe config
-- Stripe checkout/webhook flow works seamlessly with new "max" plan key
+- Stripe checkout/webhook flow works with "max" plan key
 
 ### New Supabase Tables
 - `api_cost_events` — Persistent API cost tracking (survives VPS event rotation)
-- `usage_logs` — Per-user message/token/cost tracking (existing, now used for degradation)
-
-### Model Pricing Additions
-- Added to admin stats: Gemini Flash Lite, DeepSeek V3.2, GPT-4.1
+- `usage_logs` — Per-user message/token/cost tracking (used for degradation)
 
 ---
 
@@ -405,18 +497,19 @@ SUPABASE_SERVICE_ROLE_KEY=<redacted>
 - Journal `_parse()` fix for plain text input
 - Router accuracy 72.4% → 79.7% on 59-prompt test suite
 
-### Business Model
-- **Free** ($0): 14-day trial, 25 premium messages/day, degrades to worst model after
-- **Pro** ($20/mo): 150 premium messages/day (DeepSeek V3.2), unlimited standard, all agents, 10 images/day
-- **Max** ($50/mo): 400 premium messages/day (GPT-4.1), unlimited DeepSeek V3.2, 30 images/day, admin dashboard
+### Business Model (Stripe LIVE)
+- **Free** ($0): 7 agents, 25 premium messages/day (Gemini Flash Lite), degrades after limit
+- **Pro** ($20/mo): All agents, 150 premium messages/day (DeepSeek V3.2), unlimited standard, 10 images/day
+- **Max** ($50/mo): All agents, 400 premium messages/day (GPT-4.1), unlimited DeepSeek V3.2, 30 images/day, admin dashboard
 - Target margins: ~75% on Pro ($14-17 profit), ~75% on Max ($35-42 profit)
+- Overhead: $17.99 VPS + API costs (no more Anthropic $200 plan)
 - Demo timeline: when it's ready, quality over speed
 
 ---
 
 ## Important Notes
 
-1. **Local vs VPS code:** `C:\Users\macko\harv_deploy\` has a SIMPLER version of harv_brain.py (~350 lines). The LIVE version on VPS at `/root/harv/lib/harv_brain.py` is ~680 lines with OpenRouter support, multi-provider routing, personality toggle, and Ledger integration. Never overwrite the live file — patch it.
+1. **Local vs VPS code:** `C:\Users\macko\harv_deploy\` has a SIMPLER version of harv_brain.py (~350 lines). The LIVE version on VPS at `/root/harv/lib/harv_brain.py` is ~680 lines with OpenRouter-only routing, personality toggle, and Ledger integration. Never overwrite the live file — patch it.
 
 2. **Next.js 16 gotchas:** `params` in page components is a Promise (use `use(params)`). Some lucide-react icons renamed. Check `node_modules/next/dist/docs/` for breaking changes.
 

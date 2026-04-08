@@ -7,16 +7,18 @@ import { NextRequest } from "next/server";
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const error = req.nextUrl.searchParams.get("error");
+  const state = req.nextUrl.searchParams.get("state");
+  const returnTo = state === "from_integrations" ? "/integrations" : "/calendar";
 
   if (error) {
     return Response.redirect(
-      new URL(`/calendar?error=${encodeURIComponent(error)}`, req.url)
+      new URL(`${returnTo}?error=${encodeURIComponent(error)}`, req.url)
     );
   }
 
   if (!code) {
     return Response.redirect(
-      new URL("/calendar?error=no_code", req.url)
+      new URL(`${returnTo}?error=no_code`, req.url)
     );
   }
 
@@ -41,7 +43,7 @@ export async function GET(req: NextRequest) {
       const text = await tokenRes.text();
       console.error("Token exchange failed:", text);
       return Response.redirect(
-        new URL("/calendar?error=token_exchange_failed", req.url)
+        new URL(`${returnTo}?error=token_exchange_failed`, req.url)
       );
     }
 
@@ -56,12 +58,12 @@ export async function GET(req: NextRequest) {
 
     const encoded = encodeURIComponent(JSON.stringify(tokenData));
     return Response.redirect(
-      new URL(`/calendar?tokens=${encoded}`, req.url)
+      new URL(`${returnTo}?tokens=${encoded}`, req.url)
     );
   } catch (e) {
     console.error("OAuth callback error:", e);
     return Response.redirect(
-      new URL("/calendar?error=server_error", req.url)
+      new URL(`${returnTo}?error=server_error`, req.url)
     );
   }
 }

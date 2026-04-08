@@ -14,48 +14,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Bot,
-  Brain,
-  Dumbbell,
-  DollarSign,
-  Music,
-  Plane,
-  ShoppingCart,
-  TrendingUp,
-  Mail,
-  Calendar,
-  Search,
-  Video,
-  BookOpen,
-  Shield,
-  Wrench,
   Activity,
   BarChart3,
-  Database,
-  FileText,
-  Image,
-  Trophy,
-  Megaphone,
+  Wrench,
+  Shield,
+  Search,
   ChevronDown,
   ChevronUp,
   Clock,
   Zap,
   Cpu,
   Send,
-  Film,
-  Scissors,
-  Package,
-  LineChart,
-  PieChart,
-  PenTool,
   Users,
   ArrowRight,
   X,
   ShieldCheck,
   AlertTriangle,
-  Heart,
   Plus,
   MessageSquare,
+  Bot,
+  Lock,
+  Crown,
 } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
 import { saveAgentMessage } from "@/lib/chat-history";
@@ -63,202 +42,21 @@ import { getRoutingMessage } from "@/lib/constants";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { TIER_LIMITS, type TierKey } from "@/lib/plan-config";
-
-// ─── Types ──────────────────────────────────────────────
-
-interface LastEvent {
-  action: string;
-  status: string;
-  summary: string;
-  timestamp: string;
-  cost: number;
-  tokens: number;
-  duration: number;
-}
-
-interface Agent {
-  name: string;
-  status: string;
-  model: string;
-  type: string;
-  tier: string;
-  provider: string;
-  description: string;
-  cost_per_call: number;
-  last_event?: LastEvent | null;
-}
-
-// ─── Constants ──────────────────────────────────────────
-
-const AGENT_ICONS: Record<string, React.ElementType> = {
-  Harv: Bot,
-  Router: Brain,
-  Guardian: Shield,
-  Medic: Wrench,
-  Fitness: Dumbbell,
-  Finance: DollarSign,
-  Trading: TrendingUp,
-  Research: Search,
-  Music: Music,
-  Travel: Plane,
-  Shopping: ShoppingCart,
-  Sports: Trophy,
-  "Auto Marketing": Megaphone,
-  Email: Mail,
-  Scheduler: Calendar,
-  "Video Digest": Video,
-  "YouTube Digest": Video,
-  "TikTok Digest": Video,
-  "Twitter Digest": Video,
-  Learning: BookOpen,
-  Journal: FileText,
-  Analytics: BarChart3,
-  Memory: Database,
-  Ledger: FileText,
-  Drive: Database,
-  "Image Gen": Image,
-  Heartbeat: Heart,
-  Postman: Mail,
-  "Media Manager": Film,
-  "Video Gen": Film,
-  "Video Editor": Scissors,
-  "Product Research": Package,
-  "Market Research": LineChart,
-  "Data Viz": PieChart,
-};
-
-const SUB_AGENT_MAP: Record<string, string[]> = {
-  "Video Digest": ["YouTube Digest", "TikTok Digest", "Twitter Digest"],
-  "Media Manager": ["Image Gen", "Video Gen", "Video Editor"],
-  Research: ["Product Research", "Market Research", "Data Viz"],
-};
-
-// Agents that are coming soon — moved out of active agents section
-const COMING_SOON_PERSONAL = new Set([
-  "Music",
-  "Fitness",
-  "Finance",
-  "Shopping",
-  "Sports",
-  "Trading",
-  "Travel",
-]);
-
-const COMING_SOON_BUSINESS = new Set([
-  "Auto Marketing",
-]);
-
-const COMING_SOON_AGENTS = new Set([...COMING_SOON_PERSONAL, ...COMING_SOON_BUSINESS]);
-
-// Planned sub-agents not yet implemented
-const PLANNED_AGENT_NAMES = new Set([
-  "TikTok Digest",
-  "Twitter Digest",
-  "Video Gen",
-  "Video Editor",
-  "Product Research",
-  "Market Research",
-  "Data Viz",
-]);
-
-// Agents that should NOT show inline chat (orchestrators, tools, background, coming soon, planned)
-const NO_CHAT_AGENTS = new Set([
-  "Router",
-  // Tools
-  "Drive",
-  "Ledger",
-  // Background
-  "Heartbeat",
-  "Guardian",
-  "Medic",
-  // Coming soon
-  ...COMING_SOON_AGENTS,
-  // Planned sub-agents
-  ...PLANNED_AGENT_NAMES,
-]);
-
-const PLANNED_AGENTS: Agent[] = [
-  {
-    name: "TikTok Digest",
-    status: "PLANNED",
-    model: "tbd",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "tbd",
-    description: "TikTok video transcription and digest",
-    cost_per_call: 0,
-  },
-  {
-    name: "Twitter Digest",
-    status: "PLANNED",
-    model: "tbd",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "tbd",
-    description: "Twitter/X video transcription and digest",
-    cost_per_call: 0,
-  },
-  {
-    name: "Media Manager",
-    status: "LIVE",
-    model: "none",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "keyword-router",
-    description: "Media orchestrator — routes to Image Gen, Video Gen, and Video Editor",
-    cost_per_call: 0,
-  },
-  {
-    name: "Video Gen",
-    status: "PLANNED",
-    model: "tbd",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "tbd",
-    description: "AI video generation from text prompts and storyboards",
-    cost_per_call: 0,
-  },
-  {
-    name: "Video Editor",
-    status: "PLANNED",
-    model: "tbd",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "tbd",
-    description: "Automated video editing, trimming, and post-production",
-    cost_per_call: 0,
-  },
-  {
-    name: "Product Research",
-    status: "PLANNED",
-    model: "tbd",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "tbd",
-    description: "Product comparisons, reviews, and purchase recommendations",
-    cost_per_call: 0,
-  },
-  {
-    name: "Market Research",
-    status: "PLANNED",
-    model: "tbd",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "tbd",
-    description: "Market analysis, competitor tracking, and trend reports",
-    cost_per_call: 0,
-  },
-  {
-    name: "Data Viz",
-    status: "PLANNED",
-    model: "tbd",
-    type: "agent",
-    tier: "AGENTS",
-    provider: "tbd",
-    description: "Charts, graphs, and visual data reports from raw data",
-    cost_per_call: 0,
-  },
-];
+import {
+  AGENT_ICONS,
+  SUB_AGENT_MAP,
+  COMING_SOON_AGENTS,
+  COMING_SOON_PERSONAL,
+  COMING_SOON_BUSINESS,
+  PLANNED_AGENT_NAMES,
+  PLANNED_AGENTS,
+  PLANNED_AGENTS_META,
+  NO_CHAT_AGENTS,
+  statusColor,
+  type Agent,
+  type LastEvent,
+  type PlannedAgentMeta,
+} from "@/lib/agent-data";
 
 // ─── Helpers ────────────────────────────────────────────
 
@@ -284,22 +82,7 @@ function simplifyModel(model: string): string {
   return model.split("/").pop()?.replace(/-\d{8,}$/, "") || model;
 }
 
-function statusColor(status: string) {
-  switch (status.toUpperCase()) {
-    case "LIVE":
-    case "ACTIVE":
-    case "RUNNING":
-      return "bg-green-500/15 text-green-400 border-green-500/30";
-    case "IDLE":
-      return "bg-yellow-500/15 text-yellow-400 border-yellow-500/30";
-    case "ERROR":
-      return "bg-red-500/15 text-red-400 border-red-500/30";
-    case "PLANNED":
-      return "bg-slate-500/15 text-slate-400 border-slate-500/30";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-}
+
 
 function typeColor(type: string) {
   switch (type) {
@@ -525,6 +308,10 @@ function AgentCard({ agent, onViewDetails, childAgents, harvPlanModel }: { agent
 function SubAgentCard({ agent }: { agent: Agent }) {
   const Icon = AGENT_ICONS[agent.name] || Bot;
   const isPlanned = agent.status.toUpperCase() === "PLANNED";
+  const meta = isPlanned ? PLANNED_AGENTS_META.find((m) => m.agent.name === agent.name) : null;
+
+  // If we have rich metadata, show the enhanced card
+  if (meta) return <PlannedAgentCard meta={meta} />;
 
   return (
     <Link
@@ -558,6 +345,79 @@ function SubAgentCard({ agent }: { agent: Agent }) {
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+// ─── PlannedAgentCard ──────────────────────────────────
+
+function getAgentWaitlist(): string[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem("harv-agent-waitlist") || "[]"); } catch { return []; }
+}
+
+function PlannedAgentCard({ meta }: { meta: PlannedAgentMeta }) {
+  const { agent, capabilities, eta } = meta;
+  const Icon = AGENT_ICONS[agent.name] || Bot;
+  const [onWaitlist, setOnWaitlist] = useState(false);
+
+  useEffect(() => {
+    setOnWaitlist(getAgentWaitlist().includes(agent.name));
+  }, [agent.name]);
+
+  function toggleNotify() {
+    const list = getAgentWaitlist();
+    const idx = list.indexOf(agent.name);
+    if (idx >= 0) { list.splice(idx, 1); } else { list.push(agent.name); }
+    localStorage.setItem("harv-agent-waitlist", JSON.stringify(list));
+    setOnWaitlist(idx < 0);
+    toast.success(idx < 0 ? `You'll be notified when ${agent.name} launches` : `Removed from ${agent.name} waitlist`);
+  }
+
+  return (
+    <Card className="relative overflow-hidden transition-all duration-300 ring-1 ring-white/[0.08] hover:ring-primary/15 bg-gradient-to-br from-white/[0.02] to-transparent">
+      {/* ETA ribbon */}
+      <div className="absolute top-3 right-3">
+        <Badge className="bg-indigo-500/15 text-indigo-400 border-indigo-500/30 text-[9px] px-1.5 py-0">
+          {eta}
+        </Badge>
+      </div>
+
+      <CardContent className="py-3.5 px-4">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] ring-1 ring-white/[0.08]">
+            <Icon className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div>
+            <span className="text-sm font-semibold">{agent.name}</span>
+            <p className="text-[11px] text-muted-foreground">{agent.description}</p>
+          </div>
+        </div>
+
+        {/* Capabilities */}
+        <ul className="space-y-1 mb-3">
+          {capabilities.map((cap) => (
+            <li key={cap} className="flex items-start gap-2 text-[11px] text-muted-foreground/80">
+              <span className="mt-1 h-1 w-1 rounded-full bg-primary/50 shrink-0" />
+              {cap}
+            </li>
+          ))}
+        </ul>
+
+        {/* Notify button */}
+        <button
+          onClick={toggleNotify}
+          className={cn(
+            "w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all ring-1",
+            onWaitlist
+              ? "bg-primary/10 text-primary ring-primary/20"
+              : "bg-white/[0.02] text-muted-foreground ring-white/[0.06] hover:ring-white/[0.12] hover:text-foreground"
+          )}
+        >
+          <MessageSquare className="h-3 w-3" />
+          {onWaitlist ? "On Waitlist" : "Notify Me"}
+        </button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -768,6 +628,35 @@ function AgentDetailsModal({ agent, onClose, harvPlanModel }: { agent: Agent | n
           <span>Tag: <span className="text-foreground">{agent.tier === "BACKGROUND" ? "SYSTEM" : agent.tier}</span></span>
           {agent.cost_per_call > 0 && <span>Cost: <span className="text-foreground">${agent.cost_per_call.toFixed(5)}</span></span>}
         </div>
+
+        {/* Research Multi-Model Pipeline */}
+        {agentName === "Research" && (
+          <div className="px-5 py-3 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="h-3 w-3 text-primary" />
+              <span className="text-[10px] font-semibold text-primary uppercase tracking-wide">Multi-Model Pipeline</span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px]">
+              <div className="flex items-center gap-1.5 rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20 px-2.5 py-1.5">
+                <Search className="h-3 w-3 text-blue-400" />
+                <span className="text-blue-400 font-medium">Grok</span>
+                <span className="text-blue-400/60">Search</span>
+              </div>
+              <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
+              <div className="flex items-center gap-1.5 rounded-lg bg-purple-500/10 ring-1 ring-purple-500/20 px-2.5 py-1.5">
+                <Cpu className="h-3 w-3 text-purple-400" />
+                <span className="text-purple-400 font-medium">Kimi K2</span>
+                <span className="text-purple-400/60">Analysis</span>
+              </div>
+              <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
+              <div className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/20 px-2.5 py-1.5">
+                <Shield className="h-3 w-3 text-emerald-400" />
+                <span className="text-emerald-400 font-medium">DeepSeek</span>
+                <span className="text-emerald-400/60">Fallback</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">

@@ -24,10 +24,12 @@ import {
   LogOut,
   User,
   CreditCard,
+  Link2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
+import { getSidebarOrder } from "@/lib/sidebar-order";
 
 // Core tabs — always visible in sidebar
 const NAV_ITEMS = [
@@ -46,6 +48,7 @@ const PROFILE_MENU_ITEMS = [
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/activity", label: "Activity", icon: Activity },
   { href: "/team", label: "Meet the Team", icon: Users2 },
+  { href: "/integrations", label: "Integrations", icon: Link2 },
 ];
 
 const ADMIN_ITEMS = [
@@ -63,6 +66,7 @@ export const Sidebar = React.memo(function Sidebar() {
   });
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [navOrder, setNavOrder] = useState<string[]>(() => getSidebarOrder());
 
   // Hide sidebar on auth pages
   if (pathname?.startsWith("/auth")) return null;
@@ -75,6 +79,14 @@ export const Sidebar = React.memo(function Sidebar() {
     }
     window.addEventListener("personality-change", handleChange);
     return () => window.removeEventListener("personality-change", handleChange);
+  }, []);
+
+  // Listen for sidebar order changes from settings
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    function handleOrderChange() { setNavOrder(getSidebarOrder()); }
+    window.addEventListener("sidebar-order-change", handleOrderChange);
+    return () => window.removeEventListener("sidebar-order-change", handleOrderChange);
   }, []);
 
   // Close profile menu on outside click
@@ -104,7 +116,11 @@ export const Sidebar = React.memo(function Sidebar() {
 
       <ScrollArea className="flex flex-1 flex-col w-full">
         <nav className="flex flex-col gap-1 px-2 w-full">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {[...NAV_ITEMS].sort((a, b) => {
+            const ai = navOrder.indexOf(a.label);
+            const bi = navOrder.indexOf(b.label);
+            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+          }).map(({ href, label, icon: Icon }) => {
             const active =
               href === "/"
                 ? pathname === "/"

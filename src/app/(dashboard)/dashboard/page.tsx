@@ -21,6 +21,7 @@ import {
   TrendingUp,
   RefreshCw,
   FolderOpen,
+  FolderKanban,
   Activity,
   Timer,
   FileText,
@@ -31,6 +32,7 @@ import {
   Check,
   Shield,
   CreditCard,
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn, timeAgo } from "@/lib/utils";
@@ -199,6 +201,9 @@ export default function DashboardPage() {
     { id: "totalSpend", label: "Total Spend", href: "/analytics", icon: DollarSign, color: "bg-emerald-500/50", textColor: "text-emerald-400", value: () => `$${stats.totalSpend.toFixed(4)}`, subtitle: "all time" },
     { id: "systemHealth", label: "System", href: "/settings?tab=system", icon: Shield, color: "bg-green-500/50", textColor: "text-green-400", value: () => stats.health === "healthy" ? "Online" : stats.health === "checking" ? "..." : "Down", subtitle: stats.health === "healthy" ? "all systems go" : "check status" },
     { id: "projected", label: "Projected", href: "/analytics", icon: TrendingUp, color: "bg-cyan-500/50", textColor: "text-cyan-400", value: () => `$${(stats.dailyBurn * 30).toFixed(2)}`, subtitle: "monthly estimate" },
+    { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar, color: "bg-rose-500/50", textColor: "text-rose-400", value: () => "—", subtitle: "upcoming events" },
+    { id: "files", label: "Files", href: "/documents", icon: FolderOpen, color: "bg-orange-500/50", textColor: "text-orange-400", value: () => "—", subtitle: "documents" },
+    { id: "projects", label: "Projects", href: "/projects", icon: FolderKanban, color: "bg-indigo-500/50", textColor: "text-indigo-400", value: () => "—", subtitle: "active" },
   ];
 
   // Configurable: which 4 cards to show (stored in localStorage)
@@ -229,56 +234,42 @@ export default function DashboardPage() {
 
   const visibleCards = allStatCards.filter((c) => selectedCardIds.includes(c.id));
 
-  const quickLinks = [
-    {
-      href: "/chat",
-      label: "Chat with Harv",
-      description: "Start a conversation with your AI assistant",
-      icon: MessageSquare,
-      color: "text-sky-400",
-      bg: "bg-sky-500/10 ring-1 ring-sky-500/20",
-    },
-    {
-      href: "/agents",
-      label: "Agents",
-      description: "View and manage all registered agents",
-      icon: Bot,
-      color: "text-violet-400",
-      bg: "bg-violet-500/10 ring-1 ring-violet-500/20",
-    },
-    {
-      href: "/crons",
-      label: "Automations",
-      description: "Manage your scheduled automations",
-      icon: Zap,
-      color: "text-amber-400",
-      bg: "bg-amber-500/10 ring-1 ring-amber-500/20",
-    },
-    {
-      href: "/analytics",
-      label: "Analytics",
-      description: "API costs, usage metrics, and projections",
-      icon: BarChart3,
-      color: "text-emerald-400",
-      bg: "bg-emerald-500/10 ring-1 ring-emerald-500/20",
-    },
-    {
-      href: "/documents",
-      label: "Files",
-      description: "Files and media from your agents",
-      icon: FolderOpen,
-      color: "text-amber-400",
-      bg: "bg-amber-500/10 ring-1 ring-amber-500/20",
-    },
-    {
-      href: "/memory",
-      label: "Memory",
-      description: "Chat history and knowledge base",
-      icon: Brain,
-      color: "text-pink-400",
-      bg: "bg-pink-500/10 ring-1 ring-pink-500/20",
-    },
+  const allQuickLinks = [
+    { id: "chat", href: "/chat", label: "Chat with Harv", description: "Start a conversation with your AI assistant", icon: MessageSquare, color: "text-sky-400", bg: "bg-sky-500/10 ring-1 ring-sky-500/20" },
+    { id: "agents", href: "/agents", label: "Agents", description: "View and manage all registered agents", icon: Bot, color: "text-violet-400", bg: "bg-violet-500/10 ring-1 ring-violet-500/20" },
+    { id: "automations", href: "/crons", label: "Automations", description: "Manage your scheduled automations", icon: Zap, color: "text-amber-400", bg: "bg-amber-500/10 ring-1 ring-amber-500/20" },
+    { id: "analytics", href: "/analytics", label: "Analytics", description: "API costs, usage metrics, and projections", icon: BarChart3, color: "text-emerald-400", bg: "bg-emerald-500/10 ring-1 ring-emerald-500/20" },
+    { id: "files", href: "/documents", label: "Files", description: "Files and media from your agents", icon: FolderOpen, color: "text-amber-400", bg: "bg-amber-500/10 ring-1 ring-amber-500/20" },
+    { id: "memory", href: "/memory", label: "Memory", description: "Chat history and knowledge base", icon: Brain, color: "text-pink-400", bg: "bg-pink-500/10 ring-1 ring-pink-500/20" },
+    { id: "calendar", href: "/calendar", label: "Calendar", description: "Sync and view your Google Calendar", icon: Calendar, color: "text-rose-400", bg: "bg-rose-500/10 ring-1 ring-rose-500/20" },
+    { id: "integrations", href: "/integrations", label: "Integrations", description: "Connect external services to Harv", icon: Link2, color: "text-cyan-400", bg: "bg-cyan-500/10 ring-1 ring-cyan-500/20" },
+    { id: "projects", href: "/projects", label: "Projects", description: "Organize work into projects", icon: FolderKanban, color: "text-indigo-400", bg: "bg-indigo-500/10 ring-1 ring-indigo-500/20" },
   ];
+  const defaultQuickLinks = ["chat", "agents", "automations", "analytics", "files", "memory"];
+  const [selectedQuickIds, setSelectedQuickIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return defaultQuickLinks;
+    try {
+      const saved = localStorage.getItem("harv-dashboard-quick-links");
+      return saved ? JSON.parse(saved) : defaultQuickLinks;
+    } catch { return defaultQuickLinks; }
+  });
+  const [showQuickPicker, setShowQuickPicker] = useState(false);
+
+  function toggleQuickLink(id: string) {
+    setSelectedQuickIds((prev) => {
+      let next: string[];
+      if (prev.includes(id)) {
+        if (prev.length <= 3) return prev; // minimum 3
+        next = prev.filter((c) => c !== id);
+      } else {
+        if (prev.length >= 9) return prev; // maximum all
+        next = [...prev, id];
+      }
+      localStorage.setItem("harv-dashboard-quick-links", JSON.stringify(next));
+      return next;
+    });
+  }
+  const visibleQuickLinks = allQuickLinks.filter((l) => selectedQuickIds.includes(l.id));
 
   return (
     <div className="p-6 space-y-8 max-w-6xl mx-auto">
@@ -433,13 +424,55 @@ export default function DashboardPage() {
 
       {/* Quick Access */}
       <div>
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Quick Access
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Quick Access
+          </h2>
+          <button
+            onClick={() => setShowQuickPicker(!showQuickPicker)}
+            className={cn(
+              "flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors rounded-lg px-2 py-1",
+              showQuickPicker && "bg-white/[0.04] text-foreground"
+            )}
+          >
+            <Settings2 className="h-3 w-3" />
+            Customize
+          </button>
+        </div>
+
+        {/* Quick link picker */}
+        {showQuickPicker && (
+          <div className="flex flex-wrap gap-2 pb-3">
+            {allQuickLinks.map((link) => {
+              const active = selectedQuickIds.includes(link.id);
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => toggleQuickLink(link.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-200 ring-1",
+                    active
+                      ? "bg-primary/10 text-primary ring-primary/20"
+                      : "bg-white/[0.02] text-muted-foreground ring-white/[0.06] hover:ring-white/[0.12]"
+                  )}
+                >
+                  {active && <Check className="h-3 w-3" />}
+                  <Icon className="h-3 w-3" />
+                  {link.label}
+                </button>
+              );
+            })}
+            <span className="text-[10px] text-muted-foreground/40 self-center ml-1">
+              {selectedQuickIds.length} selected (min 3)
+            </span>
+          </div>
+        )}
+
         <div data-tour="dashboard-quick-access" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {quickLinks.map(
-            ({ href, label, description, icon: Icon, color, bg }) => (
-              <Link key={href} href={href}>
+          {visibleQuickLinks.map(
+            ({ id, href, label, description, icon: Icon, color, bg }) => (
+              <Link key={id} href={href}>
                 <Card className="group cursor-pointer transition-all duration-300 hover:ring-primary/15 h-full">
                   <CardContent className="flex items-start gap-4 pt-5 pb-5">
                     <div

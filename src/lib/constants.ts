@@ -76,34 +76,13 @@ export function getKachowGreeting(name?: string): string {
   return name ? greeting.replace("What do you need?", `What do you need, ${name}?`) : greeting;
 }
 
-// ─── Agent classification (shared across Agents page + Chat agents tab) ───
-
-/** Agents marked "coming soon" on the Agents page — not yet fully wired */
-export const COMING_SOON_AGENTS = new Set([
-  "Music",
-  "Fitness",
-  "Finance",
-  "Shopping",
-  "Sports",
-  "Trading",
-  "Travel",
-  "Auto Marketing",
-]);
-
-/** Planned sub-agents not yet implemented on the backend */
-export const PLANNED_AGENTS = new Set([
-  "TikTok Digest",
-  "Twitter Digest",
-  "Video Gen",
-  "Video Editor",
-  "Product Research",
-  "Market Research",
-  "Data Viz",
-]);
-
-/** Agents that should NOT appear in chat interfaces (orchestrators, tools, bg, coming soon, planned) */
-export const NO_CHAT_AGENTS = new Set([
-  "Router",
-  ...COMING_SOON_AGENTS,
-  ...PLANNED_AGENTS,
-]);
+// ─── Agent classification (re-exported from agent-data — single source of truth) ───
+export {
+  COMING_SOON_AGENTS,
+  COMING_SOON_PERSONAL,
+  COMING_SOON_BUSINESS,
+  PLANNED_AGENT_NAMES,
+  NO_CHAT_AGENTS,
+  AGENT_ICONS,
+  SUB_AGENT_MAP,
+} from "@/lib/agent-data";

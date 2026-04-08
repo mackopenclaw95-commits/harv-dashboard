@@ -82,8 +82,16 @@ export const CORE_AGENTS = new Set([
   "Learning", "Research", "Video Digest", "Media Manager",
 ]);
 
+export const COMING_SOON_PERSONAL = new Set([
+  "Music", "Fitness", "Finance", "Shopping", "Sports", "Trading", "Travel",
+]);
+
+export const COMING_SOON_BUSINESS = new Set([
+  "Auto Marketing",
+]);
+
 export const COMING_SOON_AGENTS = new Set([
-  "Music", "Fitness", "Finance", "Shopping", "Sports", "Trading",
+  ...COMING_SOON_PERSONAL, ...COMING_SOON_BUSINESS,
 ]);
 
 export const PLANNED_AGENT_NAMES = new Set([
@@ -93,11 +101,21 @@ export const PLANNED_AGENT_NAMES = new Set([
 
 export const NO_CHAT_AGENTS = new Set([
   "Router",
+  // Tools
   "Drive", "Ledger",
+  // Background
   "Heartbeat", "Guardian", "Medic",
+  // Coming soon + planned
   ...COMING_SOON_AGENTS,
   ...PLANNED_AGENT_NAMES,
 ]);
+
+export interface PlannedAgentMeta {
+  agent: Agent;
+  capabilities: string[];
+  eta: string;
+  parent?: string;
+}
 
 export const PLANNED_AGENTS: Agent[] = [
   { name: "TikTok Digest", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "TikTok video transcription and digest", cost_per_call: 0 },
@@ -108,6 +126,51 @@ export const PLANNED_AGENTS: Agent[] = [
   { name: "Product Research", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Product comparisons, reviews, and purchase recommendations", cost_per_call: 0 },
   { name: "Market Research", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Market analysis, competitor tracking, and trend reports", cost_per_call: 0 },
   { name: "Data Viz", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Charts, graphs, and visual data reports from raw data", cost_per_call: 0 },
+];
+
+export const PLANNED_AGENTS_META: PlannedAgentMeta[] = [
+  {
+    agent: PLANNED_AGENTS.find((a) => a.name === "TikTok Digest")!,
+    capabilities: ["Auto-transcribe TikTok videos", "Generate key point summaries", "Extract trending topics"],
+    eta: "Q3 2026",
+    parent: "Video Digest",
+  },
+  {
+    agent: PLANNED_AGENTS.find((a) => a.name === "Twitter Digest")!,
+    capabilities: ["Summarize Twitter/X video threads", "Track conversation highlights", "Extract viral clips"],
+    eta: "Q3 2026",
+    parent: "Video Digest",
+  },
+  {
+    agent: PLANNED_AGENTS.find((a) => a.name === "Video Gen")!,
+    capabilities: ["Generate short videos from text prompts", "Storyboard to video pipeline", "Multiple aspect ratios"],
+    eta: "Q4 2026",
+    parent: "Media Manager",
+  },
+  {
+    agent: PLANNED_AGENTS.find((a) => a.name === "Video Editor")!,
+    capabilities: ["AI-powered cut and trim", "Auto-subtitles and overlays", "Smart transitions"],
+    eta: "Q4 2026",
+    parent: "Media Manager",
+  },
+  {
+    agent: PLANNED_AGENTS.find((a) => a.name === "Product Research")!,
+    capabilities: ["Compare products across retailers", "Aggregate reviews and ratings", "Price tracking and alerts"],
+    eta: "Q3 2026",
+    parent: "Research",
+  },
+  {
+    agent: PLANNED_AGENTS.find((a) => a.name === "Market Research")!,
+    capabilities: ["Competitor analysis", "Industry trend reports", "Market sizing estimates"],
+    eta: "Q3 2026",
+    parent: "Research",
+  },
+  {
+    agent: PLANNED_AGENTS.find((a) => a.name === "Data Viz")!,
+    capabilities: ["Auto-generate charts from data", "Interactive dashboard creation", "Export to image/PDF"],
+    eta: "Q4 2026",
+    parent: "Research",
+  },
 ];
 
 // ─── Helpers ────────────────────────────────────────────

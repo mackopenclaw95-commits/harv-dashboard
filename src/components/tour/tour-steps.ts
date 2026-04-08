@@ -524,6 +524,37 @@ function makePhases(isKachow: boolean): TourPhase[] {
             align: "start" as const,
           },
         },
+        // ── Transition to Integrations ──
+        {
+          element: '[data-tour="integrations"]',
+          popover: {
+            title: k ? "🏁 Next Stop: Pit Crew Links" : "Next: Integrations →",
+            description: k
+              ? "Let's check out the connections — link up Google, Telegram, and more."
+              : "Let's look at Integrations — connect external services to Harv.",
+            side: "right" as const,
+            align: "center" as const,
+          },
+        },
+      ],
+    },
+
+    // ══════════════════════════════════════
+    // Phase 7: Integrations (/integrations)
+    // ══════════════════════════════════════
+    {
+      path: "/integrations",
+      steps: [
+        {
+          popover: {
+            title: k ? "🔌 The Pit Crew Connections" : "🔗 Integrations Hub",
+            description: k
+              ? "This is where you wire up your tools — Google Calendar, Telegram, GitHub, and more.\n\nConnected services show in green at the top."
+              : "Connect external services to Harv — Google Calendar, Telegram, GitHub, Spotify, and more.\n\nConnected services appear at the top. Click \"Notify Me\" on upcoming integrations to get notified.",
+            side: "bottom" as const,
+            align: "center" as const,
+          },
+        },
         // ── Transition to Settings ──
         {
           element: '[data-tour="settings"]',
@@ -540,7 +571,7 @@ function makePhases(isKachow: boolean): TourPhase[] {
     },
 
     // ══════════════════════════════════════
-    // Phase 7: Settings (/settings)
+    // Phase 8: Settings (/settings)
     // ══════════════════════════════════════
     {
       path: "/settings",
