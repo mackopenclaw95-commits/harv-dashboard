@@ -29,7 +29,11 @@ import { toast } from "sonner";
 
 type StatusFilter = "active" | "archived" | "all";
 
-export function HistoryTab() {
+interface HistoryTabProps {
+  onOpenConversation?: (conversationId: string) => void;
+}
+
+export function HistoryTab({ onOpenConversation }: HistoryTabProps = {}) {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +106,10 @@ export function HistoryTab() {
   ).filter(([, items]) => items.length > 0);
 
   function openConversation(agentName: string, conversationId: string) {
+    if (onOpenConversation && agentName === "Harv") {
+      onOpenConversation(conversationId);
+      return;
+    }
     if (agentName === "Harv") {
       router.push(`/chat?tab=harv&conversation=${conversationId}`);
     } else {

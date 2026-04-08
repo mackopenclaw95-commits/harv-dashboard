@@ -46,6 +46,7 @@ function ChatPageInner() {
   const [activeTab, setActiveTab] = useState(TAB_MAP[tabParam] ?? 0);
   const [historyCount, setHistoryCount] = useState<number | null>(null);
   const [newProjectChatTrigger, setNewProjectChatTrigger] = useState(0);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(conversationParam);
 
   // Sync tab state when URL search params change (e.g. navigating from History)
   useEffect(() => {
@@ -250,7 +251,7 @@ function ChatPageInner() {
           <HarvTab
             newChatTrigger={newProjectChatTrigger}
             projectId={activeProject}
-            initialConversationId={conversationParam}
+            initialConversationId={selectedConversationId}
           />
         </TabsContent>
 
@@ -259,7 +260,11 @@ function ChatPageInner() {
         </TabsContent>
 
         <TabsContent value={2} className="flex-1 min-h-0">
-          <HistoryTab />
+          <HistoryTab onOpenConversation={(conversationId) => {
+            // Switch to Harv tab and load the conversation
+            setActiveTab(0);
+            setSelectedConversationId(conversationId);
+          }} />
         </TabsContent>
       </Tabs>
     </div>
