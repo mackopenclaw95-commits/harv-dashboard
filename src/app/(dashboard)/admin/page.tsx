@@ -514,7 +514,7 @@ export default function AdminPage() {
             </div>
 
             {/* Tab content */}
-            <ScrollArea className="max-h-64">
+            <div className="h-64 overflow-y-auto rounded-lg border border-white/[0.04]">
               <div className="space-y-1.5">
                 {costDetailTab === "model" && (
                   <>
@@ -593,13 +593,13 @@ export default function AdminPage() {
                   </>
                 )}
               </div>
-            </ScrollArea>
+            </div>
 
-          </div>
-          {/* Footer — outside scroll area */}
-          <div className="pt-3 mt-1 border-t border-white/[0.06] flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Monthly overhead</span>
-            <span className="text-sm font-bold font-mono">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</span>
+            {/* Footer */}
+            <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Monthly overhead</span>
+              <span className="text-sm font-bold font-mono">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</span>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
