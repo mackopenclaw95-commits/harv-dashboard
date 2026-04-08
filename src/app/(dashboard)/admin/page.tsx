@@ -73,6 +73,12 @@ export default function AdminPage() {
   const [sortBy, setSortBy] = useState<"joined" | "tokens" | "cost">("joined");
   const [filterPlan, setFilterPlan] = useState<"all" | "free" | "pro" | "max">("all");
   const [costDetailOpen, setCostDetailOpen] = useState(false);
+  const [costDetailTab, setCostDetailTab] = useState<"model" | "agent" | "daily">("model");
+  const [vpsAnalytics, setVpsAnalytics] = useState<{
+    by_agent: Record<string, { total_cost: number; calls: number; input_tokens: number; output_tokens: number }>;
+    daily_last_30: Array<{ date: string; cost: number; calls: number }>;
+    burn_rate: { daily_avg_usd: number; projected_monthly: number };
+  } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -88,6 +94,19 @@ export default function AdminPage() {
       try {
         const healthRes = await fetch("/api/proxy?path=/api/health/quick");
         if (healthRes.ok) setVpsHealth(await healthRes.json());
+      } catch {}
+
+      // VPS analytics (per-agent costs, daily costs)
+      try {
+        const analyticsRes = await fetch("/api/proxy?path=/api/analytics/");
+        if (analyticsRes.ok) {
+          const aData = await analyticsRes.json();
+          setVpsAnalytics({
+            by_agent: aData.by_agent || {},
+            daily_last_30: aData.daily_last_30 || [],
+            burn_rate: aData.burn_rate || { daily_avg_usd: 0, projected_monthly: 0 },
+          });
+        }
       } catch {}
 
       // Recent events
@@ -452,7 +471,7 @@ export default function AdminPage() {
 
       {/* API Cost Detail Dialog */}
       <Dialog open={costDetailOpen} onOpenChange={setCostDetailOpen}>
-        <DialogContent className="max-w-md bg-card/95 backdrop-blur-2xl border-white/[0.08]">
+        <DialogContent className="max-w-lg bg-card/95 backdrop-blur-2xl border-white/[0.08]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-yellow-400" />
@@ -460,51 +479,123 @@ export default function AdminPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Summary */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Summary row */}
+            <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg bg-white/[0.03] p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total API Cost</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Cost</p>
                 <p className="text-lg font-bold text-yellow-400">${(stats?.totalApiCost || 0).toFixed(4)}</p>
-                <p className="text-[10px] text-muted-foreground/50">OpenRouter pay-per-use</p>
               </div>
               <div className="rounded-lg bg-white/[0.03] p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Tokens</p>
-                <p className="text-lg font-bold text-primary">{(stats?.totalTokens || 0).toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground/50">across all models</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Daily Avg</p>
+                <p className="text-lg font-bold text-primary">${(vpsAnalytics?.burn_rate.daily_avg_usd || 0).toFixed(4)}</p>
+              </div>
+              <div className="rounded-lg bg-white/[0.03] p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Proj. Monthly</p>
+                <p className="text-lg font-bold text-primary">${(vpsAnalytics?.burn_rate.projected_monthly || 0).toFixed(4)}</p>
               </div>
             </div>
 
-            {/* Per-model breakdown */}
-            <div>
-              <p className="text-xs font-semibold mb-2">Cost by Model</p>
+            {/* Tab buttons */}
+            <div className="flex gap-1 p-1 rounded-lg bg-white/[0.03]">
+              {(["model", "agent", "daily"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setCostDetailTab(tab)}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize",
+                    costDetailTab === tab
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab === "model" ? "By Model" : tab === "agent" ? "By Agent" : "Daily"}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab content */}
+            <ScrollArea className="max-h-64">
               <div className="space-y-1.5">
-                {stats?.costByModel && Object.entries(stats.costByModel)
-                  .sort(([, a], [, b]) => b.cost - a.cost)
-                  .map(([model, data]) => {
-                    const shortName = model.split("/").pop() || model;
-                    return (
-                      <div key={model} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium truncate">{shortName}</p>
-                          <p className="text-[10px] text-muted-foreground/50">
-                            {data.calls} calls · {data.tokens.toLocaleString()} tokens
+                {costDetailTab === "model" && (
+                  <>
+                    {stats?.costByModel && Object.entries(stats.costByModel)
+                      .sort(([, a], [, b]) => b.cost - a.cost)
+                      .map(([model, data]) => {
+                        const shortName = model.split("/").pop() || model;
+                        return (
+                          <div key={model} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate">{shortName}</p>
+                              <p className="text-[10px] text-muted-foreground/50">
+                                {data.calls} calls · {data.tokens.toLocaleString()} tokens
+                              </p>
+                            </div>
+                            <p className="text-xs font-mono font-medium text-yellow-400 shrink-0">
+                              ${data.cost.toFixed(4)}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    {(!stats?.costByModel || Object.keys(stats.costByModel).length === 0) && (
+                      <p className="text-xs text-muted-foreground/50 text-center py-4">No data</p>
+                    )}
+                  </>
+                )}
+
+                {costDetailTab === "agent" && (
+                  <>
+                    {vpsAnalytics?.by_agent && Object.entries(vpsAnalytics.by_agent)
+                      .filter(([, a]) => a.total_cost > 0 || a.calls > 0)
+                      .sort(([, a], [, b]) => b.total_cost - a.total_cost)
+                      .map(([agent, data]) => (
+                        <div key={agent} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate">{agent}</p>
+                            <p className="text-[10px] text-muted-foreground/50">
+                              {data.calls} calls · {(data.input_tokens + data.output_tokens).toLocaleString()} tokens
+                            </p>
+                          </div>
+                          <p className="text-xs font-mono font-medium text-yellow-400 shrink-0">
+                            ${data.total_cost.toFixed(4)}
                           </p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-mono font-medium text-yellow-400">
-                            ${data.cost.toFixed(4)}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                {(!stats?.costByModel || Object.keys(stats.costByModel).length === 0) && (
-                  <p className="text-xs text-muted-foreground/50 text-center py-4">No API calls recorded</p>
+                      ))}
+                    {!vpsAnalytics?.by_agent && (
+                      <p className="text-xs text-muted-foreground/50 text-center py-4">No data</p>
+                    )}
+                  </>
+                )}
+
+                {costDetailTab === "daily" && (
+                  <>
+                    {vpsAnalytics?.daily_last_30 && [...vpsAnalytics.daily_last_30]
+                      .reverse()
+                      .map((day) => {
+                        const d = new Date(day.date + "T12:00:00");
+                        const label = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+                        return (
+                          <div key={day.date} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium">{label}</p>
+                              <p className="text-[10px] text-muted-foreground/50">
+                                {day.calls} calls
+                              </p>
+                            </div>
+                            <p className="text-xs font-mono font-medium text-yellow-400 shrink-0">
+                              ${day.cost.toFixed(4)}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    {!vpsAnalytics?.daily_last_30?.length && (
+                      <p className="text-xs text-muted-foreground/50 text-center py-4">No data</p>
+                    )}
+                  </>
                 )}
               </div>
-            </div>
+            </ScrollArea>
 
-            {/* Total */}
+            {/* Footer */}
             <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Monthly overhead</span>
               <span className="text-sm font-bold font-mono">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</span>
