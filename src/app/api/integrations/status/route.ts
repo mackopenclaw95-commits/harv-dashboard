@@ -86,7 +86,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (data && data.length > 0) {
-      return NextResponse.json({ linked: true, user_id: data[0].user_id });
+      // Also look up the user's plan
+      const { data: profile } = await serviceClient
+        .from("profiles")
+        .select("plan")
+        .eq("id", data[0].user_id)
+        .single();
+      return NextResponse.json({
+        linked: true,
+        user_id: data[0].user_id,
+        plan: profile?.plan || "free",
+      });
     }
 
     return NextResponse.json({ linked: false });
