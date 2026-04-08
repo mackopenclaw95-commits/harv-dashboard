@@ -23,6 +23,11 @@ import {
   CheckCircle,
   Clock,
   Zap,
+  Ban,
+  Play,
+  FolderKanban,
+  CreditCard,
+  User,
 } from "lucide-react";
 import {
   Dialog,
@@ -31,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn, timeAgo } from "@/lib/utils";
+import { toast } from "sonner";
 import type { Profile } from "@/components/auth-provider";
 
 interface ModelCost {
@@ -73,6 +79,15 @@ export default function AdminPage() {
   const [sortBy, setSortBy] = useState<"joined" | "tokens" | "cost">("joined");
   const [filterPlan, setFilterPlan] = useState<"all" | "free" | "pro" | "max">("all");
   const [costDetailOpen, setCostDetailOpen] = useState(false);
+  const [userDetailId, setUserDetailId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<{
+    profile: Profile;
+    conversations: Array<{ id: string; title: string | null; agent_name: string; status: string; updated_at: string; messages: { count: number }[] }>;
+    documents: Record<string, unknown>[];
+    projects: Record<string, unknown>[];
+    usage: { today: number; total: number; totalTokens: number; totalCost: number } | null;
+  } | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
   const [costDetailTab, setCostDetailTab] = useState<"model" | "agent" | "daily">("model");
   const [vpsAnalytics, setVpsAnalytics] = useState<{
     by_agent: Record<string, { total_cost: number; calls: number; input_tokens: number; output_tokens: number }>;
@@ -129,6 +144,40 @@ export default function AdminPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function openUserDetail(userId: string) {
+    setUserDetailId(userId);
+    setUserDetail(null);
+    setUserDetailLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserDetail(data);
+      }
+    } catch {}
+    setUserDetailLoading(false);
+  }
+
+  async function toggleUserStatus(userId: string, action: "ban" | "activate") {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update in the modal
+        setUserDetail((prev) => prev ? { ...prev, profile: { ...prev.profile, plan_status: data.status } } : null);
+        // Update in the user list
+        setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, plan_status: data.status } : u));
+        toast.success(action === "ban" ? "User suspended" : "User activated");
+      }
+    } catch {
+      toast.error("Action failed");
+    }
+  }
 
   const filteredUsers = users
     .filter((u) => {
@@ -336,10 +385,10 @@ export default function AdminPage() {
                 {filteredUsers.map((u) => {
                   const uu = u as Profile & { usage_tokens?: number; usage_cost?: number; usage_messages?: number };
                   return (
-                  <Link
+                  <button
                     key={u.id}
-                    href={`/admin/users/${u.id}`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                    onClick={() => openUserDetail(u.id)}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors w-full text-left"
                   >
                     <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
                       {(u.name || u.email || "?").charAt(0).toUpperCase()}
@@ -396,7 +445,7 @@ export default function AdminPage() {
                       </p>
                     </div>
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
-                  </Link>
+                  </button>
                   );
                 })}
                 {filteredUsers.length === 0 && (
@@ -601,6 +650,153 @@ export default function AdminPage() {
               <span className="text-sm font-bold font-mono">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</span>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Detail Modal */}
+      <Dialog open={!!userDetailId} onOpenChange={(open) => { if (!open) { setUserDetailId(null); setUserDetail(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border-white/[0.08]">
+          {userDetailLoading ? (
+            <div className="space-y-4 py-4">
+              <Skeleton className="h-12 w-48" />
+              <Skeleton className="h-20 rounded-xl" />
+              <div className="grid grid-cols-3 gap-4">
+                <Skeleton className="h-32 rounded-xl" />
+                <Skeleton className="h-32 rounded-xl" />
+                <Skeleton className="h-32 rounded-xl" />
+              </div>
+            </div>
+          ) : userDetail?.profile ? (
+            <>
+              {/* Header */}
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
+                    {(userDetail.profile.name || userDetail.profile.email || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <DialogTitle className="text-base">{userDetail.profile.name || "Unnamed"}</DialogTitle>
+                      <Badge variant="outline" className={cn("text-[9px]", userDetail.profile.plan === "pro" && "text-primary border-primary/30", userDetail.profile.plan === "max" && "text-yellow-400 border-yellow-500/30")}>
+                        {userDetail.profile.plan}
+                      </Badge>
+                      <Badge variant="outline" className={cn("text-[9px]", userDetail.profile.plan_status === "active" && "text-green-400 border-green-500/30", userDetail.profile.plan_status === "trial" && "text-yellow-400 border-yellow-500/30", userDetail.profile.plan_status === "cancelled" && "text-red-400 border-red-500/30")}>
+                        {userDetail.profile.plan_status}
+                      </Badge>
+                      {userDetail.profile.role !== "user" && (
+                        <Badge className="text-[9px] bg-primary/20 text-primary border-0">{userDetail.profile.role}</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{userDetail.profile.email}</p>
+                  </div>
+                  <div className="shrink-0">
+                    {userDetail.profile.plan_status !== "cancelled" ? (
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => userDetailId && toggleUserStatus(userDetailId, "ban")}>
+                        <Ban className="h-3 w-3" /> Suspend
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/10" onClick={() => userDetailId && toggleUserStatus(userDetailId, "activate")}>
+                        <Play className="h-3 w-3" /> Activate
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </DialogHeader>
+
+              {/* Details grid */}
+              <div className="grid grid-cols-5 gap-3 text-xs rounded-xl bg-white/[0.02] p-3">
+                <div><p className="text-[9px] text-muted-foreground uppercase">Joined</p><p className="font-medium mt-0.5">{timeAgo(userDetail.profile.created_at)}</p></div>
+                <div><p className="text-[9px] text-muted-foreground uppercase">Role</p><p className="font-medium mt-0.5">{userDetail.profile.role}</p></div>
+                <div><p className="text-[9px] text-muted-foreground uppercase">Stripe</p><p className="font-mono text-[10px] mt-0.5 truncate">{userDetail.profile.stripe_customer_id || "—"}</p></div>
+                <div><p className="text-[9px] text-muted-foreground uppercase">Onboarded</p><p className="font-medium mt-0.5">{userDetail.profile.onboarded ? "Yes" : "No"}</p></div>
+                <div><p className="text-[9px] text-muted-foreground uppercase">Promo</p><p className="font-medium mt-0.5">{userDetail.profile.promo_code || "—"}</p></div>
+              </div>
+
+              {/* Usage stats */}
+              {userDetail.usage && (
+                <div className="grid grid-cols-4 gap-3 text-xs">
+                  <div className="rounded-lg bg-white/[0.03] p-3">
+                    <p className="text-[9px] text-muted-foreground uppercase">Today</p>
+                    <p className="text-lg font-bold mt-0.5">{userDetail.usage.today}</p>
+                  </div>
+                  <div className="rounded-lg bg-white/[0.03] p-3">
+                    <p className="text-[9px] text-muted-foreground uppercase">All Time</p>
+                    <p className="text-lg font-bold mt-0.5">{userDetail.usage.total}</p>
+                  </div>
+                  <div className="rounded-lg bg-white/[0.03] p-3">
+                    <p className="text-[9px] text-muted-foreground uppercase">Tokens</p>
+                    <p className="text-lg font-bold mt-0.5">{userDetail.usage.totalTokens.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg bg-white/[0.03] p-3">
+                    <p className="text-[9px] text-muted-foreground uppercase">API Cost</p>
+                    <p className="text-lg font-bold mt-0.5">${userDetail.usage.totalCost.toFixed(4)}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Data sections */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Conversations */}
+                <div>
+                  <p className="text-xs font-semibold flex items-center gap-1.5 mb-2"><MessageSquare className="h-3.5 w-3.5 text-primary" /> Conversations ({userDetail.conversations?.length || 0})</p>
+                  <ScrollArea className="max-h-40">
+                    <div className="space-y-1">
+                      {(userDetail.conversations || []).map((c) => (
+                        <div key={c.id} className="px-2 py-1.5 rounded-lg hover:bg-white/[0.03] text-[11px]">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium truncate flex-1">{c.title || "Untitled"}</span>
+                            <Badge variant="outline" className="text-[8px] px-1">{c.agent_name}</Badge>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground/50">{c.messages?.[0]?.count || 0} msgs · {timeAgo(c.updated_at)}</p>
+                        </div>
+                      ))}
+                      {(!userDetail.conversations || userDetail.conversations.length === 0) && (
+                        <p className="text-[10px] text-muted-foreground/40 text-center py-3">None</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                {/* Files */}
+                <div>
+                  <p className="text-xs font-semibold flex items-center gap-1.5 mb-2"><FileText className="h-3.5 w-3.5 text-blue-400" /> Files ({userDetail.documents?.length || 0})</p>
+                  <ScrollArea className="max-h-40">
+                    <div className="space-y-1">
+                      {(userDetail.documents || []).map((d) => (
+                        <div key={String(d.id)} className="px-2 py-1.5 rounded-lg hover:bg-white/[0.03] text-[11px]">
+                          <span className="font-medium truncate block">{String(d.filename)}</span>
+                          <p className="text-[9px] text-muted-foreground/50">{String(d.file_type)} · {timeAgo(String(d.created_at))}</p>
+                        </div>
+                      ))}
+                      {(!userDetail.documents || userDetail.documents.length === 0) && (
+                        <p className="text-[10px] text-muted-foreground/40 text-center py-3">None</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                {/* Projects */}
+                <div>
+                  <p className="text-xs font-semibold flex items-center gap-1.5 mb-2"><FolderKanban className="h-3.5 w-3.5 text-yellow-400" /> Projects ({userDetail.projects?.length || 0})</p>
+                  <ScrollArea className="max-h-40">
+                    <div className="space-y-1">
+                      {(userDetail.projects || []).map((p) => (
+                        <div key={String(p.id)} className="px-2 py-1.5 rounded-lg hover:bg-white/[0.03] text-[11px]">
+                          <span className="font-medium truncate block">{String(p.name)}</span>
+                          <p className="text-[9px] text-muted-foreground/50">{timeAgo(String(p.updated_at))}</p>
+                        </div>
+                      ))}
+                      {(!userDetail.projects || userDetail.projects.length === 0) && (
+                        <p className="text-[10px] text-muted-foreground/40 text-center py-3">None</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="py-8 text-center text-sm text-muted-foreground">User not found</div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
