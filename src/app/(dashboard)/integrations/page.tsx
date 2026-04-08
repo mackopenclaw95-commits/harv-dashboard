@@ -638,7 +638,7 @@ export default function IntegrationsPage() {
                   <div className="rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 space-y-2">
                     <p className="text-sm font-medium">
                       {isTelegram
-                        ? "Send this to @HarvAIBot on Telegram:"
+                        ? "Send this to @OpenclawHarvbot on Telegram:"
                         : "Send this to Harv on WhatsApp:"
                       }
                     </p>
@@ -647,7 +647,7 @@ export default function IntegrationsPage() {
                     </div>
                     <p className="text-[11px] text-muted-foreground">
                       {isTelegram
-                        ? "Open Telegram, find @HarvAIBot, and send the command above."
+                        ? "Open Telegram, find @OpenclawHarvbot, and send the command above."
                         : "Open WhatsApp and send the command above to the Harv number."
                       }
                     </p>
