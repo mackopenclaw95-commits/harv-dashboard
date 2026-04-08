@@ -46,10 +46,9 @@ export async function POST(req: NextRequest) {
     if (profile.stripe_subscription_id) {
       try {
         const sub = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
-        const raw = (sub as Record<string, unknown>).current_period_start;
-        const periodStart = typeof raw === "number"
-          ? new Date(raw > 1e12 ? raw : raw * 1000)  // handle seconds vs ms
-          : new Date(String(raw));
+        const raw = (sub as unknown as Record<string, unknown>).current_period_start as number | string;
+        const ts = typeof raw === "number" ? (raw > 1e12 ? raw : raw * 1000) : Date.parse(String(raw));
+        const periodStart = new Date(ts);
         if (!isNaN(periodStart.getTime())) {
           daysSincePeriodStart = (Date.now() - periodStart.getTime()) / 86400000;
         }
