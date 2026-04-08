@@ -206,12 +206,9 @@ export default function AdminPage() {
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">API Cost</span>
               <span className="text-[9px] text-primary/60 ml-auto">Details →</span>
             </div>
-            <p className="text-2xl font-bold mt-1">${(stats?.openrouterCost || 0).toFixed(4)}</p>
+            <p className="text-2xl font-bold mt-1">${(stats?.totalApiCost || 0).toFixed(4)}</p>
             <p className="text-[10px] text-muted-foreground/50 mt-0.5">
               OpenRouter (pay-per-use)
-            </p>
-            <p className="text-[10px] text-muted-foreground/40 mt-0.5">
-              Claude: ${(stats?.claudeCost || 0).toFixed(4)} (included in $200)
             </p>
             {stats?.lastCostEvent && (
               <p className="text-[9px] text-muted-foreground/30 mt-0.5">
@@ -226,8 +223,8 @@ export default function AdminPage() {
               <Zap className="h-4 w-4 text-red-400" />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Monthly Overhead</span>
             </div>
-            <p className="text-2xl font-bold mt-1">${(217.99 + (stats?.openrouterCost || 0)).toFixed(2)}</p>
-            <p className="text-[10px] text-muted-foreground/50 mt-0.5">$200 Claude + $17.99 VPS + OpenRouter</p>
+            <p className="text-2xl font-bold mt-1">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">$17.99 VPS + OpenRouter API</p>
           </CardContent>
         </Card>
         <Card>
@@ -442,11 +439,11 @@ export default function AdminPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className={cn("text-2xl font-bold", ((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.openrouterCost || 0)) >= 0 ? "text-green-400" : "text-red-400")}>
-                ${((stats?.paidUsers || 0) * 20 - 217.99 - (stats?.openrouterCost || 0)).toFixed(2)}
+              <p className={cn("text-2xl font-bold", ((stats?.paidUsers || 0) * 20 - 17.99 - (stats?.totalApiCost || 0)) >= 0 ? "text-green-400" : "text-red-400")}>
+                ${((stats?.paidUsers || 0) * 20 - 17.99 - (stats?.totalApiCost || 0)).toFixed(2)}
               </p>
               <p className="text-xs text-muted-foreground">
-                Revenue - Overhead
+                Revenue - Overhead ($17.99 VPS + API)
               </p>
             </CardContent>
           </Card>
@@ -466,14 +463,14 @@ export default function AdminPage() {
             {/* Summary */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-white/[0.03] p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">OpenRouter</p>
-                <p className="text-lg font-bold text-yellow-400">${(stats?.openrouterCost || 0).toFixed(4)}</p>
-                <p className="text-[10px] text-muted-foreground/50">pay-per-use</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total API Cost</p>
+                <p className="text-lg font-bold text-yellow-400">${(stats?.totalApiCost || 0).toFixed(4)}</p>
+                <p className="text-[10px] text-muted-foreground/50">OpenRouter pay-per-use</p>
               </div>
               <div className="rounded-lg bg-white/[0.03] p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Claude</p>
-                <p className="text-lg font-bold text-muted-foreground">${(stats?.claudeCost || 0).toFixed(4)}</p>
-                <p className="text-[10px] text-muted-foreground/50">included in $200</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Tokens</p>
+                <p className="text-lg font-bold text-primary">{(stats?.totalTokens || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground/50">across all models</p>
               </div>
             </div>
 
@@ -484,7 +481,6 @@ export default function AdminPage() {
                 {stats?.costByModel && Object.entries(stats.costByModel)
                   .sort(([, a], [, b]) => b.cost - a.cost)
                   .map(([model, data]) => {
-                    const isIncluded = model.startsWith("claude-");
                     const shortName = model.split("/").pop() || model;
                     return (
                       <div key={model} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
@@ -495,12 +491,9 @@ export default function AdminPage() {
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={cn("text-xs font-mono font-medium", isIncluded ? "text-muted-foreground/60" : "text-yellow-400")}>
+                          <p className="text-xs font-mono font-medium text-yellow-400">
                             ${data.cost.toFixed(4)}
                           </p>
-                          {isIncluded && (
-                            <p className="text-[9px] text-muted-foreground/40">included</p>
-                          )}
                         </div>
                       </div>
                     );
@@ -513,12 +506,8 @@ export default function AdminPage() {
 
             {/* Total */}
             <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Total (all models)</span>
-              <span className="text-sm font-bold font-mono">${(stats?.totalApiCost || 0).toFixed(4)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Total tokens</span>
-              <span className="text-sm font-bold font-mono">{(stats?.totalTokens || 0).toLocaleString()}</span>
+              <span className="text-xs text-muted-foreground">Monthly overhead</span>
+              <span className="text-sm font-bold font-mono">${(17.99 + (stats?.totalApiCost || 0)).toFixed(2)}</span>
             </div>
           </div>
         </DialogContent>
