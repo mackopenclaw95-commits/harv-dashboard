@@ -20,8 +20,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No billing account found" }, { status: 404 });
     }
 
+    // Create a portal config that only allows payment method updates
+    // (cancel/downgrade is handled by our custom proration system)
+    const config = await stripe.billingPortal.configurations.create({
+      business_profile: {
+        headline: "Manage your HarvAI subscription",
+      },
+      features: {
+        payment_method_update: { enabled: true },
+        invoice_history: { enabled: true },
+        subscription_cancel: { enabled: false },
+        subscription_update: { enabled: false },
+      },
+    });
+
     const session = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
+      configuration: config.id,
       return_url: `${req.headers.get("origin") || "http://localhost:3000"}/settings?tab=billing`,
     });
 
