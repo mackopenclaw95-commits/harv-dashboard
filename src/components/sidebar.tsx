@@ -38,7 +38,6 @@ const NAV_ITEMS = [
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/documents", label: "Files", icon: FolderOpen },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 // Secondary tabs — moved to profile dropdown
@@ -206,7 +205,15 @@ export const Sidebar = React.memo(function Sidebar() {
 
             <div className="mx-3 my-1 border-t border-white/[0.06]" />
 
-            {/* Quick actions */}
+            {/* Settings & quick actions */}
+            <Link
+              href="/settings"
+              onClick={() => setProfileMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors mx-1 rounded-lg"
+            >
+              <Settings className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline">Settings</span>
+            </Link>
             <button
               onClick={() => { setProfileMenuOpen(false); router.push("/settings?tab=billing"); }}
               className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors w-full mx-1 rounded-lg"
