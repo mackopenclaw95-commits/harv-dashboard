@@ -1,11 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { AuthProvider } from "@/components/auth-provider";
 import { PersonalityProvider } from "@/components/personality-provider";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { NotificationProvider } from "@/components/notification-provider";
-import { TourProvider } from "@/components/tour/tour-provider";
 import { Sidebar } from "@/components/sidebar";
+
+const TourProvider = dynamic(
+  () => import("@/components/tour/tour-provider").then((m) => m.TourProvider),
+  { ssr: false }
+);
 
 export default function DashboardLayout({
   children,

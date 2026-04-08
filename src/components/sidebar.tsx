@@ -45,7 +45,7 @@ const ADMIN_ITEMS = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
-export function Sidebar() {
+export const Sidebar = React.memo(function Sidebar() {
   const pathname = usePathname();
   const { isAdmin } = useAuth();
   const [isKachow, setIsKachow] = useState(false);
@@ -58,18 +58,12 @@ export function Sidebar() {
   if (pathname?.startsWith("/auth")) return null;
 
   useEffect(() => {
-    // Check on mount
     setIsKachow(document.documentElement.classList.contains("kachow"));
-    // Listen for changes
     function handleChange(e: Event) {
       setIsKachow((e as CustomEvent).detail === "cars1");
     }
     window.addEventListener("personality-change", handleChange);
-    // Also poll briefly for initial load
-    const timer = setTimeout(() => {
-      setIsKachow(document.documentElement.classList.contains("kachow"));
-    }, 2000);
-    return () => { window.removeEventListener("personality-change", handleChange); clearTimeout(timer); };
+    return () => window.removeEventListener("personality-change", handleChange);
   }, []);
 
   return (
@@ -166,4 +160,4 @@ export function Sidebar() {
       </div>
     </aside>
   );
-}
+});

@@ -427,6 +427,8 @@ function DocumentGridCard({
           <img
             src={previewUrl}
             alt={doc.filename}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
           />
         ) : (
