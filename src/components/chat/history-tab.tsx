@@ -103,7 +103,7 @@ export function HistoryTab() {
 
   function openConversation(agentName: string, conversationId: string) {
     if (agentName === "Harv") {
-      router.push(`/chat?conversation=${conversationId}`);
+      router.push(`/chat?tab=harv&conversation=${conversationId}`);
     } else {
       router.push(
         `/chat?tab=agents&agent=${encodeURIComponent(agentName)}&conversation=${conversationId}`
