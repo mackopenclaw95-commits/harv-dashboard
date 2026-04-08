@@ -147,7 +147,7 @@ function chartDateLabel(dateStr: string) {
 }
 
 export default function AnalyticsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -161,7 +161,6 @@ export default function AnalyticsPage() {
   const [showAllAgents, setShowAllAgents] = useState(false);
 
   const load = async () => {
-    if (!isAdmin) { setLoading(false); setData(null); return; }
     setLoading(true);
     setError(false);
     try {
@@ -178,10 +177,15 @@ export default function AnalyticsPage() {
     }
   };
 
-  useEffect(() => { load(); }, [isAdmin]);
+  // Wait for auth to resolve before loading
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAdmin) { setLoading(false); setData(null); return; }
+    load();
+  }, [isAdmin, authLoading]);
 
   useEffect(() => {
-    if (chartView !== "daily" || !isAdmin) return;
+    if (chartView !== "daily" || !isAdmin || authLoading) return;
     async function loadHourly() {
       setHourlyLoading(true);
       try {
@@ -226,6 +230,24 @@ export default function AnalyticsPage() {
           <Card><CardContent className="pt-6 space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}</CardContent></Card>
           <Card><CardContent className="pt-6 space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}</CardContent></Card>
         </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin && !authLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-full">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 ring-1 ring-amber-500/20">
+              <BarChart3 className="h-7 w-7 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold mb-1">Admin Only</h2>
+              <p className="text-sm text-muted-foreground">Analytics are only available to admin accounts.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
