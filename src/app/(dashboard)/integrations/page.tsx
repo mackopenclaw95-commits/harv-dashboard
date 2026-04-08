@@ -89,6 +89,10 @@ export default function IntegrationsPage() {
   const [setupDialog, setSetupDialog] = useState<Integration | null>(null);
   const [successDialog, setSuccessDialog] = useState<Integration | null>(null);
   const [googleInfo, setGoogleInfo] = useState<{ connectedAt: string | null; scopes: string[] }>({ connectedAt: null, scopes: [] });
+  // Link code flow state
+  const [linkDialog, setLinkDialog] = useState<{ integration: Integration; code: string; expiresAt: number } | null>(null);
+  const [linkPolling, setLinkPolling] = useState(false);
+  const [, setTick] = useState(0); // force re-render for countdown
 
   // Hydrate statuses + handle OAuth callback
   useEffect(() => {
@@ -127,6 +131,23 @@ export default function IntegrationsPage() {
     if (googleConnected) {
       setGoogleInfo(getGoogleConnectionInfo());
     }
+
+    // Fetch real integration statuses from Supabase
+    fetch("/api/integrations/status")
+      .then((r) => r.json())
+      .then((data) => {
+        const linked = data.integrations || [];
+        setIntegrations((prev) =>
+          prev.map((i) => {
+            const match = linked.find((l: { provider: string; status: string }) => l.provider === i.id);
+            if (match && match.status === "active") {
+              return { ...i, status: "connected" as const, connectedAt: match.connected_at };
+            }
+            return i;
+          })
+        );
+      })
+      .catch(() => {});
   }, [searchParams]);
 
   const handleConnect = useCallback((integration: Integration) => {
@@ -144,12 +165,12 @@ export default function IntegrationsPage() {
     );
   }, []);
 
-  const handleConfirmConnect = useCallback((integration: Integration) => {
+  const handleConfirmConnect = useCallback(async (integration: Integration) => {
     setSetupDialog(null);
+
     if (integration.id === "google") {
       setConnecting("google");
       try {
-        // Override redirect to come back to integrations page
         const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
         const redirectUri = `${window.location.origin}/api/auth/google/callback`;
         const params = new URLSearchParams({
@@ -166,10 +187,74 @@ export default function IntegrationsPage() {
         toast.error("Failed to start Google auth");
         setConnecting(null);
       }
+      return;
+    }
+
+    // Telegram / WhatsApp — generate link code
+    if (integration.id === "telegram" || integration.id === "whatsapp") {
+      setConnecting(integration.id);
+      try {
+        const res = await fetch("/api/integrations/link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: integration.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to generate code");
+        setLinkDialog({
+          integration,
+          code: data.code,
+          expiresAt: Date.now() + data.expires_in * 1000,
+        });
+        setLinkPolling(true);
+      } catch (err) {
+        toast.error(String(err));
+      } finally {
+        setConnecting(null);
+      }
     }
   }, []);
 
-  const handleDisconnect = useCallback((integration: Integration) => {
+  // Countdown timer for link dialog
+  useEffect(() => {
+    if (!linkDialog) return;
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [linkDialog]);
+
+  // Poll for link code verification
+  useEffect(() => {
+    if (!linkPolling || !linkDialog) return;
+    const interval = setInterval(async () => {
+      // Check if expired
+      if (Date.now() > linkDialog.expiresAt) {
+        setLinkPolling(false);
+        toast.error("Link code expired. Generate a new one.");
+        setLinkDialog(null);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/integrations/status?provider=${linkDialog.integration.id}`);
+        const data = await res.json();
+        const match = (data.integrations || []).find((i: { status: string }) => i.status === "active");
+        if (match) {
+          setLinkPolling(false);
+          setLinkDialog(null);
+          setIntegrations((prev) =>
+            prev.map((i) =>
+              i.id === linkDialog.integration.id
+                ? { ...i, status: "connected", connectedAt: match.connected_at }
+                : i
+            )
+          );
+          setSuccessDialog(linkDialog.integration);
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [linkPolling, linkDialog]);
+
+  const handleDisconnect = useCallback(async (integration: Integration) => {
     if (integration.id === "google") {
       disconnectGoogle();
       setIntegrations((prev) =>
@@ -177,6 +262,23 @@ export default function IntegrationsPage() {
       );
       setGoogleInfo({ connectedAt: null, scopes: [] });
       toast.success("Google disconnected");
+      return;
+    }
+    // Telegram / WhatsApp — unlink via API
+    try {
+      const res = await fetch("/api/integrations/unlink", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: integration.id }),
+      });
+      if (res.ok) {
+        setIntegrations((prev) =>
+          prev.map((i) => i.id === integration.id ? { ...i, status: "disconnected" } : i)
+        );
+        toast.success(`${integration.name} disconnected`);
+      }
+    } catch {
+      toast.error("Failed to disconnect");
     }
   }, []);
 
@@ -495,6 +597,73 @@ export default function IntegrationsPage() {
                     )}
                   </div>
                 )}
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Link Code Dialog ── */}
+      <Dialog open={!!linkDialog} onOpenChange={() => { setLinkDialog(null); setLinkPolling(false); }}>
+        <DialogContent className="max-w-sm">
+          {linkDialog && (() => {
+            const Icon = linkDialog.integration.icon;
+            const isTelegram = linkDialog.integration.id === "telegram";
+            const remaining = Math.max(0, Math.ceil((linkDialog.expiresAt - Date.now()) / 1000));
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            return (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <DialogTitle className="text-base">Link {linkDialog.integration.name}</DialogTitle>
+                      <p className="text-xs text-muted-foreground">Send this code to verify your account</p>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <div className="space-y-4 mt-3">
+                  {/* The code */}
+                  <div className="flex items-center justify-center">
+                    <div className="font-mono text-4xl font-bold tracking-[0.3em] text-primary bg-primary/5 rounded-xl px-6 py-4 ring-1 ring-primary/20">
+                      {linkDialog.code}
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 space-y-2">
+                    <p className="text-sm font-medium">
+                      {isTelegram
+                        ? "Send this to @HarvAIBot on Telegram:"
+                        : "Send this to Harv on WhatsApp:"
+                      }
+                    </p>
+                    <div className="font-mono text-sm bg-white/[0.04] rounded-lg px-3 py-2 text-primary">
+                      /link {linkDialog.code}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {isTelegram
+                        ? "Open Telegram, find @HarvAIBot, and send the command above."
+                        : "Open WhatsApp and send the command above to the Harv number."
+                      }
+                    </p>
+                  </div>
+
+                  {/* Polling status */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                      Waiting for verification...
+                    </div>
+                    <span className="font-mono">
+                      {minutes}:{String(seconds).padStart(2, "0")}
+                    </span>
+                  </div>
+                </div>
               </>
             );
           })()}

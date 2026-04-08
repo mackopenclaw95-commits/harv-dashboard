@@ -128,8 +128,8 @@ export const INTEGRATIONS: Integration[] = [
     icon: MessageSquare,
     description: "Chat with Harv directly in Telegram — send commands, get notifications",
     category: "communication",
-    status: "vps_active",
-    hasAuth: false,
+    status: "disconnected",
+    hasAuth: true,
     setupGuide: {
       features: [
         "Chat with Harv directly in Telegram",
@@ -172,8 +172,8 @@ export const INTEGRATIONS: Integration[] = [
     icon: MessageSquare,
     description: "Message Harv via WhatsApp — powered by Twilio",
     category: "communication",
-    status: "vps_active",
-    hasAuth: false,
+    status: "disconnected",
+    hasAuth: true,
     setupGuide: {
       features: [
         "Chat with Harv via WhatsApp",
