@@ -366,7 +366,36 @@ SUPABASE_SERVICE_ROLE_KEY=<redacted>
 
 ---
 
-## Recent Changes (2026-04-08) — P2 Sprint
+## Recent Changes (2026-04-08) — Multi-User Integrations
+
+### Telegram Integration (Full End-to-End)
+- `user_integrations` Supabase table for account linking (provider, external_id, status, link_code)
+- 4 API routes: /api/integrations/{link, verify, status, unlink}
+- Dashboard: setup guide dialogs, 6-digit link code flow with 3s polling, success dialog
+- VPS: @HarvAI_bot with /link command, Supabase auth, user-scoped sessions (tg-{user_id})
+- Plan routing: bot looks up user's plan via dashboard API, passes to Flask, correct model used
+- Conversations saved to Supabase conversations + messages tables per user
+- Usage logged to usage_logs per user
+- User context: [USER] Name/Email/Plan/Source [/USER] injected into each message
+
+### Google OAuth Expanded
+- Scopes: Calendar + Gmail + Drive + Docs + Sheets (all granted in one consent)
+- Vercel env vars configured (NEXT_PUBLIC_GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
+- Setup guide + post-connect confirmation dialogs
+
+### WhatsApp Integration (Code Ready, Hidden)
+- Same architecture as Telegram, hidden until dedicated phone number available
+- Shows as "Coming Soon — Q3 2026"
+
+### VPS Changes
+- Flask /chat (port 5050) forwards plan, model_tier, user_id, source to harv_brain
+- Flask saves conversations + usage to Supabase for linked users
+- Telegram bot token: @HarvAI_bot (8772238863)
+- HARV_DASHBOARD_URL=https://harv-dashboard.vercel.app added to .env
+
+---
+
+## Previous Changes (2026-04-08) — P2 Sprint
 
 ### Standalone Integrations Page
 - New `/integrations` route with full integration management
