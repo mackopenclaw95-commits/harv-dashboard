@@ -689,17 +689,10 @@ export default function IntegrationsPage() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 mt-3 w-full">
-                    {successDialog.id === "google" && (
-                      <Button className="flex-1" size="sm" onClick={() => { setSuccessDialog(null); window.location.href = "/calendar"; }}>
-                        <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                        Go to Calendar
-                      </Button>
-                    )}
+                  <div className="mt-3 w-full">
                     <Button
-                      variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="w-full"
                       onClick={() => setSuccessDialog(null)}
                     >
                       Done
