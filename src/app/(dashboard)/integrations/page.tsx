@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Link2, Check, Unplug, Bell, Loader2, ArrowRight,
+  Link2, Check, Unplug, Bell, Loader2, ArrowRight, Copy,
   Server, Clock, ChevronRight, Sparkles, Shield, Info,
   Calendar, CheckCircle,
 } from "lucide-react";
@@ -632,9 +632,13 @@ export default function IntegrationsPage() {
                   {/* Instructions */}
                   <div className="rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 space-y-2">
                     <p className="text-sm font-medium">{inst.where}</p>
-                    <div className="font-mono text-sm bg-white/[0.04] rounded-lg px-3 py-2 text-primary">
-                      /link {linkDialog.code}
-                    </div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(`/link ${linkDialog.code}`); toast.success("Copied to clipboard"); }}
+                      className="w-full flex items-center justify-between font-mono text-sm bg-white/[0.04] hover:bg-white/[0.07] rounded-lg px-3 py-2 text-primary transition-colors cursor-pointer"
+                    >
+                      <span>/link {linkDialog.code}</span>
+                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
                     <p className="text-[11px] text-muted-foreground">{inst.how}</p>
                     {"link" in inst && (inst as { link?: string }).link && (
                       <a
