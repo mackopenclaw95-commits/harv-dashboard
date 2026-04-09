@@ -62,6 +62,13 @@ export function HistoryTab({ onOpenConversation }: HistoryTabProps = {}) {
 
   useEffect(() => {
     loadConversations(statusFilter);
+    // Auto-refresh every 10 seconds to pick up new Telegram/Discord messages
+    const interval = setInterval(() => {
+      getRecentConversations(100, undefined, statusFilter)
+        .then((convos) => setConversations(convos as ConversationWithMeta[]))
+        .catch(() => {});
+    }, 10000);
+    return () => clearInterval(interval);
   }, [statusFilter, loadConversations]);
 
   useEffect(() => {
