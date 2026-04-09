@@ -603,7 +603,7 @@ export default function IntegrationsPage() {
             const seconds = remaining % 60;
             const instructions = {
               telegram: { where: "Send this to @HarvAI_bot on Telegram:", how: "Open Telegram, find @HarvAI_bot, and send the command above." },
-              discord: { where: "Use this slash command in the Harv AI Discord server:", how: "Open Discord, go to any channel in the Harv AI server, and type the command above.", link: "https://discord.gg/HbBEKTyXZE" },
+              discord: { where: "Use this slash command in Discord (DM or server):", how: "DM the Harv bot directly, or use /link in any channel of a server the bot is in.", link: "https://discord.com/oauth2/authorize?client_id=1491649290785784041&permissions=311385245712&integration_type=0&scope=bot+applications.commands" },
               whatsapp: { where: "Send this to Harv on WhatsApp:", how: "Open WhatsApp and send the command above to the Harv number." },
             };
             const inst = instructions[provider as keyof typeof instructions] || instructions.telegram;
@@ -643,7 +643,7 @@ export default function IntegrationsPage() {
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 mt-2 rounded-lg bg-primary/10 ring-1 ring-primary/20 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/15 transition-colors"
                       >
-                        Join Harv AI Server
+                        Add Harv Bot to Discord
                         <ArrowRight className="h-3 w-3" />
                       </a>
                     )}
