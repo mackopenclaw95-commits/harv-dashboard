@@ -164,7 +164,7 @@ export const INTEGRATIONS: Integration[] = [
       ],
       permissions: ["Your Discord account will be linked to your Harv account"],
       steps: [
-        "Join the Harv AI Discord server",
+        "Join the Harv AI Discord server (link provided below)",
         "Copy the 6-digit code shown below",
         "Use /link <code> in any channel on the server",
         "You'll be verified and can start chatting",
