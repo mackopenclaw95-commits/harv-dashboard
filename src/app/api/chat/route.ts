@@ -1,3 +1,6 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
 export async function POST(req: Request) {
   const { messages, context, plan, model_tier } = await req.json();
   const lastMessage = messages[messages.length - 1]?.content || "";
@@ -6,6 +9,26 @@ export async function POST(req: Request) {
     process.env.API_URL ||
     "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
   const API_KEY = process.env.HARV_API_KEY || "";
+
+  // Get user info for cross-platform context
+  let userId = "";
+  let userName = "";
+  let userEmail = "";
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} } }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      userId = user.id;
+      userName = user.user_metadata?.name || user.user_metadata?.full_name || "";
+      userEmail = user.email || "";
+    }
+  } catch {}
+
 
   // If project context is provided, prepend it so Harv has awareness
   const messageWithContext = context
@@ -20,7 +43,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
         "X-API-Key": API_KEY,
       },
-      body: JSON.stringify({ message: messageWithContext, stream: true, plan: plan || "free", model_tier: model_tier || "primary" }),
+      body: JSON.stringify({ message: messageWithContext, stream: true, plan: plan || "free", model_tier: model_tier || "primary", user_id: userId, source: "dashboard", user_name: userName, user_email: userEmail }),
     });
 
     if (
@@ -47,7 +70,7 @@ export async function POST(req: Request) {
       "Content-Type": "application/json",
       "X-API-Key": API_KEY,
     },
-    body: JSON.stringify({ message: messageWithContext }),
+    body: JSON.stringify({ message: messageWithContext, plan: plan || "free", model_tier: model_tier || "primary", user_id: userId, source: "dashboard", user_name: userName, user_email: userEmail }),
   });
 
   if (!response.ok) {
