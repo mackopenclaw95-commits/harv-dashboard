@@ -128,7 +128,7 @@ export const INTEGRATIONS: Integration[] = [
     id: "telegram",
     name: "Telegram",
     icon: MessageSquare,
-    description: "Chat with Harv directly in Telegram — send commands, get notifications",
+    description: "Message Harv on the go — chat, run commands, and get notifications from your phone",
     category: "communication",
     status: "disconnected",
     hasAuth: true,
