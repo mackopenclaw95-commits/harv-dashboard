@@ -171,18 +171,7 @@ export default function IntegrationsPage() {
     if (integration.id === "google") {
       setConnecting("google");
       try {
-        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
-        const redirectUri = `${window.location.origin}/api/auth/google/callback`;
-        const params = new URLSearchParams({
-          client_id: clientId,
-          redirect_uri: redirectUri,
-          response_type: "code",
-          scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events",
-          access_type: "offline",
-          prompt: "consent",
-          state: "from_integrations",
-        });
-        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+        window.location.href = getGoogleAuthUrl("from_integrations");
       } catch {
         toast.error("Failed to start Google auth");
         setConnecting(null);

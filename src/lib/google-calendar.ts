@@ -111,7 +111,7 @@ export function getGoogleConnectionInfo(): { connectedAt: string | null; scopes:
 }
 
 /** Build the Google OAuth consent URL. */
-export function getGoogleAuthUrl(): string {
+export function getGoogleAuthUrl(state?: string): string {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
   const redirectUri = `${window.location.origin}/api/auth/google/callback`;
   const params = new URLSearchParams({
@@ -122,6 +122,7 @@ export function getGoogleAuthUrl(): string {
     access_type: "offline",
     prompt: "consent",
   });
+  if (state) params.set("state", state);
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
 }
 
