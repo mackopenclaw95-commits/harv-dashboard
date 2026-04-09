@@ -152,11 +152,24 @@ export const INTEGRATIONS: Integration[] = [
     id: "discord",
     name: "Discord",
     icon: MessageSquare,
-    description: "Server bots, webhook notifications, and channel alerts",
+    description: "Chat with Harv in Discord — each channel routes to a different agent",
     category: "communication",
-    status: "coming_soon",
-    hasAuth: false,
-    eta: "Q3 2026",
+    status: "disconnected",
+    hasAuth: true,
+    setupGuide: {
+      features: [
+        "Chat with Harv in #general — auto-routes to the right agent",
+        "Dedicated channels for Research, Finance, Email, and more",
+        "Per-channel conversation history synced to your dashboard",
+      ],
+      permissions: ["Your Discord account will be linked to your Harv account"],
+      steps: [
+        "Join the Harv AI Discord server",
+        "Copy the 6-digit code shown below",
+        "Use /link <code> in any channel on the server",
+        "You'll be verified and can start chatting",
+      ],
+    },
   },
   {
     id: "slack",
