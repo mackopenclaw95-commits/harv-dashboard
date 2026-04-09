@@ -170,10 +170,11 @@ export const INTEGRATIONS: Integration[] = [
     id: "whatsapp",
     name: "WhatsApp",
     icon: MessageSquare,
-    description: "Message Harv via WhatsApp — powered by Twilio",
+    description: "Message Harv via WhatsApp — dedicated number coming soon",
     category: "communication",
-    status: "disconnected",
-    hasAuth: true,
+    status: "coming_soon",
+    hasAuth: false,
+    eta: "Q3 2026",
     setupGuide: {
       features: [
         "Chat with Harv via WhatsApp",
