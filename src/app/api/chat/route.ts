@@ -30,6 +30,9 @@ export async function POST(req: Request) {
   } catch {}
 
 
+  // User-scoped session ID so dashboard conversations are linked to the user
+  const sessionId = userId ? `dash-${userId.substring(0, 8)}` : "";
+
   // If project context is provided, prepend it so Harv has awareness
   const messageWithContext = context
     ? `[CONTEXT]\n${context}\n[/CONTEXT]\n\n${lastMessage}`
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
         "X-API-Key": API_KEY,
       },
-      body: JSON.stringify({ message: messageWithContext, stream: true, plan: plan || "free", model_tier: model_tier || "primary", user_id: userId, source: "dashboard", user_name: userName, user_email: userEmail }),
+      body: JSON.stringify({ message: messageWithContext, stream: true, plan: plan || "free", model_tier: model_tier || "primary", user_id: userId, source: "dashboard", user_name: userName, user_email: userEmail, session_id: sessionId }),
     });
 
     if (
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
       "Content-Type": "application/json",
       "X-API-Key": API_KEY,
     },
-    body: JSON.stringify({ message: messageWithContext, plan: plan || "free", model_tier: model_tier || "primary", user_id: userId, source: "dashboard", user_name: userName, user_email: userEmail }),
+    body: JSON.stringify({ message: messageWithContext, plan: plan || "free", model_tier: model_tier || "primary", user_id: userId, source: "dashboard", user_name: userName, user_email: userEmail, session_id: sessionId }),
   });
 
   if (!response.ok) {
