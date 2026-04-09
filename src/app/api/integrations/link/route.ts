@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { provider } = await req.json();
-    if (!["telegram", "whatsapp"].includes(provider)) {
+    if (!["telegram", "whatsapp", "discord"].includes(provider)) {
       return NextResponse.json({ error: "Invalid provider" }, { status: 400 });
     }
 

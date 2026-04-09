@@ -179,8 +179,8 @@ export default function IntegrationsPage() {
       return;
     }
 
-    // Telegram / WhatsApp — generate link code
-    if (integration.id === "telegram" || integration.id === "whatsapp") {
+    // Telegram / WhatsApp / Discord — generate link code
+    if (integration.id === "telegram" || integration.id === "whatsapp" || integration.id === "discord") {
       setConnecting(integration.id);
       try {
         const res = await fetch("/api/integrations/link", {
@@ -597,10 +597,16 @@ export default function IntegrationsPage() {
         <DialogContent className="max-w-sm">
           {linkDialog && (() => {
             const Icon = linkDialog.integration.icon;
-            const isTelegram = linkDialog.integration.id === "telegram";
+            const provider = linkDialog.integration.id;
             const remaining = Math.max(0, Math.ceil((linkDialog.expiresAt - Date.now()) / 1000));
             const minutes = Math.floor(remaining / 60);
             const seconds = remaining % 60;
+            const instructions = {
+              telegram: { where: "Send this to @HarvAI_bot on Telegram:", how: "Open Telegram, find @HarvAI_bot, and send the command above." },
+              discord: { where: "Use this slash command in the Harv AI Discord server:", how: "Open Discord, go to any channel in the Harv AI server, and type the command above." },
+              whatsapp: { where: "Send this to Harv on WhatsApp:", how: "Open WhatsApp and send the command above to the Harv number." },
+            };
+            const inst = instructions[provider as keyof typeof instructions] || instructions.telegram;
             return (
               <>
                 <DialogHeader>
@@ -625,21 +631,11 @@ export default function IntegrationsPage() {
 
                   {/* Instructions */}
                   <div className="rounded-xl bg-white/[0.03] ring-1 ring-white/[0.06] p-4 space-y-2">
-                    <p className="text-sm font-medium">
-                      {isTelegram
-                        ? "Send this to @HarvAI_bot on Telegram:"
-                        : "Send this to Harv on WhatsApp:"
-                      }
-                    </p>
+                    <p className="text-sm font-medium">{inst.where}</p>
                     <div className="font-mono text-sm bg-white/[0.04] rounded-lg px-3 py-2 text-primary">
                       /link {linkDialog.code}
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {isTelegram
-                        ? "Open Telegram, find @HarvAI_bot, and send the command above."
-                        : "Open WhatsApp and send the command above to the Harv number."
-                      }
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">{inst.how}</p>
                   </div>
 
                   {/* Polling status */}
