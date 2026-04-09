@@ -4,7 +4,14 @@
  * Tokens stored in localStorage (single-user system).
  */
 
-const SCOPES = "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events";
+const SCOPES = [
+  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/drive",
+  "https://www.googleapis.com/auth/documents",
+  "https://www.googleapis.com/auth/spreadsheets",
+].join(" ");
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 
 export interface CalendarEvent {
@@ -104,7 +111,7 @@ export function getGoogleConnectionInfo(): { connectedAt: string | null; scopes:
   try {
     const meta = localStorage.getItem(`${key}-meta`);
     const connectedAt = meta ? JSON.parse(meta).connected_at : null;
-    return { connectedAt, scopes: ["Calendar"] };
+    return { connectedAt, scopes: ["Calendar", "Gmail", "Drive", "Docs", "Sheets"] };
   } catch {
     return { connectedAt: null, scopes: [] };
   }
