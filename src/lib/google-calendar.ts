@@ -104,7 +104,7 @@ export function getGoogleConnectionInfo(): { connectedAt: string | null; scopes:
   try {
     const meta = localStorage.getItem(`${key}-meta`);
     const connectedAt = meta ? JSON.parse(meta).connected_at : null;
-    return { connectedAt, scopes: ["Calendar", "Gmail", "Drive"] };
+    return { connectedAt, scopes: ["Calendar"] };
   } catch {
     return { connectedAt: null, scopes: [] };
   }

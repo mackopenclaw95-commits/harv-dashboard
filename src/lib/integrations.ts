@@ -37,16 +37,16 @@ export const INTEGRATIONS: Integration[] = [
     id: "google",
     name: "Google",
     icon: Globe,
-    description: "Calendar, Gmail, Drive — sync events, send emails, manage files",
+    description: "Sync your Google Calendar events with Harv",
     category: "productivity",
     status: "disconnected",
     hasAuth: true,
-    scopes: ["Calendar", "Gmail", "Drive"],
+    scopes: ["Calendar"],
     setupGuide: {
       features: [
         "View and manage your Google Calendar events",
-        "Harv can schedule meetings and check your availability",
-        "Access Gmail for email drafting and sending",
+        "Harv can check your availability and schedule",
+        "See upcoming events alongside your tasks",
       ],
       permissions: [
         "Read and write access to your Google Calendar",
