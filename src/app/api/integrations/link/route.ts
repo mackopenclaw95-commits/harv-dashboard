@@ -33,6 +33,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid provider" }, { status: 400 });
     }
 
+    // Check plan — Telegram/Discord require Pro or Max
+    if (["telegram", "discord"].includes(provider)) {
+      const serviceClient = createServiceClient();
+      const { data: profile } = await serviceClient
+        .from("profiles")
+        .select("plan")
+        .eq("id", user.id)
+        .single();
+      const plan = profile?.plan || "free";
+      if (plan === "free") {
+        return NextResponse.json({ error: "Messaging integrations require a Pro or Max plan" }, { status: 403 });
+      }
+    }
+
     // Generate 6-digit code
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min

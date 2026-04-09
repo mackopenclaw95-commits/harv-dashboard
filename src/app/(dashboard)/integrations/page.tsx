@@ -30,6 +30,11 @@ import {
   isGoogleConnected, getGoogleAuthUrl, disconnectGoogle,
   storeTokens, getGoogleConnectionInfo,
 } from "@/lib/google-calendar";
+import { useAuth } from "@/components/auth-provider";
+import { Crown } from "lucide-react";
+
+// Integrations that require a paid plan
+const PAID_INTEGRATIONS = new Set(["telegram", "discord"]);
 
 // ─── Helpers ───────────────────────────────────────────
 
@@ -83,6 +88,9 @@ function toggleWaitlist(id: string): boolean {
 
 export default function IntegrationsPage() {
   const searchParams = useSearchParams();
+  const { profile } = useAuth();
+  const userPlan = profile?.plan || "free";
+  const isPaid = userPlan === "pro" || userPlan === "max";
   const [integrations, setIntegrations] = useState<Integration[]>(INTEGRATIONS);
   const [waitlist, setWaitlist] = useState<string[]>([]);
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -413,6 +421,9 @@ export default function IntegrationsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold">{integration.name}</p>
+                            {PAID_INTEGRATIONS.has(integration.id) && !isPaid && (
+                              <Badge className="bg-yellow-500/15 text-yellow-400 border-yellow-500/30 text-[9px] px-1.5 py-0">PRO</Badge>
+                            )}
                             {statusBadge(integration.status)}
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{integration.description}</p>
@@ -424,18 +435,30 @@ export default function IntegrationsPage() {
 
                       <div className="mt-3 pt-3 border-t border-white/[0.06]">
                         {integration.status === "disconnected" && integration.hasAuth ? (
-                          <Button
-                            size="sm"
-                            className="h-7 text-[11px] w-full"
-                            onClick={() => handleConnect(integration)}
-                            disabled={isConnecting}
-                          >
-                            {isConnecting ? (
-                              <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Connecting...</>
-                            ) : (
-                              <><Link2 className="h-3 w-3 mr-1" />Connect {integration.name}</>
-                            )}
-                          </Button>
+                          PAID_INTEGRATIONS.has(integration.id) && !isPaid ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] w-full border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                              onClick={() => window.location.href = "/settings?tab=billing"}
+                            >
+                              <Crown className="h-3 w-3 mr-1" />
+                              Upgrade to Pro
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="h-7 text-[11px] w-full"
+                              onClick={() => handleConnect(integration)}
+                              disabled={isConnecting}
+                            >
+                              {isConnecting ? (
+                                <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Connecting...</>
+                              ) : (
+                                <><Link2 className="h-3 w-3 mr-1" />Connect {integration.name}</>
+                              )}
+                            </Button>
+                          )
                         ) : integration.status === "coming_soon" ? (
                           <div className="flex gap-2">
                             <Button
