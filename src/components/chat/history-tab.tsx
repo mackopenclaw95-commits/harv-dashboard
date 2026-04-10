@@ -21,6 +21,7 @@ import { getProjects, type Project } from "@/lib/supabase-projects";
 import {
   groupConversationsByTime,
   getConversationDisplayTitle,
+  getConversationPlatform,
   formatTimeGroupLabel,
   type ConversationWithMeta,
   type GroupedConversations,
@@ -315,6 +316,18 @@ export function HistoryTab({ onOpenConversation }: HistoryTabProps = {}) {
                                 <span className="text-sm font-medium truncate">
                                   {getConversationDisplayTitle(conv)}
                                 </span>
+                                {getConversationPlatform(conv) && (
+                                  <Badge
+                                    variant="outline"
+                                    className={cn("shrink-0 text-[9px] px-1.5 py-0",
+                                      getConversationPlatform(conv) === "Discord" ? "border-indigo-500/30 text-indigo-400 bg-indigo-500/10"
+                                      : getConversationPlatform(conv) === "Telegram" ? "border-sky-500/30 text-sky-400 bg-sky-500/10"
+                                      : "border-white/[0.08] text-muted-foreground/60"
+                                    )}
+                                  >
+                                    {getConversationPlatform(conv)}
+                                  </Badge>
+                                )}
                                 <Badge
                                   variant="outline"
                                   className="shrink-0 text-[10px] border-white/[0.08] text-muted-foreground/60"

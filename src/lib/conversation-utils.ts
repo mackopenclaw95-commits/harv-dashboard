@@ -50,10 +50,28 @@ export function groupConversationsByTime(
   return groups;
 }
 
+const PLATFORM_TAGS: Record<string, string> = {
+  "[dc]": "Discord",
+  "[tg]": "Telegram",
+  "[dash]": "Dashboard",
+  "[api]": "API",
+};
+
 export function getConversationDisplayTitle(conv: ConversationWithMeta): string {
-  if (conv.title) return conv.title;
-  if (conv.last_message) return conv.last_message.slice(0, 60) + (conv.last_message.length > 60 ? "..." : "");
-  return "New conversation";
+  let title = conv.title || conv.last_message?.slice(0, 60) || "New conversation";
+  // Strip platform tags from display title
+  for (const tag of Object.keys(PLATFORM_TAGS)) {
+    title = title.replace(tag + " ", "").replace(tag, "");
+  }
+  return title.trim() || "New conversation";
+}
+
+export function getConversationPlatform(conv: ConversationWithMeta): string | null {
+  if (!conv.title) return null;
+  for (const [tag, label] of Object.entries(PLATFORM_TAGS)) {
+    if (conv.title.startsWith(tag)) return label;
+  }
+  return null;
 }
 
 export function formatTimeGroupLabel(group: keyof GroupedConversations): string {
