@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     return Response.json(data);
   } catch {
     const text = await res.text().catch(() => "");
-    return Response.json({ error: "Invalid JSON from backend", raw: text.slice(0, 200) }, { status: 502 });
+    return Response.json({ error: "Invalid response from backend" }, { status: 502 });
   }
 }
 
@@ -79,6 +79,6 @@ export async function POST(req: NextRequest) {
     return Response.json(data);
   } catch {
     const text = await res.text().catch(() => "");
-    return Response.json({ error: "Invalid JSON from backend", raw: text.slice(0, 200) }, { status: 502 });
+    return Response.json({ error: "Invalid response from backend" }, { status: 502 });
   }
 }

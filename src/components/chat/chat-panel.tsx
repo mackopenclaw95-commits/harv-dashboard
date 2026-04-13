@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bot, Flag, Paperclip, Send, User, X, Zap } from "lucide-react";
+import { Bot, Flag, Loader2, Paperclip, Send, User, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownMessage } from "./markdown-message";
 import { ImageMessage, parseImageResponse } from "./image-message";
@@ -635,7 +635,7 @@ export function ChatPanel({
                   disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
                   className="h-8 w-8 rounded-lg hover:bg-primary/10"
                 >
-                  <Send className="h-4 w-4" />
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -814,7 +814,7 @@ export function ChatPanel({
                 disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
                 className="shrink-0 h-9 w-9 rounded-lg"
               >
-                <Send className="h-4 w-4" />
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </form>
           </div>
