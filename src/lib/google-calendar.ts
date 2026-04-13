@@ -96,12 +96,18 @@ export function storeTokens(tokens: TokenData): void {
   }
 }
 
-/** Clear tokens (disconnect). */
+/** Clear tokens (disconnect). Also removes from Supabase so VPS agents stop using them. */
 export function disconnectGoogle(): void {
   const key = getUserTokenKey();
   if (!key) return;
   localStorage.removeItem(key);
   localStorage.removeItem(`${key}-meta`);
+  // Also clean up Supabase — fire and forget
+  fetch("/api/integrations/unlink", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: "google" }),
+  }).catch(() => {});
 }
 
 /** Get connection info for display. */
@@ -117,8 +123,8 @@ export function getGoogleConnectionInfo(): { connectedAt: string | null; scopes:
   }
 }
 
-/** Build the Google OAuth consent URL. */
-export function getGoogleAuthUrl(state?: string): string {
+/** Build the Google OAuth consent URL. Encodes userId + returnTo in state for Supabase sync. */
+export function getGoogleAuthUrl(returnTo?: string, userId?: string): string {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
   const redirectUri = `${window.location.origin}/api/auth/google/callback`;
   const params = new URLSearchParams({
@@ -129,7 +135,11 @@ export function getGoogleAuthUrl(state?: string): string {
     access_type: "offline",
     prompt: "consent",
   });
-  if (state) params.set("state", state);
+  const state = JSON.stringify({
+    returnTo: returnTo || "/calendar",
+    userId: userId || _currentUserId || "",
+  });
+  params.set("state", state);
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
 }
 

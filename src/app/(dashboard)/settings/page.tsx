@@ -476,7 +476,7 @@ function SettingsPage() {
                       Disconnect
                     </Button>
                   ) : (
-                    <Button size="sm" className="text-xs h-7" onClick={() => { window.location.href = getGoogleAuthUrl(); }}>
+                    <Button size="sm" className="text-xs h-7" onClick={() => { window.location.href = getGoogleAuthUrl("/settings?tab=integrations"); }}>
                       Connect
                     </Button>
                   )}

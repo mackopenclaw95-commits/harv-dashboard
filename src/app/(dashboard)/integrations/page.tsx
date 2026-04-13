@@ -179,7 +179,7 @@ export default function IntegrationsPage() {
     if (integration.id === "google") {
       setConnecting("google");
       try {
-        window.location.href = getGoogleAuthUrl("from_integrations");
+        window.location.href = getGoogleAuthUrl("/integrations");
       } catch {
         toast.error("Failed to start Google auth");
         setConnecting(null);

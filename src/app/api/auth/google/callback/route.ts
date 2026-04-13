@@ -1,14 +1,27 @@
 import { NextRequest } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Google OAuth callback — exchanges auth code for tokens.
- * Called by Google after user consents. Redirects to /calendar with tokens in hash.
+ * Saves tokens to Supabase user_integrations (so VPS agents can read them).
+ * Also passes tokens to client via URL param for localStorage caching.
  */
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const error = req.nextUrl.searchParams.get("error");
-  const state = req.nextUrl.searchParams.get("state");
-  const returnTo = state === "from_integrations" ? "/integrations" : "/calendar";
+  const stateRaw = req.nextUrl.searchParams.get("state") || "";
+
+  // Parse state — may be JSON { returnTo, userId } or legacy string
+  let returnTo = "/calendar";
+  let userId = "";
+  try {
+    const parsed = JSON.parse(stateRaw);
+    returnTo = parsed.returnTo || "/calendar";
+    userId = parsed.userId || "";
+  } catch {
+    // Legacy: plain string state like "from_integrations"
+    if (stateRaw === "from_integrations") returnTo = "/integrations";
+  }
 
   if (error) {
     return Response.redirect(
@@ -48,12 +61,57 @@ export async function GET(req: NextRequest) {
     }
 
     const tokens = await tokenRes.json();
+    const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
 
-    // Redirect to calendar page with tokens in URL hash (client-side only, not sent to server)
+    // ─── Save tokens to Supabase for VPS agent access ───
+    if (userId) {
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+          process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+        );
+
+        const integrationData = {
+          user_id: userId,
+          provider: "google",
+          external_id: "",
+          status: "active",
+          connected_at: new Date().toISOString(),
+          metadata: {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token || "",
+            expires_at: expiresAt.toISOString(),
+            scopes: "calendar,gmail,drive,docs,sheets",
+          },
+        };
+
+        // Upsert — update existing or insert new
+        const { data: existing } = await supabase
+          .from("user_integrations")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("provider", "google")
+          .single();
+
+        if (existing) {
+          await supabase
+            .from("user_integrations")
+            .update(integrationData)
+            .eq("id", existing.id);
+        } else {
+          await supabase.from("user_integrations").insert(integrationData);
+        }
+      } catch (e) {
+        console.error("Failed to save Google tokens to Supabase:", e);
+        // Continue — localStorage will still work for dashboard
+      }
+    }
+
+    // Also pass tokens to client for localStorage caching
     const tokenData = {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token || "",
-      expires_at: Date.now() + (tokens.expires_in || 3600) * 1000,
+      expires_at: expiresAt.getTime(),
     };
 
     const encoded = encodeURIComponent(JSON.stringify(tokenData));

@@ -268,7 +268,7 @@ export default function CalendarPage() {
 
   // ─── Navigation ──────────────────────────────────────
   function handleConnect() {
-    window.location.href = getGoogleAuthUrl();
+    window.location.href = getGoogleAuthUrl("/calendar");
   }
 
   function handleDisconnect() {
