@@ -100,6 +100,7 @@ export async function GET() {
       const API_KEY = process.env.HARV_API_KEY || "";
       const eventsRes = await fetch(`${API_URL}/api/events/recent?limit=500`, {
         headers: { "X-API-Key": API_KEY },
+        signal: AbortSignal.timeout(15000),
       });
       if (eventsRes.ok) {
         const json = await eventsRes.json();

@@ -7,6 +7,7 @@ async function proxyGet(path: string) {
   const res = await fetch(`${API_BASE}/api/marketing/${path}`, {
     headers: { "X-API-Key": API_KEY },
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
   });
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });
@@ -20,6 +21,7 @@ async function proxyPost(path: string, body: Record<string, unknown>) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15000),
   });
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });

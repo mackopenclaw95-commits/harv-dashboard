@@ -27,6 +27,7 @@ async function tryFetch(method: string, body?: string): Promise<Response | null>
         },
         ...(body ? { body } : {}),
         cache: "no-store",
+        signal: AbortSignal.timeout(10000),
       });
 
       if (res.ok) return res;

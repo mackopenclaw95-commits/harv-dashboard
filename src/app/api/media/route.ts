@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
   try {
     const res = await fetch(url, {
       headers: { "X-API-Key": API_KEY },
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) {

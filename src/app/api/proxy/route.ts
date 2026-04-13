@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     headers,
     redirect: "follow",
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     headers,
     body: JSON.stringify(body),
     redirect: "follow",
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
