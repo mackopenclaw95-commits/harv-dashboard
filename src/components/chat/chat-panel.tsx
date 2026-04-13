@@ -70,6 +70,39 @@ function stripContextBlocks(text: string): string {
     .trim();
 }
 
+/** Sanitize agent responses — replace raw errors with friendly messages, strip action blocks */
+function sanitizeAgentResponse(text: string): string {
+  let cleaned = text;
+
+  // Replace raw Google OAuth errors with friendly message
+  if (/RefreshError.*Token has been expired or revoked/i.test(cleaned) ||
+      /invalid_grant/i.test(cleaned)) {
+    cleaned = "Your Google connection needs to be re-authorized. Go to **Settings > Integrations** to reconnect Google, then try again.";
+  }
+
+  // Replace raw RuntimeError for unconfigured agents
+  if (/RuntimeError.*not configured/i.test(cleaned)) {
+    const match = cleaned.match(/RuntimeError:\s*(.+?)(?:\.|$)/);
+    cleaned = `This feature needs setup first${match ? `: ${match[1]}` : ""}. Check **Settings** or ask Harv for help.`;
+  }
+
+  // Replace raw Python/backend exceptions
+  if (/Traceback \(most recent call last\)/i.test(cleaned) ||
+      /^\w+Error:\s/m.test(cleaned) && cleaned.length < 300) {
+    if (!cleaned.startsWith("Your Google") && !cleaned.startsWith("This feature")) {
+      cleaned = "Something went wrong processing your request. Please try again, or ask Harv for help.";
+    }
+  }
+
+  // Strip [SPOTIFY_ACTION] blocks — show friendly message instead
+  cleaned = cleaned.replace(
+    /\[SPOTIFY_ACTION\][\s\S]*?\[\/SPOTIFY_ACTION\]/g,
+    "\n\n*Creating your Spotify playlist...*"
+  );
+
+  return cleaned.trim();
+}
+
 export function ChatPanel({
   conversationId,
   agentName,
@@ -456,7 +489,7 @@ export function ChatPanel({
           }
         }
 
-        const assistantContent = fullText || "Sorry, I couldn't generate a response.";
+        const assistantContent = sanitizeAgentResponse(fullText || "Sorry, I couldn't generate a response.");
         // Final update with clean text
         setMessages((prev) =>
           prev.map((m) =>
@@ -472,7 +505,7 @@ export function ChatPanel({
       } else {
         // Non-streaming fallback: plain text response
         const responseText = await res.text();
-        const assistantContent = responseText || "Sorry, I couldn't generate a response.";
+        const assistantContent = sanitizeAgentResponse(responseText || "Sorry, I couldn't generate a response.");
         setMessages((prev) => [
           ...prev,
           { id: assistantId, role: "assistant", content: assistantContent, timestamp: new Date() },
