@@ -847,6 +847,13 @@ export default function AgentsPage() {
           }
         }
 
+        // Merge Coming Soon agents not in API response
+        for (const planned of PLANNED_AGENTS) {
+          if (!agentsList.find((a) => a.name === planned.name)) {
+            agentsList.push({ ...planned, last_event: null });
+          }
+        }
+
         const events = eventsData.events || [];
         const lastEventMap: Record<string, LastEvent> = {};
         for (const ev of events) {
