@@ -34,16 +34,30 @@ export async function GET(req: NextRequest) {
     const plan = (profile?.plan || "free") as TierKey;
     const tierConfig = TIER_LIMITS[plan] || TIER_LIMITS.free;
 
-    // Owner/tester always gets primary tier, unlimited
+    // Owner/tester always gets primary tier, unlimited — but show real usage counts
     if (profile?.role === "owner" || profile?.role === "tester") {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { count: ownerToday } = await supabase
+        .from("usage_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", todayStart.toISOString());
+      const { count: ownerImages } = await supabase
+        .from("usage_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("agent_name", "Image Gen")
+        .gte("created_at", todayStart.toISOString());
       return NextResponse.json({
         allowed: true,
-        used: 0,
+        used: ownerToday || 0,
         limit: -1,
         remaining: -1,
         degraded: false,
         model_tier: "primary" as const,
         image_remaining: -1,
+        images_used: ownerImages || 0,
         agent_allowed: true,
       });
     }

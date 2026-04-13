@@ -274,7 +274,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 space-y-8 max-w-6xl mx-auto">
       {/* Trial Banner */}
-      {profile && trialDays > 0 && trialDays <= 14 && (
+      {profile && profile.plan === "free" && profile.plan_status === "trial" && trialDays > 0 && trialDays <= 14 && (
         <div className="flex items-center justify-between rounded-xl bg-primary/8 ring-1 ring-primary/15 px-4 py-2.5">
           <div className="flex items-center gap-2 text-sm">
             <Timer className="h-4 w-4 text-primary" />

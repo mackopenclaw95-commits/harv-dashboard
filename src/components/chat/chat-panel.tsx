@@ -497,7 +497,9 @@ export function ChatPanel({
           tokens_used: tokensIn + tokensOut,
           estimated_cost: Math.round(estCost * 1_000_000) / 1_000_000,
         }),
-      }).catch(() => {});
+      }).then(res => {
+        if (!res.ok) console.error("[usage-log] Failed:", res.status);
+      }).catch(err => console.error("[usage-log] Error:", err));
     } catch {
       toast.error("Connection error — is the Harv API running?");
       setMessages((prev) => [

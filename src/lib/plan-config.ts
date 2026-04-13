@@ -38,15 +38,19 @@ export const FREE_PLAN_AGENTS = new Set([
   "Learning",
 ]);
 
-// Agents locked behind pro/max
+// Agents locked behind pro/max (Video Gen is MAX_ONLY, not listed here)
 export const PRO_ONLY_AGENTS = new Set([
   "Video Digest",
   "YouTube Digest",
+  "TikTok Digest",
+  "Twitter Digest",
   "Media Manager",
   "Image Gen",
   "Image Editor",
-  "Video Gen",
   "Video Editor",
+  "Product Research",
+  "Market Research",
+  "Marketing",
   "Finance",
   "Travel",
   "Sports",

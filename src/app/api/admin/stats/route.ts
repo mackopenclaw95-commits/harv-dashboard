@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { createServiceClient } from "@/lib/supabase";
+import { cookies } from "next/headers";
 
 // Model pricing per million tokens (matching OpenRouter rates)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
@@ -24,7 +26,31 @@ function estimateCost(model: string, tokens: number): number {
 
 export async function GET() {
   try {
+    // --- Auth check: require authenticated admin/owner ---
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(c) { c.forEach(({ name, value, options }) => { try { cookieStore.set(name, value, options); } catch {} }); },
+        },
+      }
+    );
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
     const supabase = createServiceClient();
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (!callerProfile || !["owner", "admin"].includes(callerProfile.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
