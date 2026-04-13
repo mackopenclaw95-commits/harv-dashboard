@@ -119,7 +119,7 @@ export interface PlannedAgentMeta {
 export const PLANNED_AGENTS: Agent[] = [
   { name: "TikTok Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "TikTok video digest, transcription, and implementation guide", cost_per_call: 0.001 },
   { name: "Twitter Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Twitter/X thread summarization and implementation guide", cost_per_call: 0.001 },
-  { name: "Media Manager", status: "LIVE", model: "none", type: "agent", tier: "AGENTS", provider: "keyword-router", description: "Media orchestrator — routes to Image Gen, Video Gen, and Video Editor", cost_per_call: 0 },
+  { name: "Media Manager", status: "LIVE", model: "orchestrator", type: "agent", tier: "AGENTS", provider: "keyword-router", description: "Media orchestrator — routes to Image Gen, Video Gen, and Video Editor", cost_per_call: 0 },
   { name: "Video Gen", status: "LIVE", model: "bytedance/seedance-1-5-pro", type: "agent", tier: "AGENTS", provider: "openrouter", description: "AI video generation from text prompts (Seedance 1.5 Pro)", cost_per_call: 0.005 },
   { name: "Video Editor", status: "LIVE", model: "ffmpeg+deepseek", type: "agent", tier: "AGENTS", provider: "local+openrouter", description: "Video editing — trim, resize, crop, speed, rotate, subtitles, convert", cost_per_call: 0 },
   { name: "Image Editor", status: "LIVE", model: "pillow+deepseek", type: "agent", tier: "AGENTS", provider: "local+openrouter", description: "Image editing — resize, crop, rotate, filters, text overlay, convert", cost_per_call: 0 },
@@ -130,6 +130,8 @@ export const PLANNED_AGENTS: Agent[] = [
   { name: "Product Research", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Product comparisons, reviews, and purchase recommendations", cost_per_call: 0.001 },
   { name: "Market Research", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Competitor analysis, industry trends, market sizing", cost_per_call: 0.001 },
   { name: "Data Viz", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Charts, graphs, and visual data reports from raw data", cost_per_call: 0 },
+  { name: "Fitness", status: "COMING_SOON", model: "tbd", type: "personal", tier: "AGENTS", provider: "tbd", description: "Fitness tracking with Garmin Connect integration", cost_per_call: 0 },
+  { name: "Shopping", status: "COMING_SOON", model: "tbd", type: "personal", tier: "AGENTS", provider: "tbd", description: "Shopping lists, product research, and purchase tracking", cost_per_call: 0 },
 ];
 
 export const PLANNED_AGENTS_META: PlannedAgentMeta[] = [

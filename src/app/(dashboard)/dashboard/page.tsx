@@ -120,9 +120,8 @@ export default function DashboardPage() {
       if (cronsRes?.ok) {
         const data = await cronsRes.json();
         const ADMIN_CRONS = new Set(["Daily Backup", "Daily Backups", "VPS Snapshot", "VPS Snapshots", "Weekly Archive", "Weekly Archives", "Dependency Updates", "Daily Digest"]);
-        const SYSTEM_CRONS = new Set(["Heartbeat", "System Health", "Medic"]);
         const allJobs = data.jobs || [];
-        results.crons = allJobs.filter((j: { name: string }) => !ADMIN_CRONS.has(j.name) && !SYSTEM_CRONS.has(j.name)).length;
+        results.crons = allJobs.filter((j: { name: string }) => !ADMIN_CRONS.has(j.name)).length;
       }
       if (healthRes?.ok) {
         const data = await healthRes.json();

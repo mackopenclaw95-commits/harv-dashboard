@@ -573,7 +573,7 @@ export default function CalendarPage() {
                       ))}
                       {showCrons && userTasks.length > 0 && dayEvents.length === 0 && (
                         <div className="text-[9px] text-cyan-400/50 px-1">
-                          {userTasks.length} tasks
+                          {userTasks.length} {userTasks.length === 1 ? "task" : "tasks"}
                         </div>
                       )}
                     </div>
