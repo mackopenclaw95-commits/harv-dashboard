@@ -5,6 +5,7 @@ export const TIER_LIMITS = {
     primaryMessagesPerDay: 25,
     weeklyBackstop: 100,
     imagesPerDay: 0,
+    videosPerDay: 0,
     primaryModel: "gemini-flash-lite",
     fallbackModel: "qwen3-8b-free",
   },
@@ -12,6 +13,7 @@ export const TIER_LIMITS = {
     primaryMessagesPerDay: 150,
     weeklyBackstop: 750,
     imagesPerDay: 10,
+    videosPerDay: 0,
     primaryModel: "deepseek-v3.2",
     fallbackModel: "gemini-flash-lite",
   },
@@ -19,6 +21,7 @@ export const TIER_LIMITS = {
     primaryMessagesPerDay: 400,
     weeklyBackstop: 2000,
     imagesPerDay: 30,
+    videosPerDay: 5,
     primaryModel: "gpt-4.1",
     fallbackModel: "deepseek-v3.2",
   },
@@ -41,9 +44,22 @@ export const PRO_ONLY_AGENTS = new Set([
   "YouTube Digest",
   "Media Manager",
   "Image Gen",
+  "Image Editor",
+  "Video Gen",
+  "Video Editor",
+  "Finance",
+  "Travel",
+  "Sports",
+  "Music",
+]);
+
+// Agents locked behind max only
+export const MAX_ONLY_AGENTS = new Set([
+  "Video Gen",
 ]);
 
 export function isAgentAvailable(agentName: string, plan: string): boolean {
+  if (MAX_ONLY_AGENTS.has(agentName)) return plan === "max";
   if (plan === "pro" || plan === "max") return true;
   return FREE_PLAN_AGENTS.has(agentName);
 }
@@ -77,7 +93,7 @@ export const PLANS = {
     features: [
       "400 messages/day (GPT-4.1)",
       "Unlimited DeepSeek V3.2 after limit",
-      "All agents + Image gen (30/day)",
+      "All agents + Image gen (30/day) + Video gen (5/day)",
       "Employee Harvs",
       "Custom integrations",
       "Admin dashboard",

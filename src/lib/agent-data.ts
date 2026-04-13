@@ -2,7 +2,7 @@ import {
   Bot, Brain, Shield, Wrench, Dumbbell, DollarSign, TrendingUp, Search,
   Music, Plane, ShoppingCart, Trophy, Megaphone, Mail, Calendar, Video,
   BookOpen, FileText, BarChart3, Database, Image, Activity, PenTool, Heart,
-  Film, Scissors, Package, LineChart, PieChart, Zap,
+  Film, Scissors, Package, LineChart, PieChart, Zap, ImagePlus,
 } from "lucide-react";
 import type React from "react";
 
@@ -45,7 +45,7 @@ export const AGENT_ICONS: Record<string, React.ElementType> = {
   Travel: Plane,
   Shopping: ShoppingCart,
   Sports: Trophy,
-  "Auto Marketing": Megaphone,
+  "Marketing": Megaphone,
   Email: Mail,
   Scheduler: Calendar,
   "Video Digest": Video,
@@ -64,6 +64,7 @@ export const AGENT_ICONS: Record<string, React.ElementType> = {
   "Media Manager": Film,
   "Video Gen": Film,
   "Video Editor": Scissors,
+  "Image Editor": ImagePlus,
   "Product Research": Package,
   "Market Research": LineChart,
   "Data Viz": PieChart,
@@ -72,7 +73,7 @@ export const AGENT_ICONS: Record<string, React.ElementType> = {
 
 export const SUB_AGENT_MAP: Record<string, string[]> = {
   "Video Digest": ["YouTube Digest", "TikTok Digest", "Twitter Digest"],
-  "Media Manager": ["Image Gen", "Video Gen", "Video Editor"],
+  "Media Manager": ["Image Gen", "Image Editor", "Video Gen", "Video Editor"],
   Research: ["Product Research", "Market Research", "Data Viz"],
 };
 
@@ -83,11 +84,10 @@ export const CORE_AGENTS = new Set([
 ]);
 
 export const COMING_SOON_PERSONAL = new Set([
-  "Music", "Fitness", "Finance", "Shopping", "Sports", "Trading", "Travel",
+  "Fitness", "Shopping", "Trading",
 ]);
 
-export const COMING_SOON_BUSINESS = new Set([
-  "Auto Marketing",
+export const COMING_SOON_BUSINESS = new Set<string>([
 ]);
 
 export const COMING_SOON_AGENTS = new Set([
@@ -95,8 +95,7 @@ export const COMING_SOON_AGENTS = new Set([
 ]);
 
 export const PLANNED_AGENT_NAMES = new Set([
-  "TikTok Digest", "Twitter Digest", "Video Gen", "Video Editor",
-  "Product Research", "Market Research", "Data Viz",
+  "Data Viz",
 ]);
 
 export const NO_CHAT_AGENTS = new Set([
@@ -118,53 +117,22 @@ export interface PlannedAgentMeta {
 }
 
 export const PLANNED_AGENTS: Agent[] = [
-  { name: "TikTok Digest", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "TikTok video transcription and digest", cost_per_call: 0 },
-  { name: "Twitter Digest", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Twitter/X video transcription and digest", cost_per_call: 0 },
+  { name: "TikTok Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "TikTok video digest, transcription, and implementation guide", cost_per_call: 0.001 },
+  { name: "Twitter Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Twitter/X thread summarization and implementation guide", cost_per_call: 0.001 },
   { name: "Media Manager", status: "LIVE", model: "none", type: "agent", tier: "AGENTS", provider: "keyword-router", description: "Media orchestrator — routes to Image Gen, Video Gen, and Video Editor", cost_per_call: 0 },
-  { name: "Video Gen", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "AI video generation from text prompts and storyboards", cost_per_call: 0 },
-  { name: "Video Editor", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Automated video editing, trimming, and post-production", cost_per_call: 0 },
-  { name: "Product Research", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Product comparisons, reviews, and purchase recommendations", cost_per_call: 0 },
-  { name: "Market Research", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Market analysis, competitor tracking, and trend reports", cost_per_call: 0 },
+  { name: "Video Gen", status: "LIVE", model: "bytedance/seedance-1-5-pro", type: "agent", tier: "AGENTS", provider: "openrouter", description: "AI video generation from text prompts (Seedance 1.5 Pro)", cost_per_call: 0.005 },
+  { name: "Video Editor", status: "LIVE", model: "ffmpeg+deepseek", type: "agent", tier: "AGENTS", provider: "local+openrouter", description: "Video editing — trim, resize, crop, speed, rotate, subtitles, convert", cost_per_call: 0 },
+  { name: "Image Editor", status: "LIVE", model: "pillow+deepseek", type: "agent", tier: "AGENTS", provider: "local+openrouter", description: "Image editing — resize, crop, rotate, filters, text overlay, convert", cost_per_call: 0 },
+  { name: "Finance", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Personal finance — spending tracking, budgets, analysis, financial advice", cost_per_call: 0.001 },
+  { name: "Travel", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Trip planning, flights, hotels, itineraries, destination guides", cost_per_call: 0.001 },
+  { name: "Sports", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Scores, standings, game recaps, predictions, fantasy advice", cost_per_call: 0.001 },
+  { name: "Music", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Music discovery, playlist curation, artist info, recommendations", cost_per_call: 0.001 },
+  { name: "Product Research", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Product comparisons, reviews, and purchase recommendations", cost_per_call: 0.001 },
+  { name: "Market Research", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Competitor analysis, industry trends, market sizing", cost_per_call: 0.001 },
   { name: "Data Viz", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Charts, graphs, and visual data reports from raw data", cost_per_call: 0 },
 ];
 
 export const PLANNED_AGENTS_META: PlannedAgentMeta[] = [
-  {
-    agent: PLANNED_AGENTS.find((a) => a.name === "TikTok Digest")!,
-    capabilities: ["Auto-transcribe TikTok videos", "Generate key point summaries", "Extract trending topics"],
-    eta: "Q3 2026",
-    parent: "Video Digest",
-  },
-  {
-    agent: PLANNED_AGENTS.find((a) => a.name === "Twitter Digest")!,
-    capabilities: ["Summarize Twitter/X video threads", "Track conversation highlights", "Extract viral clips"],
-    eta: "Q3 2026",
-    parent: "Video Digest",
-  },
-  {
-    agent: PLANNED_AGENTS.find((a) => a.name === "Video Gen")!,
-    capabilities: ["Generate short videos from text prompts", "Storyboard to video pipeline", "Multiple aspect ratios"],
-    eta: "Q4 2026",
-    parent: "Media Manager",
-  },
-  {
-    agent: PLANNED_AGENTS.find((a) => a.name === "Video Editor")!,
-    capabilities: ["AI-powered cut and trim", "Auto-subtitles and overlays", "Smart transitions"],
-    eta: "Q4 2026",
-    parent: "Media Manager",
-  },
-  {
-    agent: PLANNED_AGENTS.find((a) => a.name === "Product Research")!,
-    capabilities: ["Compare products across retailers", "Aggregate reviews and ratings", "Price tracking and alerts"],
-    eta: "Q3 2026",
-    parent: "Research",
-  },
-  {
-    agent: PLANNED_AGENTS.find((a) => a.name === "Market Research")!,
-    capabilities: ["Competitor analysis", "Industry trend reports", "Market sizing estimates"],
-    eta: "Q3 2026",
-    parent: "Research",
-  },
   {
     agent: PLANNED_AGENTS.find((a) => a.name === "Data Viz")!,
     capabilities: ["Auto-generate charts from data", "Interactive dashboard creation", "Export to image/PDF"],

@@ -187,6 +187,18 @@ export default function IntegrationsPage() {
       return;
     }
 
+    if (integration.id === "spotify") {
+      setConnecting("spotify");
+      try {
+        const uid = profile?.id || "";
+        window.location.href = `/api/auth/spotify?user_id=${uid}`;
+      } catch {
+        toast.error("Failed to start Spotify auth");
+        setConnecting(null);
+      }
+      return;
+    }
+
     // Telegram / WhatsApp / Discord — generate link code
     if (integration.id === "telegram" || integration.id === "whatsapp" || integration.id === "discord") {
       setConnecting(integration.id);

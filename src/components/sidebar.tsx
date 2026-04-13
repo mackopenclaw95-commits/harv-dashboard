@@ -9,6 +9,7 @@ import {
   Bot,
   Brain,
   BarChart3,
+  Megaphone,
   Settings,
   Zap,
   Activity,
@@ -25,6 +26,12 @@ import {
   User,
   CreditCard,
   Link2,
+  Trophy,
+  Music,
+  DollarSign,
+  Plane,
+  Sparkles,
+  Video,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -51,9 +58,18 @@ const PROFILE_MENU_ITEMS = [
   { href: "/integrations", label: "Integrations", icon: Link2 },
 ];
 
+const PERSONAL_AGENT_ITEMS = [
+  { href: "/sports", label: "Sports", icon: Trophy },
+  { href: "/music", label: "Music", icon: Music },
+  { href: "/finance", label: "Finance", icon: DollarSign },
+  { href: "/travel", label: "Travel", icon: Plane },
+];
+
 const ADMIN_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/digest", label: "Digest", icon: Video },
 ];
 
 export const Sidebar = React.memo(function Sidebar() {
@@ -61,8 +77,11 @@ export const Sidebar = React.memo(function Sidebar() {
   const router = useRouter();
   const { isAdmin, profile, signOut } = useAuth();
   const [isKachow, setIsKachow] = useState(false);
+  const [personalOpen, setPersonalOpen] = useState(() => {
+    return pathname?.startsWith("/sports") || pathname?.startsWith("/music") || pathname?.startsWith("/finance") || pathname?.startsWith("/travel") || false;
+  });
   const [adminOpen, setAdminOpen] = useState(() => {
-    return pathname?.startsWith("/admin") || pathname?.startsWith("/analytics") || false;
+    return pathname?.startsWith("/admin") || pathname?.startsWith("/analytics") || pathname?.startsWith("/marketing") || pathname?.startsWith("/digest") || false;
   });
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -145,6 +164,47 @@ export const Sidebar = React.memo(function Sidebar() {
             );
           })}
 
+          {/* Personal Agents section */}
+          <div className="mx-3 my-2 border-t border-white/[0.06]" />
+          <button
+            onClick={() => setPersonalOpen(!personalOpen)}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              pathname.startsWith("/sports") || pathname.startsWith("/music") || pathname.startsWith("/finance") || pathname.startsWith("/travel")
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <Sparkles className="h-5 w-5 shrink-0" />
+            <span className="hidden md:inline flex-1 text-left">Personal Agents</span>
+            <ChevronDown className={cn(
+              "h-3.5 w-3.5 shrink-0 transition-transform duration-200 hidden md:block",
+              personalOpen && "rotate-180"
+            )} />
+          </button>
+          {personalOpen && (
+            <div className="flex flex-col gap-0.5 ml-4 md:ml-6">
+              {PERSONAL_AGENT_ITEMS.map(({ href, label, icon: Icon }) => {
+                const active = pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="hidden md:inline">{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
           {/* Admin section — owner/admin only */}
           {isAdmin && (
             <>
@@ -153,7 +213,7 @@ export const Sidebar = React.memo(function Sidebar() {
                 onClick={() => setAdminOpen(!adminOpen)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  pathname.startsWith("/admin") || pathname.startsWith("/analytics")
+                  pathname.startsWith("/admin") || pathname.startsWith("/analytics") || pathname.startsWith("/marketing") || pathname.startsWith("/digest")
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}

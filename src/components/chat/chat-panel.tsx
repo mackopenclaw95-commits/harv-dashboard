@@ -9,6 +9,7 @@ import { Bot, Flag, Paperclip, Send, User, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownMessage } from "./markdown-message";
 import { ImageMessage, parseImageResponse } from "./image-message";
+import { VideoMessage, parseVideoResponse } from "./video-message";
 import { getRoutingMessage, getKachowGreeting, KACHOW_PLACEHOLDERS } from "@/lib/constants";
 import {
   saveMessage,
@@ -689,6 +690,10 @@ export function ChatPanel({
                   const imgData = parseImageResponse(cleaned);
                   if (imgData) {
                     return <ImageMessage {...imgData} projectId={projectId} />;
+                  }
+                  const vidData = parseVideoResponse(cleaned);
+                  if (vidData) {
+                    return <VideoMessage {...vidData} projectId={projectId} />;
                   }
                   return (
                     <div className="text-sm leading-relaxed">
