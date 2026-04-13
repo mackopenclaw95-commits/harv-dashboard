@@ -19,7 +19,7 @@ export async function POST(req: Request) {
         "X-API-Key": API_KEY,
       },
       body: JSON.stringify({ message: messageWithContext, agent, stream: true, plan: plan || "free", model_tier: model_tier || "primary" }),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(90000),
     });
 
     if (
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       "X-API-Key": API_KEY,
     },
     body: JSON.stringify({ message: messageWithContext, agent }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(90000),
   });
 
   if (!response.ok) {
