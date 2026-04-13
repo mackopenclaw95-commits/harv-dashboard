@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { stripe, PLANS, type PlanKey } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase";
 import { PLAN_RANK } from "@/lib/plan-config";
 import { calculateProration, getDowngradeCooldownDays } from "@/lib/proration";
+import { cookies } from "next/headers";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +13,29 @@ export async function POST(req: NextRequest) {
 
     if (!newPlan || !userId) {
       return NextResponse.json({ error: "Missing plan or userId" }, { status: 400 });
+    }
+
+    // Verify authenticated user matches userId
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(c) { c.forEach(({ name, value, options }) => { try { cookieStore.set(name, value, options); } catch {} }); },
+        },
+      }
+    );
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user || user.id !== userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit: 5 downgrade attempts per 10 minutes
+    const rl = rateLimit(`downgrade:${userId}`, 5, 10 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
     }
 
     const supabase = createServiceClient();

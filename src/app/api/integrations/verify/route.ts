@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/integrations/verify
@@ -20,6 +21,17 @@ export async function POST(req: NextRequest) {
     const { provider, external_id, code } = await req.json();
     if (!provider || !external_id || !code) {
       return NextResponse.json({ error: "Missing provider, external_id, or code" }, { status: 400 });
+    }
+
+    // Rate limit: 10 verify attempts per 5 minutes per IP+provider
+    // Prevents brute-forcing the 6-digit code (1M combinations)
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = rateLimit(`verify:${clientIp}:${provider}`, 10, 5 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many verification attempts. Try again later.", retry_after: Math.ceil(rl.resetIn / 1000) },
+        { status: 429 }
+      );
     }
 
     const serviceClient = createServiceClient();

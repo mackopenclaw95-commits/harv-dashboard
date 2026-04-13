@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/integrations/link
@@ -26,6 +27,15 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Rate limit: 5 link code requests per 10 minutes per user
+    const rl = rateLimit(`link:${user.id}`, 5, 10 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many link requests. Try again later.", retry_after: Math.ceil(rl.resetIn / 1000) },
+        { status: 429 }
+      );
     }
 
     const { provider } = await req.json();
