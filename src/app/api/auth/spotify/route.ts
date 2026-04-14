@@ -12,11 +12,16 @@ export async function GET(req: NextRequest) {
   const clientId = (process.env.SPOTIFY_CLIENT_ID || "").trim();
   const redirectUri = `${req.nextUrl.origin}/api/auth/spotify/callback`;
 
-  // Only playlist scopes work in Spotify Development Mode (Feb 2026 restrictions)
-  // user-top-read, user-library-read, user-read-recently-played are all blocked
+  // Request all scopes — playlist scopes work in Dev Mode, others activate
+  // after Extended Quota Mode approval. The app handles missing scopes gracefully.
   const scopes = [
     "playlist-modify-public",
     "playlist-modify-private",
+    "user-read-playback-state",
+    "user-read-currently-playing",
+    "user-read-recently-played",
+    "user-top-read",
+    "user-read-private",
   ].join(" ");
 
   const params = new URLSearchParams({
