@@ -143,10 +143,10 @@ export async function GET(req: NextRequest) {
       result.top_artists = (data.items || []).map((a, i) => ({
         rank: i + 1,
         name: a.name,
-        genres: a.genres.slice(0, 3),
+        genres: (a.genres || []).slice(0, 3),
         image: a.images?.[1]?.url || a.images?.[0]?.url || "",
         url: a.external_urls?.spotify || "",
-        popularity: a.popularity,
+        popularity: a.popularity || 0,
         followers: a.followers?.total || 0,
       }));
     } else {
