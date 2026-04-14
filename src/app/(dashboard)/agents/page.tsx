@@ -1298,7 +1298,7 @@ const FALLBACK_AGENTS: Agent[] = [
   { name: "Market Research", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Competitor analysis, industry trends, market sizing", cost_per_call: 0.001 },
   { name: "Data Viz", status: "PLANNED", model: "tbd", type: "agent", tier: "AGENTS", provider: "tbd", description: "Charts, graphs, and visual data reports from raw data", cost_per_call: 0 },
   { name: "Finance", status: "LIVE", model: "deepseek/deepseek-v3.2", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Budget tracking, transaction logging, Plaid bank sync", cost_per_call: 0 },
-  { name: "Trading", status: "LIVE", model: "deepseek/deepseek-v3.2", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Polymarket + Kalshi paper trading, crypto tracking", cost_per_call: 0 },
+  { name: "Trading", status: "COMING_SOON", model: "tbd", type: "personal", tier: "AGENTS", provider: "tbd", description: "Polymarket + Kalshi paper trading, crypto tracking", cost_per_call: 0 },
   { name: "Music", status: "LIVE", model: "deepseek/deepseek-v3.2", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Spotify API — playback, playlists, recommendations", cost_per_call: 0 },
   { name: "Sports", status: "LIVE", model: "deepseek/deepseek-v3.2", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Live scores, standings, schedules, injury reports", cost_per_call: 0 },
   { name: "Learning", status: "LIVE", model: "deepseek/deepseek-v3.2", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Research assistant, tutor, flashcards, quizzes", cost_per_call: 0 },
