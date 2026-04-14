@@ -298,7 +298,7 @@ export default function IntegrationsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-6">
       {/* Header */}
-      <div>
+      <div data-tour="integrations-header">
         <h1 className="text-2xl font-bold tracking-tight">Integrations</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Connect your favorite services to Harv
@@ -307,7 +307,7 @@ export default function IntegrationsPage() {
 
       {/* ── Connected Services ── */}
       {connected.length > 0 && (
-        <section>
+        <section data-tour="integrations-connected">
           <div className="flex items-center gap-2 mb-4">
             <div className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-500/15">
               <Check className="h-3 w-3 text-emerald-400" />
@@ -402,6 +402,7 @@ export default function IntegrationsPage() {
       )}
 
       {/* ── Available Integrations by Category ── */}
+      <div data-tour="integrations-available">
       {CATEGORY_ORDER.map((cat) => {
         const items = grouped.get(cat);
         if (!items || items.length === 0) return null;
@@ -515,9 +516,10 @@ export default function IntegrationsPage() {
           </section>
         );
       })}
+      </div>
 
       {/* Footer */}
-      <div className="text-center text-xs text-muted-foreground/50 pt-4">
+      <div data-tour="integrations-footer" className="text-center text-xs text-muted-foreground/50 pt-4">
         {connected.length} active &middot; {available.length} available &middot; More integrations coming soon
       </div>
 

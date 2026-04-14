@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, DollarSign, Zap, TrendingDown, Clock, PieChart, RefreshCw, WifiOff, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, DollarSign, Zap, TrendingDown, Clock, PieChart, RefreshCw, WifiOff, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, MessageSquare, Flame, Bot, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
@@ -146,10 +146,27 @@ function chartDateLabel(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+interface UsageData {
+  daily_messages: Array<{ date: string; messages: number; tokens: number }>;
+  top_agents: Array<{ name: string; messages: number; tokens: number; cost: number }>;
+  usage_by_hour: Array<{ hour: number; messages: number }>;
+  summary: {
+    total_messages: number;
+    total_tokens: number;
+    total_cost: number;
+    avg_per_day: number;
+    unique_agents: number;
+    streak: number;
+  };
+}
+
 export default function AnalyticsPage() {
   const { isAdmin, isLoading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<"costs" | "usage">("costs");
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [usageLoading, setUsageLoading] = useState(false);
   const [error, setError] = useState(false);
   const [chartView, setChartView] = useState<"monthly" | "daily">("monthly");
   const [chartDate, setChartDate] = useState<string>(() => {
@@ -177,11 +194,21 @@ export default function AnalyticsPage() {
     }
   };
 
+  const loadUsage = async () => {
+    setUsageLoading(true);
+    try {
+      const res = await fetch("/api/analytics/usage");
+      if (res.ok) setUsageData(await res.json());
+    } catch { /* silent */ }
+    finally { setUsageLoading(false); }
+  };
+
   // Wait for auth to resolve before loading
   useEffect(() => {
     if (authLoading) return;
     if (!isAdmin) { setLoading(false); setData(null); return; }
     load();
+    loadUsage();
   }, [isAdmin, authLoading]);
 
   useEffect(() => {
@@ -291,9 +318,226 @@ export default function AnalyticsPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
             <p className="text-sm text-muted-foreground">API cost tracking and usage metrics</p>
           </div>
+          <div className="ml-auto flex items-center gap-1 rounded-lg bg-white/[0.04] p-0.5">
+            <button
+              onClick={() => setActiveTab("costs")}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+                activeTab === "costs" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <DollarSign className="h-3 w-3" />Costs
+            </button>
+            <button
+              onClick={() => setActiveTab("usage")}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+                activeTab === "usage" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Activity className="h-3 w-3" />Usage
+            </button>
+          </div>
         </div>
       </header>
 
+      {/* ═══════════ USAGE TAB ═══════════ */}
+      {activeTab === "usage" && (
+        usageLoading ? (
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="relative overflow-hidden">
+                  <CardHeader className="pb-2"><Skeleton className="h-4 w-24" /></CardHeader>
+                  <CardContent><Skeleton className="h-8 w-28" /></CardContent>
+                </Card>
+              ))}
+            </div>
+            <Card><CardContent className="pt-6"><Skeleton className="h-64 w-full rounded-lg" /></CardContent></Card>
+          </div>
+        ) : usageData ? (
+          <div className="space-y-6">
+            {/* Usage summary cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-y-0 left-0 w-[2px] bg-cyan-500/50" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Messages</CardTitle>
+                  <MessageSquare className="h-4 w-4 text-cyan-400" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold tabular-nums">{usageData.summary.total_messages.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Last 30 days</p>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-y-0 left-0 w-[2px] bg-amber-500/50" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Daily Average</CardTitle>
+                  <TrendingDown className="h-4 w-4 text-amber-400" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold tabular-nums">{usageData.summary.avg_per_day}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">messages/day</p>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-y-0 left-0 w-[2px] bg-orange-500/50" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Active Streak</CardTitle>
+                  <Flame className="h-4 w-4 text-orange-400" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold tabular-nums">{usageData.summary.streak}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">consecutive day{usageData.summary.streak !== 1 ? "s" : ""}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden">
+                <div className="absolute inset-y-0 left-0 w-[2px] bg-violet-500/50" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Agents Used</CardTitle>
+                  <Bot className="h-4 w-4 text-violet-400" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold tabular-nums">{usageData.summary.unique_agents}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">unique agents</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Messages over time chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-cyan-400" />
+                  Messages Over Time
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={usageData.daily_messages}>
+                      <defs>
+                        <linearGradient id="msgGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="oklch(0.78 0.145 192)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="oklch(0.78 0.145 192)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 6%)" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "oklch(0.65 0.015 265)" }} axisLine={{ stroke: "oklch(1 0 0 / 8%)" }} tickLine={false} interval={4} tickFormatter={(d: string) => { const p = d.split("-"); return `${parseInt(p[1])}/${parseInt(p[2])}`; }} />
+                      <YAxis tick={{ fontSize: 11, fill: "oklch(0.65 0.015 265)" }} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
+                      <Tooltip
+                        cursor={{ stroke: "oklch(1 0 0 / 8%)", strokeWidth: 1 }}
+                        contentStyle={{ backgroundColor: "oklch(0.13 0.015 265 / 90%)", border: "1px solid oklch(1 0 0 / 10%)", borderRadius: "0.75rem", backdropFilter: "blur(12px)", color: "oklch(0.95 0.005 265)", fontSize: "12px" }}
+                        formatter={(value, name) => {
+                          if (name === "messages") return [value, "Messages"];
+                          return [Number(value).toLocaleString(), "Tokens"];
+                        }}
+                      />
+                      <Area type="monotone" dataKey="messages" stroke="oklch(0.78 0.145 192)" strokeWidth={2} fill="url(#msgGradient)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Top agents + Peak hours */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Top agents */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-violet-400" />
+                    Most Used Agents
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {usageData.top_agents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No agent usage yet</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {usageData.top_agents.slice(0, 8).map((agent, i) => {
+                        const maxMsg = usageData.top_agents[0]?.messages || 1;
+                        return (
+                          <div key={agent.name} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground/50 font-mono w-4">#{i + 1}</span>
+                                {agent.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                {agent.messages} msg{agent.messages !== 1 ? "s" : ""}
+                                <span className="text-muted-foreground/40 ml-2">{agent.tokens.toLocaleString()} tok</span>
+                              </span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-violet-500/50 transition-all duration-500"
+                                style={{ width: `${Math.max(2, (agent.messages / maxMsg) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Usage by hour */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-amber-400" />
+                    Peak Usage Hours
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[280px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={usageData.usage_by_hour}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 6%)" vertical={false} />
+                        <XAxis
+                          dataKey="hour"
+                          tick={{ fontSize: 10, fill: "oklch(0.65 0.015 265)" }}
+                          axisLine={{ stroke: "oklch(1 0 0 / 8%)" }}
+                          tickLine={false}
+                          tickFormatter={formatHourLabel}
+                          interval={3}
+                        />
+                        <YAxis tick={{ fontSize: 11, fill: "oklch(0.65 0.015 265)" }} axisLine={false} tickLine={false} width={30} allowDecimals={false} />
+                        <Tooltip
+                          cursor={{ fill: "oklch(1 0 0 / 4%)" }}
+                          contentStyle={{ backgroundColor: "oklch(0.13 0.015 265 / 90%)", border: "1px solid oklch(1 0 0 / 10%)", borderRadius: "0.75rem", backdropFilter: "blur(12px)", color: "oklch(0.95 0.005 265)", fontSize: "12px" }}
+                          labelFormatter={(h) => formatHourLabel(Number(h))}
+                          formatter={(value) => [value, "Messages"]}
+                        />
+                        <Bar dataKey="messages" fill="oklch(0.72 0.14 60)" radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="pt-12 pb-12 flex flex-col items-center text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5 ring-1 ring-primary/10 mb-4">
+                <Activity className="h-7 w-7 text-primary/30" />
+              </div>
+              <p className="font-medium">No usage data</p>
+              <p className="text-sm text-muted-foreground mt-1">Start chatting with Harv to see your usage analytics</p>
+            </CardContent>
+          </Card>
+        )
+      )}
+
+      {/* ═══════════ COSTS TAB ═══════════ */}
+      {activeTab === "costs" && <>
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="relative overflow-hidden">
@@ -584,6 +828,7 @@ export default function AnalyticsPage() {
           </Card>
         )}
       </div>
+      </>}
     </div>
   );
 }

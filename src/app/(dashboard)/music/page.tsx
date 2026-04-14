@@ -509,7 +509,7 @@ export default function MusicPage() {
           <CardContent className="space-y-3">
             <Textarea placeholder="Describe your playlist... (e.g., 'chill lofi for studying')" value={playlistPrompt} onChange={e => setPlaylistPrompt(e.target.value)} className="min-h-[80px] resize-none" />
             <Button onClick={() => askMusic(`make me a playlist of ${playlistPrompt}`)} disabled={loading || !playlistPrompt.trim()} className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30">
-              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ListMusic className="h-4 w-4 mr-2" />} Create Playlist
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</> : <><ListMusic className="h-4 w-4 mr-2" /> Create Playlist</>}
             </Button>
           </CardContent>
         </Card>

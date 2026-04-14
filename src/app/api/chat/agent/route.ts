@@ -1,10 +1,7 @@
+import { API_BASE, API_KEY } from "@/lib/api-config";
+
 export async function POST(req: Request) {
   const { message, agent, context, plan, model_tier } = await req.json();
-
-  const API_BASE =
-    process.env.API_URL ||
-    "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
-  const API_KEY = process.env.HARV_API_KEY || "";
 
   const messageWithContext = context
     ? `[CONTEXT]\n${context}\n[/CONTEXT]\n\n${message}`

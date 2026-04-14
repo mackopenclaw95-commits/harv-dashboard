@@ -546,13 +546,36 @@ function makePhases(isKachow: boolean): TourPhase[] {
       path: "/integrations",
       steps: [
         {
+          element: '[data-tour="integrations-header"]',
           popover: {
             title: k ? "🔌 The Pit Crew Connections" : "🔗 Integrations Hub",
             description: k
-              ? "This is where you wire up your tools — Google Calendar, Telegram, GitHub, and more.\n\nConnected services show in green at the top."
-              : "Connect external services to Harv — Google Calendar, Telegram, GitHub, Spotify, and more.\n\nConnected services appear at the top. Click \"Notify Me\" on upcoming integrations to get notified.",
+              ? "This is where you wire up your tools — Google Calendar, Telegram, Spotify, and more."
+              : "Connect external services to Harv — Google Calendar, Telegram, Spotify, and more.\n\nThis is where you manage all your service connections.",
             side: "bottom" as const,
-            align: "center" as const,
+            align: "start" as const,
+          },
+        },
+        {
+          element: '[data-tour="integrations-connected"]',
+          popover: {
+            title: k ? "🟢 Crew Members Online" : "✅ Connected Services",
+            description: k
+              ? "These are your active connections — the crew members already wired in and reporting for duty.\n\nYou can disconnect any of them from here."
+              : "Services you've already connected show here with a green badge.\n\nEach card shows the service status and lets you disconnect if needed.",
+            side: "bottom" as const,
+            align: "start" as const,
+          },
+        },
+        {
+          element: '[data-tour="integrations-available"]',
+          popover: {
+            title: k ? "🔧 Available Upgrades" : "🔌 Available Integrations",
+            description: k
+              ? "Browse what else you can hook up. Click \"Connect\" to wire in a new service, or \"Notify Me\" for upcoming ones."
+              : "Browse available integrations by category. Click \"Connect\" to set up a new service, or join the waitlist for upcoming ones.\n\nSome integrations require a Pro or Max plan.",
+            side: "top" as const,
+            align: "start" as const,
           },
         },
         // ── Transition to Settings ──

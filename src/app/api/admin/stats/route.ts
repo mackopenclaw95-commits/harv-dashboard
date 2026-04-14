@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
+import { API_BASE as API_URL_CFG, API_KEY as API_KEY_CFG } from "@/lib/api-config";
 
 // Model pricing per million tokens (matching OpenRouter rates)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
@@ -96,10 +97,8 @@ export async function GET() {
 
     // --- Sync new api_cost events from VPS into Supabase ---
     try {
-      const API_URL = process.env.API_URL || "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
-      const API_KEY = process.env.HARV_API_KEY || "";
-      const eventsRes = await fetch(`${API_URL}/api/events/recent?limit=500`, {
-        headers: { "X-API-Key": API_KEY },
+      const eventsRes = await fetch(`${API_URL_CFG}/api/events/recent?limit=500`, {
+        headers: { "X-API-Key": API_KEY_CFG },
         signal: AbortSignal.timeout(15000),
       });
       if (eventsRes.ok) {

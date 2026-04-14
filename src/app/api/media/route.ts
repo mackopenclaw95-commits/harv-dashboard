@@ -15,10 +15,7 @@ export async function GET(req: NextRequest) {
     return new Response("Invalid path", { status: 403 });
   }
 
-  const API_BASE =
-    process.env.API_URL ||
-    "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
-  const API_KEY = process.env.HARV_API_KEY || "";
+  const { API_BASE, API_KEY } = await import("@/lib/api-config");
 
   // Fetch via /api/agents/media/ (passes through Hostinger's proxy)
   const relativePath = filePath.replace("/root/harv/media/", "");

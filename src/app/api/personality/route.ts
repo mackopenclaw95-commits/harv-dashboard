@@ -1,9 +1,5 @@
 import { NextRequest } from "next/server";
-
-const API_BASE =
-  process.env.API_URL ||
-  "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
-const API_KEY = process.env.HARV_API_KEY || "";
+import { API_BASE, API_KEY } from "@/lib/api-config";
 
 // Try multiple endpoint paths to work around Hostinger blocking /api/settings/*
 const PATHS = [

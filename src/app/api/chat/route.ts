@@ -5,10 +5,7 @@ export async function POST(req: Request) {
   const { messages, context, plan, model_tier } = await req.json();
   const lastMessage = messages[messages.length - 1]?.content || "";
 
-  const API_BASE =
-    process.env.API_URL ||
-    "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
-  const API_KEY = process.env.HARV_API_KEY || "";
+  const { API_BASE, API_KEY } = await import("@/lib/api-config");
 
   // Get user info for cross-platform context
   let userId = "";

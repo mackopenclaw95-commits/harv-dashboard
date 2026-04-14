@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity, Bot, Filter, Search, ChevronDown, ChevronUp, Calendar, ChevronLeft, ChevronRight, X, CalendarDays } from "lucide-react";
+import { Activity, Bot, Filter, Search, ChevronDown, ChevronUp, Calendar, ChevronLeft, ChevronRight, X, CalendarDays, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { AGENT_ICONS, COMING_SOON_AGENTS } from "@/lib/agent-data";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ interface AgentEvent {
   timestamp: string;
   cost: number;
   tokens: number;
+  source?: "vps" | "dashboard";
 }
 
 function parseEventDate(ts: string): Date {
@@ -183,32 +184,54 @@ export default function ActivityPage() {
   const [showPicker, setShowPicker] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  // Fetch daily counts for heat map (once) — owner only (VPS events are global)
+  // Fetch daily counts for heat map (once) — merge VPS + dashboard events
   useEffect(() => {
     if (!isAdmin) { setLoading(false); return; }
     async function loadCounts() {
       try {
-        const res = await fetch("/api/proxy?path=/api/events/daily-counts?days=90");
-        if (res.ok) {
-          const data = await res.json();
-          setDailyCounts(new Map(Object.entries(data.counts || {})));
+        const [vpsRes, dashRes] = await Promise.all([
+          fetch("/api/proxy?path=/api/events/daily-counts?days=90"),
+          fetch("/api/activity/dashboard?mode=counts"),
+        ]);
+        const merged: Record<string, number> = {};
+        if (vpsRes.ok) {
+          const vps = await vpsRes.json();
+          for (const [k, v] of Object.entries(vps.counts || {})) merged[k] = (merged[k] || 0) + (v as number);
         }
+        if (dashRes.ok) {
+          const dash = await dashRes.json();
+          for (const [k, v] of Object.entries(dash.counts || {})) merged[k] = (merged[k] || 0) + (v as number);
+        }
+        setDailyCounts(new Map(Object.entries(merged)));
       } catch { /* silent */ }
     }
     loadCounts();
   }, [isAdmin]);
 
-  // Fetch events for selected date — owner only
+  // Fetch events for selected date — merge VPS + dashboard events
   useEffect(() => {
     if (!isAdmin) { setLoading(false); return; }
     async function loadDate() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/proxy?path=/api/events/by-date?date=${pickerDate}`);
-        if (res.ok) {
-          const data = await res.json();
-          setEvents((data.events || []).filter((e: AgentEvent) => !HIDDEN_AGENTS.has(e.agent)));
+        const [vpsRes, dashRes] = await Promise.all([
+          fetch(`/api/proxy?path=/api/events/by-date?date=${pickerDate}`),
+          fetch(`/api/activity/dashboard?date=${pickerDate}`),
+        ]);
+        let all: AgentEvent[] = [];
+        if (vpsRes.ok) {
+          const vps = await vpsRes.json();
+          all.push(...(vps.events || []).map((e: AgentEvent) => ({ ...e, source: "vps" as const })));
         }
+        if (dashRes.ok) {
+          const dash = await dashRes.json();
+          all.push(...(dash.events || []));
+        }
+        // Filter hidden agents and sort by timestamp descending
+        all = all
+          .filter((e) => !HIDDEN_AGENTS.has(e.agent))
+          .sort((a, b) => parseEventDate(b.timestamp).getTime() - parseEventDate(a.timestamp).getTime());
+        setEvents(all);
       } catch {
         toast.error("Could not load activity");
       } finally {
@@ -296,7 +319,10 @@ export default function ActivityPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Activity</h1>
             <p className="text-sm text-muted-foreground">
-              {events.length} events recorded
+              {events.length} event{events.length !== 1 ? "s" : ""} recorded
+              {events.some((e) => e.source === "dashboard") && (
+                <span className="text-cyan-400/60"> &middot; {events.filter((e) => e.source === "dashboard").length} from chat</span>
+              )}
             </p>
           </div>
         </div>
@@ -550,6 +576,11 @@ export default function ActivityPage() {
                           >
                             {ev.status}
                           </Badge>
+                          {ev.source === "dashboard" && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
+                              <MessageSquare className="h-2 w-2 mr-0.5" />Chat
+                            </Badge>
+                          )}
                         </div>
                         {ev.summary && (
                           <p className="text-xs text-muted-foreground/60 mt-0.5 line-clamp-1">{ev.summary}</p>

@@ -1,8 +1,5 @@
 import { NextRequest } from "next/server";
-
-const API_BASE =
-  process.env.API_URL ||
-  "https://api.openclaw-yqar.srv1420157.hstgr.cloud";
+import { API_BASE } from "@/lib/api-config";
 
 export async function GET(req: NextRequest) {
   const path = req.nextUrl.searchParams.get("path");
