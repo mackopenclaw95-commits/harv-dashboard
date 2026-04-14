@@ -23,6 +23,9 @@ export async function GET(req: NextRequest) {
     "user-read-recently-played",
     "user-top-read",
     "user-read-private",
+    "user-library-read",
+    "playlist-read-private",
+    "playlist-read-collaborative",
   ].join(" ");
 
   const params = new URLSearchParams({
