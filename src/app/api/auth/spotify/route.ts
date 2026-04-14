@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
     "playlist-modify-public",
     "playlist-modify-private",
     "user-read-playback-state",
+    "user-modify-playback-state",
     "user-read-currently-playing",
     "user-read-recently-played",
     "user-top-read",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -76,6 +76,9 @@ export default function MusicPage() {
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [nowPlaying, setNowPlaying] = useState<NowPlayingData | null>(null);
   const [npLoading, setNpLoading] = useState(true);
+  const [localProgress, setLocalProgress] = useState(0);
+  const [controlling, setControlling] = useState(false);
+  const lastFetchTime = useRef(0);
 
   // Poll now playing
   const fetchNowPlaying = useCallback(async () => {
@@ -83,6 +86,10 @@ export default function MusicPage() {
       const res = await fetch("/api/spotify/now-playing");
       const data = await res.json();
       setNowPlaying(data);
+      if (data.progress_ms != null) {
+        setLocalProgress(data.progress_ms);
+        lastFetchTime.current = Date.now();
+      }
     } catch {
       setNowPlaying({ playing: false, error: "fetch_failed" });
     } finally {
@@ -90,11 +97,48 @@ export default function MusicPage() {
     }
   }, []);
 
+  // Poll every 10s
   useEffect(() => {
     fetchNowPlaying();
-    const interval = setInterval(fetchNowPlaying, 10000); // Poll every 10s
+    const interval = setInterval(fetchNowPlaying, 10000);
     return () => clearInterval(interval);
   }, [fetchNowPlaying]);
+
+  // Smooth progress: tick every second when playing
+  useEffect(() => {
+    if (!nowPlaying?.playing) return;
+    const tick = setInterval(() => {
+      setLocalProgress(prev => {
+        const elapsed = Date.now() - lastFetchTime.current;
+        const newProgress = (nowPlaying.progress_ms || 0) + elapsed;
+        return Math.min(newProgress, nowPlaying.duration_ms || newProgress);
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [nowPlaying]);
+
+  // Player controls
+  async function controlPlayer(action: "play" | "pause" | "next" | "previous") {
+    setControlling(true);
+    try {
+      const res = await fetch("/api/spotify/player", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Playback control failed");
+      } else {
+        // Re-fetch after a short delay to get updated state
+        setTimeout(fetchNowPlaying, 500);
+      }
+    } catch {
+      toast.error("Failed to control playback");
+    } finally {
+      setControlling(false);
+    }
+  }
 
   async function askMusic(message: string) {
     setLoading(true);
@@ -198,23 +242,54 @@ export default function MusicPage() {
                   <p className="text-sm text-muted-foreground truncate">{nowPlaying?.artist}</p>
                   <p className="text-xs text-muted-foreground/60 truncate">{nowPlaying?.album}</p>
 
-                  {/* Progress bar */}
+                  {/* Progress bar (smooth client-side interpolation) */}
                   {nowPlaying?.duration_ms && nowPlaying.duration_ms > 0 && (
                     <div className="mt-3 flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                        {formatMs(nowPlaying.progress_ms || 0)}
+                      <span className="text-[10px] text-muted-foreground/60 tabular-nums w-8">
+                        {formatMs(localProgress)}
                       </span>
                       <div className="flex-1 h-1 rounded-full bg-white/[0.06]">
                         <div
-                          className="h-1 rounded-full bg-emerald-400 transition-all duration-1000"
-                          style={{ width: `${((nowPlaying.progress_ms || 0) / nowPlaying.duration_ms) * 100}%` }}
+                          className="h-1 rounded-full bg-emerald-400 transition-all duration-1000 ease-linear"
+                          style={{ width: `${Math.min((localProgress / nowPlaying.duration_ms) * 100, 100)}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                      <span className="text-[10px] text-muted-foreground/60 tabular-nums w-8 text-right">
                         {formatMs(nowPlaying.duration_ms)}
                       </span>
                     </div>
                   )}
+
+                  {/* Playback controls */}
+                  <div className="mt-3 flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 hover:bg-white/[0.06]"
+                      onClick={() => controlPlayer("previous")}
+                      disabled={controlling}
+                    >
+                      <SkipForward className="h-4 w-4 rotate-180" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9 hover:bg-white/[0.06]"
+                      onClick={() => controlPlayer(nowPlaying?.playing ? "pause" : "play")}
+                      disabled={controlling}
+                    >
+                      {nowPlaying?.playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 hover:bg-white/[0.06]"
+                      onClick={() => controlPlayer("next")}
+                      disabled={controlling}
+                    >
+                      <SkipForward className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 {nowPlaying?.spotify_url && (
                   <a href={nowPlaying.spotify_url} target="_blank" rel="noopener noreferrer" className="shrink-0">
