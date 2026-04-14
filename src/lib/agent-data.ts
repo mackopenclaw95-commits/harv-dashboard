@@ -84,7 +84,7 @@ export const CORE_AGENTS = new Set([
 ]);
 
 export const COMING_SOON_PERSONAL = new Set([
-  "Fitness", "Shopping", "Trading",
+  "Fitness", "Shopping",
 ]);
 
 export const COMING_SOON_BUSINESS = new Set<string>([
