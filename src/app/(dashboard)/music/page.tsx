@@ -33,15 +33,9 @@ export default function MusicPage() {
     setResponse("");
     setPlaylistUrl("");
     try {
-      const res = await fetch("/api/chat/agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, agent: "Music" }),
-      });
-      const raw = await res.text();
-      let text = raw;
-      try { const data = JSON.parse(raw); text = data.response || data.text || data.message || raw; } catch {}
-      setResponse(text || "No response");
+      const { askAgent } = await import("@/lib/agent-ask");
+      const text = await askAgent("Music", message);
+      setResponse(text);
 
       // Extract Spotify URL if present
       const urlMatch = text.match(/https:\/\/open\.spotify\.com\/playlist\/\S+/);

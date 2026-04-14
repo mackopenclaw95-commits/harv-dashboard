@@ -37,14 +37,9 @@ export default function TravelPage() {
     setLoading(true);
     setResponse("");
     try {
-      const res = await fetch("/api/chat/agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, agent: "Travel" }),
-      });
-      const raw = await res.text();
-      try { const data = JSON.parse(raw); setResponse(data.response || data.text || data.message || raw); }
-      catch { setResponse(raw || "No response"); }
+      const { askAgent } = await import("@/lib/agent-ask");
+      const text = await askAgent("Travel", message);
+      setResponse(text);
     } catch {
       toast.error("Failed to get response");
     } finally {

@@ -47,18 +47,9 @@ export default function SportsPage() {
     setAsking(true);
     setResponse("");
     try {
-      const res = await fetch("/api/chat/agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, agent: "Sports" }),
-      });
-      const text = await res.text();
-      try {
-        const data = JSON.parse(text);
-        setResponse(data.response || data.text || data.message || text);
-      } catch {
-        setResponse(text || "No response");
-      }
+      const { askAgent } = await import("@/lib/agent-ask");
+      const text = await askAgent("Sports", message);
+      setResponse(text);
     } catch {
       toast.error("Failed to get response");
     } finally {
@@ -96,15 +87,8 @@ export default function SportsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/chat/agent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: "show my favorites", agent: "Sports" }),
-        });
-        const raw = await res.text();
-        let text = raw;
-        try { const data = JSON.parse(raw); text = data.response || data.text || raw; } catch {}
-        text = text || "";
+        const { askAgent } = await import("@/lib/agent-ask");
+        const text = await askAgent("Sports", "show my favorites") || "";
         // Parse favorites from response
         const teams = text.match(/Teams:\s*(.+)/)?.[1]?.split(",").map((s: string) => s.trim()).filter((s: string) => s && s !== "None set") || [];
         const sports = text.match(/Sports:\s*(.+)/)?.[1]?.split(",").map((s: string) => s.trim()).filter((s: string) => s && s !== "None set") || [];
