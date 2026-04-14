@@ -287,21 +287,21 @@ export default function DashboardPage() {
       )}
 
       {/* Hero Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-md -mx-6 px-6 pt-6 -mt-6 pb-4 relative sticky-header flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20 shadow-lg shadow-primary/10">
+      <header className="sticky top-0 z-10 backdrop-blur-md -mx-6 px-6 pt-6 -mt-6 pb-4 relative sticky-header flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/20 shadow-lg shadow-primary/10">
             <Zap className="h-6 w-6 text-primary" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">
               Command Center
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground truncate">
               Monitor agents, jobs, and system health
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           {lastRefreshed && (
             <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
               Updated {timeSinceRefresh()}
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                     {loading ? (
                       <Skeleton className="h-9 w-16" />
                     ) : (
-                      <p className="text-3xl font-bold tabular-nums">{card.value()}</p>
+                      <p className="text-2xl md:text-3xl font-bold tabular-nums truncate">{card.value()}</p>
                     )}
                     <p className="text-xs text-muted-foreground mt-0.5">{card.subtitle}</p>
                   </CardContent>

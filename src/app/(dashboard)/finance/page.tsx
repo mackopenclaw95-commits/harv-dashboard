@@ -88,7 +88,7 @@ export default function FinancePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <div className="flex rounded-lg ring-1 ring-white/[0.08] overflow-hidden">
               <button
                 onClick={() => setLogType("expense")}
@@ -119,7 +119,7 @@ export default function FinancePage() {
               placeholder="Description (e.g., groceries, salary)"
               value={logDesc}
               onChange={e => setLogDesc(e.target.value)}
-              className="flex-1"
+              className="flex-1 min-w-[150px]"
               onKeyDown={e => e.key === "Enter" && handleQuickLog()}
             />
             <Button onClick={handleQuickLog} disabled={loading}>
