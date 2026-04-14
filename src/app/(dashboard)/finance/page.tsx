@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AgentChat } from "@/components/agent-chat";
 
 export default function FinancePage() {
   const [response, setResponse] = useState("");
@@ -175,37 +176,8 @@ export default function FinancePage() {
         </CardContent>
       </Card>
 
-      {/* Ask Finance Agent */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Lightbulb className="h-4 w-4 text-green-400" />
-            Ask Finance Agent
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Ask about budgets, spending, savings tips, financial advice..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && !loading && askFinance(query)}
-            />
-            <Button onClick={() => askFinance(query)} disabled={loading || !query.trim()}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ask"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Response */}
-      {response && (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{response}</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Chat with Finance Agent */}
+      <AgentChat agentName="Finance" placeholder="Ask about budgets, spending, savings tips, financial advice..." />
     </div>
   );
 }

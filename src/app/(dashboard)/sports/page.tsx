@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
+import { AgentChat } from "@/components/agent-chat";
 
 export default function SportsPage() {
   const { profile, isLoading: authLoading } = useAuth();
@@ -217,34 +218,8 @@ export default function SportsPage() {
         ))}
       </div>
 
-      {/* Ask Sports Agent */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-400" />
-            Ask Sports Agent
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Ask about scores, standings, stats, predictions..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && !asking && askSports(query)}
-            />
-            <Button onClick={() => askSports(query)} disabled={asking || !query.trim()}>
-              {asking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ask"}
-            </Button>
-          </div>
-
-          {response && (
-            <div className="rounded-lg bg-white/[0.02] ring-1 ring-white/[0.06] p-4">
-              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{response}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Chat with Sports Agent */}
+      <AgentChat agentName="Sports" placeholder="Ask about scores, standings, stats, predictions..." />
     </div>
   );
 }

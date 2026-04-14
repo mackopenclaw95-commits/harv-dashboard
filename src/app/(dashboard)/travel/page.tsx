@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AgentChat } from "@/components/agent-chat";
 
 export default function TravelPage() {
   const [response, setResponse] = useState("");
@@ -142,37 +143,8 @@ export default function TravelPage() {
         ))}
       </div>
 
-      {/* Ask Travel Agent */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Compass className="h-4 w-4 text-sky-400" />
-            Ask Travel Agent
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Ask about destinations, flights, hotels, budgets, tips..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && !loading && askTravel(query)}
-            />
-            <Button onClick={() => askTravel(query)} disabled={loading || !query.trim()}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ask"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Response */}
-      {response && (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{response}</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Chat with Travel Agent */}
+      <AgentChat agentName="Travel" placeholder="Ask about destinations, flights, hotels, budgets, tips..." />
     </div>
   );
 }

@@ -37,6 +37,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
 import { getSidebarOrder } from "@/lib/sidebar-order";
+import { NotificationBell } from "@/components/notification-bell";
 
 // Core tabs — always visible in sidebar
 const NAV_ITEMS = [
@@ -252,6 +253,11 @@ export const Sidebar = React.memo(function Sidebar() {
 
         </nav>
       </ScrollArea>
+
+      {/* Notification bell */}
+      <div className="w-full px-2 mb-1 flex justify-center md:justify-start md:px-4">
+        <NotificationBell />
+      </div>
 
       {/* Profile widget — bottom of sidebar */}
       <div className="w-full px-2 relative" ref={profileMenuRef}>
