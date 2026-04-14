@@ -83,7 +83,72 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: playlist.id, name: playlist.name, tracks: playlist.tracks?.total || 0 });
     }
 
-    // Search for songs and add to playlist
+    // Create a new playlist and add songs to it
+    if (body.action === "create_and_add") {
+      const { name, description, songs } = body;
+      if (!name || !songs?.length) {
+        return NextResponse.json({ error: "Missing name or songs" }, { status: 400 });
+      }
+
+      // Get Spotify user ID
+      const meRes = await fetch(`${SPOTIFY}/me`, { headers });
+      if (!meRes.ok) return NextResponse.json({ error: "Failed to get user" }, { status: 500 });
+      const me = await meRes.json();
+
+      // Create playlist
+      const createRes = await fetch(`${SPOTIFY}/users/${me.id}/playlists`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ name, description: description || "", public: true }),
+      });
+      if (!createRes.ok) {
+        return NextResponse.json({ error: "Failed to create playlist" }, { status: 500 });
+      }
+      const playlist = await createRes.json();
+
+      // Search and add songs
+      const uris: string[] = [];
+      const results: { song: string; found: boolean }[] = [];
+      for (const song of songs) {
+        try {
+          const q = encodeURIComponent(song);
+          const res = await fetch(`${SPOTIFY}/search?q=${q}&type=track&limit=1`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            const track = data.tracks?.items?.[0];
+            if (track) {
+              uris.push(track.uri);
+              results.push({ song, found: true });
+            } else {
+              results.push({ song, found: false });
+            }
+          } else {
+            results.push({ song, found: false });
+          }
+        } catch {
+          results.push({ song, found: false });
+        }
+      }
+
+      if (uris.length > 0) {
+        await fetch(`${SPOTIFY}/playlists/${playlist.id}/tracks`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ uris }),
+        });
+      }
+
+      return NextResponse.json({
+        playlist_id: playlist.id,
+        name: playlist.name,
+        url: playlist.external_urls?.spotify || "",
+        added: uris.length,
+        not_found: results.filter(r => !r.found).length,
+        total: songs.length,
+      });
+    }
+
+    // Search for songs and add to existing playlist
     if (body.action === "search_and_add") {
       const { playlist_id, songs } = body;
       if (!playlist_id || !songs?.length) {
