@@ -38,9 +38,10 @@ export default function MusicPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, agent: "Music" }),
       });
-      const data = await res.json();
-      const text = data.response || data.text || data.message || "";
-      setResponse(text);
+      const raw = await res.text();
+      let text = raw;
+      try { const data = JSON.parse(raw); text = data.response || data.text || data.message || raw; } catch {}
+      setResponse(text || "No response");
 
       // Extract Spotify URL if present
       const urlMatch = text.match(/https:\/\/open\.spotify\.com\/playlist\/\S+/);

@@ -42,8 +42,9 @@ export default function TravelPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, agent: "Travel" }),
       });
-      const data = await res.json();
-      setResponse(data.response || data.text || data.message || JSON.stringify(data));
+      const raw = await res.text();
+      try { const data = JSON.parse(raw); setResponse(data.response || data.text || data.message || raw); }
+      catch { setResponse(raw || "No response"); }
     } catch {
       toast.error("Failed to get response");
     } finally {

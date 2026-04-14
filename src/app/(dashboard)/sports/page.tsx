@@ -52,8 +52,13 @@ export default function SportsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, agent: "Sports" }),
       });
-      const data = await res.json();
-      setResponse(data.response || data.text || data.message || JSON.stringify(data));
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        setResponse(data.response || data.text || data.message || text);
+      } catch {
+        setResponse(text || "No response");
+      }
     } catch {
       toast.error("Failed to get response");
     } finally {
@@ -96,8 +101,10 @@ export default function SportsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: "show my favorites", agent: "Sports" }),
         });
-        const data = await res.json();
-        const text = data.response || data.text || "";
+        const raw = await res.text();
+        let text = raw;
+        try { const data = JSON.parse(raw); text = data.response || data.text || raw; } catch {}
+        text = text || "";
         // Parse favorites from response
         const teams = text.match(/Teams:\s*(.+)/)?.[1]?.split(",").map((s: string) => s.trim()).filter((s: string) => s && s !== "None set") || [];
         const sports = text.match(/Sports:\s*(.+)/)?.[1]?.split(",").map((s: string) => s.trim()).filter((s: string) => s && s !== "None set") || [];
