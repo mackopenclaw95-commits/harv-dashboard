@@ -167,12 +167,28 @@ export default function MusicPage() {
     return () => clearInterval(tick);
   }, [nowPlaying]);
 
-  // Fetch stats on mount
+  // Fetch stats on mount — try all at once, fallback to individual sections
   useEffect(() => {
     async function loadStats() {
       try {
         const res = await fetch("/api/spotify/stats");
-        if (res.ok) setStats(await res.json());
+        if (res.ok) {
+          setStats(await res.json());
+          return;
+        }
+        // If all-at-once fails, try sections individually
+        const sections = ["recent", "top_tracks", "top_artists", "playlists", "liked"];
+        const partial: StatsData = {};
+        await Promise.all(sections.map(async (s) => {
+          try {
+            const r = await fetch(`/api/spotify/stats?sections=${s}`);
+            if (r.ok) {
+              const data = await r.json();
+              Object.assign(partial, data);
+            }
+          } catch { /* skip */ }
+        }));
+        if (Object.keys(partial).length > 0) setStats(partial);
       } catch { /* silent */ }
       finally { setStatsLoading(false); }
     }

@@ -6,12 +6,16 @@ import { cookies } from "next/headers";
 const SPOTIFY = "https://api.spotify.com/v1";
 
 async function spotifyGet(url: string, token: string) {
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) return { error: res.status };
-  return res.json();
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return { error: res.status };
+    return await res.json();
+  } catch {
+    return { error: 0 };
+  }
 }
 
 /**
@@ -183,7 +187,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error("Spotify stats error:", err);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    console.error("Spotify stats error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "server_error", detail: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
