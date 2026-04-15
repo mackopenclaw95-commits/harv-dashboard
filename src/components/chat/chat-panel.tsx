@@ -354,16 +354,44 @@ export function ChatPanel({
           return;
         }
         if (!usage.allowed) {
-          toast.error(
-            `Weekly limit reached (${usage.weekly_used}/${usage.weekly_limit}). Resets next week.`
-          );
+          if (usage.reason === "daily_cost_cap") {
+            const spent = Number(usage.daily_cost_usd || 0).toFixed(4);
+            const cap = Number(usage.daily_cost_cap_usd || 0).toFixed(2);
+            toast.error(
+              `Daily spend cap reached ($${spent} / $${cap}). Resets at midnight.`,
+              {
+                duration: 8000,
+                action: {
+                  label: "Upgrade",
+                  onClick: () => window.location.href = "/settings?tab=billing",
+                },
+              }
+            );
+          } else {
+            toast.error(
+              `Weekly limit reached (${usage.weekly_used}/${usage.weekly_limit}). Resets next week.`,
+              {
+                duration: 8000,
+                action: {
+                  label: "Upgrade",
+                  onClick: () => window.location.href = "/settings?tab=billing",
+                },
+              }
+            );
+          }
           isSendingRef.current = false;
           setIsLoading(false);
           return;
         }
         currentModelTier = usage.model_tier || "primary";
         if (usage.degraded) {
-          toast("Using standard model — daily premium limit reached", { duration: 3000 });
+          toast("Using standard model — daily premium limit reached. Upgrade for more.", {
+            duration: 4000,
+            action: {
+              label: "Upgrade",
+              onClick: () => window.location.href = "/settings?tab=billing",
+            },
+          });
         }
       }
     } catch {} // If usage check fails, allow the message through

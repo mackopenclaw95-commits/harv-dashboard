@@ -94,6 +94,35 @@ export default function AdminPage() {
     daily_last_30: Array<{ date: string; cost: number; calls: number }>;
     burn_rate: { daily_avg_usd: number; projected_monthly: number };
   } | null>(null);
+  const [drift, setDrift] = useState<{
+    ok: boolean;
+    checked_at: string;
+    rows_checked: number;
+    live_models: number;
+    zombies: string[];
+    free_wrong: { model: string; live_in: number; live_out: number }[];
+    drifts: { model: string; our_in: number; our_out: number; live_in: number; live_out: number }[];
+  } | null>(null);
+  const [driftLoading, setDriftLoading] = useState(false);
+  const [driftError, setDriftError] = useState<string | null>(null);
+
+  const checkDrift = useCallback(async () => {
+    setDriftLoading(true);
+    setDriftError(null);
+    try {
+      const res = await fetch("/api/admin/pricing-drift");
+      const data = await res.json();
+      if (!res.ok) {
+        setDriftError(data.error || `HTTP ${res.status}`);
+      } else {
+        setDrift(data);
+      }
+    } catch (e) {
+      setDriftError(String(e));
+    } finally {
+      setDriftLoading(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -143,7 +172,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    checkDrift();
+  }, [load, checkDrift]);
 
   async function openUserDetail(userId: string) {
     setUserDetailId(userId);
@@ -496,6 +526,96 @@ export default function AdminPage() {
                 )}
               </div>
             </ScrollArea>
+          </Card>
+
+          {/* Pricing Drift — OpenRouter vs Supabase model_pricing */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  Pricing Drift
+                </CardTitle>
+                <button
+                  onClick={checkDrift}
+                  disabled={driftLoading}
+                  className="text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-50 flex items-center gap-1"
+                >
+                  <RefreshCw className={cn("h-3 w-3", driftLoading && "animate-spin")} />
+                  {driftLoading ? "Checking" : "Recheck"}
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {driftError ? (
+                <p className="text-xs text-red-400">{driftError}</p>
+              ) : !drift ? (
+                <p className="text-xs text-muted-foreground/50">Checking OpenRouter…</p>
+              ) : drift.ok ? (
+                <div>
+                  <p className="text-xs text-green-400 flex items-center gap-1.5">
+                    <CheckCircle className="h-3 w-3" />
+                    All rates match OpenRouter
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">
+                    {drift.rows_checked} rows · {drift.live_models} live models
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-400 flex items-center gap-1.5">
+                    <AlertCircle className="h-3 w-3" />
+                    {drift.zombies.length + drift.free_wrong.length + drift.drifts.length} issue{drift.zombies.length + drift.free_wrong.length + drift.drifts.length === 1 ? "" : "s"} detected
+                  </p>
+                  {drift.zombies.length > 0 && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-2">
+                        Zombies ({drift.zombies.length}) — dead on OpenRouter
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {drift.zombies.map((m) => (
+                          <li key={m} className="text-[11px] font-mono text-red-400 truncate">{m}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {drift.free_wrong.length > 0 && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-2">
+                        Mis-flagged free ({drift.free_wrong.length})
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {drift.free_wrong.map((f) => (
+                          <li key={f.model} className="text-[11px] font-mono text-amber-400 truncate" title={`live: $${f.live_in.toFixed(4)}/M in · $${f.live_out.toFixed(4)}/M out`}>
+                            {f.model}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {drift.drifts.length > 0 && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-2">
+                        Rate drift ({drift.drifts.length})
+                      </p>
+                      <ul className="mt-1 space-y-1">
+                        {drift.drifts.map((d) => (
+                          <li key={d.model} className="text-[11px] leading-tight">
+                            <div className="font-mono text-amber-400 truncate">{d.model}</div>
+                            <div className="font-mono text-[10px] text-muted-foreground/60">
+                              ours ${d.our_in.toFixed(4)}/${d.our_out.toFixed(4)} · live ${d.live_in.toFixed(4)}/${d.live_out.toFixed(4)}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/50 pt-1 border-t border-white/[0.04]">
+                    Fix via Supabase SQL on <span className="font-mono">model_pricing</span>
+                  </p>
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           {/* Profit/Loss quick calc */}
