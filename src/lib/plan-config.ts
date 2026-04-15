@@ -7,7 +7,7 @@ export const TIER_LIMITS = {
     imagesPerDay: 0,
     videosPerDay: 0,
     primaryModel: "gemini-flash-lite",
-    fallbackModel: "qwen3-8b-free",
+    fallbackModel: "llama-3.3-70b-free",
     // Daily USD hard cap — blocks further calls when exceeded
     dailyCostCapUsd: 0.10,
   },

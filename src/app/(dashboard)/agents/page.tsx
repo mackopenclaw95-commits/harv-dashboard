@@ -76,6 +76,8 @@ function simplifyModel(model: string): string {
   if (m.includes("qwen3-8b")) return "Qwen3 8B";
   if (m.includes("qwen2.5:0.5b")) return "Qwen 2.5 0.5B";
   if (m.includes("qwen2.5")) return "Qwen 2.5";
+  if (m.includes("llama-3.3-70b")) return "Llama 3.3 70B";
+  if (m.includes("gemma-3-4b")) return "Gemma 3 4B";
   if (m.includes("imagen-4")) return "Imagen 4.0";
   if (m.includes("gemini")) return "Gemini";
   // Fallback: strip date suffixes and take last segment
@@ -1293,7 +1295,7 @@ export default function AgentsPage() {
 const FALLBACK_AGENTS: Agent[] = [
   { name: "Harv", status: "LIVE", model: "deepseek/deepseek-v3.2", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Main brain — Cars 1 personality, routes invisibly through Router", cost_per_call: 0.00032 },
   { name: "Router", status: "LIVE", model: "qwen/qwen3-8b", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Routes your messages to the right agent automatically", cost_per_call: 0 },
-  { name: "Guardian", status: "LIVE", model: "qwen/qwen3-8b:free", type: "background", tier: "BACKGROUND", provider: "openrouter", description: "System monitor — watches for issues and keeps everything running smoothly", cost_per_call: 0 },
+  { name: "Guardian", status: "LIVE", model: "google/gemma-3-4b-it:free", type: "background", tier: "BACKGROUND", provider: "openrouter", description: "System monitor — watches for issues and keeps everything running smoothly", cost_per_call: 0 },
   { name: "Journal", status: "LIVE", model: "minimax/minimax-m2.1", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Daily memory — session compression, 3am EST cutoff, Supabase storage", cost_per_call: 0.000622 },
   { name: "Research", status: "LIVE", model: "x-ai/grok-4.1-fast", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Research orchestrator — routes to Product, Market, and Data Viz sub-agents", cost_per_call: 0.001 },
   { name: "Product Research", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Product comparisons, reviews, and purchase recommendations", cost_per_call: 0.001 },
@@ -1319,8 +1321,8 @@ const FALLBACK_AGENTS: Agent[] = [
   { name: "Marketing", status: "LIVE", model: "deepseek/deepseek-v3.2", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Content strategy, social media, Twitter publishing", cost_per_call: 0.002 },
   { name: "Fitness", status: "COMING_SOON", model: "tbd", type: "personal", tier: "AGENTS", provider: "tbd", description: "Fitness tracking with Garmin Connect integration", cost_per_call: 0 },
   { name: "Shopping", status: "COMING_SOON", model: "tbd", type: "personal", tier: "AGENTS", provider: "tbd", description: "Shopping lists, product research, and purchase tracking", cost_per_call: 0 },
-  { name: "Medic", status: "LIVE", model: "qwen/qwen3-8b:free", type: "background", tier: "BACKGROUND", provider: "openrouter", description: "Error scanner — checks for bugs every 6 hours and auto-fixes when possible", cost_per_call: 0 },
-  { name: "Heartbeat", status: "LIVE", model: "qwen/qwen3-8b:free", type: "background", tier: "BACKGROUND", provider: "openrouter", description: "System pulse — runs health checks, processes tasks, and syncs data", cost_per_call: 0 },
+  { name: "Medic", status: "LIVE", model: "google/gemma-3-4b-it:free", type: "background", tier: "BACKGROUND", provider: "openrouter", description: "Error scanner — checks for bugs every 6 hours and auto-fixes when possible", cost_per_call: 0 },
+  { name: "Heartbeat", status: "LIVE", model: "google/gemma-3-4b-it:free", type: "background", tier: "BACKGROUND", provider: "openrouter", description: "System pulse — runs health checks, processes tasks, and syncs data", cost_per_call: 0 },
   { name: "Ledger", status: "LIVE", model: "none", type: "tool", tier: "TOOLS", provider: "none", description: "Real-time Mission Control updater", cost_per_call: 0 },
   { name: "Drive", status: "LIVE", model: "none", type: "tool", tier: "TOOLS", provider: "none", description: "Google Drive I/O — read, write, list, move, delete", cost_per_call: 0 },
 ];

@@ -35,7 +35,9 @@ const FALLBACK: PricingMap = {
   "x-ai/grok-3":                      mk("x-ai/grok-3", 3.00, 15.00),
   "minimax/minimax-m2.1":             mk("minimax/minimax-m2.1", 0.29, 0.95),
   "qwen/qwen3-8b":                    mk("qwen/qwen3-8b", 0.05, 0.40),
-  "qwen/qwen3-8b:free":               { ...mk("qwen/qwen3-8b:free", 0, 0), is_free: true },
+  // Free models — verified alive on OpenRouter /v1/models 2026-04-15
+  "meta-llama/llama-3.3-70b-instruct:free": { ...mk("meta-llama/llama-3.3-70b-instruct:free", 0, 0), is_free: true },
+  "google/gemma-3-4b-it:free":        { ...mk("google/gemma-3-4b-it:free", 0, 0), is_free: true },
   "google/gemini-2.0-flash-lite-001": mk("google/gemini-2.0-flash-lite-001", 0.075, 0.30),
   "google/gemini-2.5-flash":          { ...mk("google/gemini-2.5-flash", 0.30, 2.50), modality: "vlm" },
   "openai/gpt-4.1":                   mk("openai/gpt-4.1", 2.00, 8.00),

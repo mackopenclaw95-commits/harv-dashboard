@@ -44,7 +44,9 @@ INSERT INTO model_pricing (model, provider, input_per_million, output_per_millio
   ('x-ai/grok-3',                      'openrouter', 3.00,  15.00, 'text', false, 'Grok 3'),
   ('minimax/minimax-m2.1',             'openrouter', 0.30,  1.20,  'text', false, 'MiniMax M2.1 (agent default)'),
   ('qwen/qwen3-8b',                    'openrouter', 0.04,  0.09,  'text', false, 'Qwen3 8B'),
-  ('qwen/qwen3-8b:free',               'openrouter', 0.00,  0.00,  'text', true,  'Qwen3 8B free tier'),
+  -- Free models — verified alive on OpenRouter /v1/models 2026-04-15
+  ('meta-llama/llama-3.3-70b-instruct:free', 'openrouter', 0.00, 0.00, 'text', true, 'Llama 3.3 70B free — user-facing fallback'),
+  ('google/gemma-3-4b-it:free',        'openrouter', 0.00,  0.00,  'text', true,  'Gemma 3 4B free — background agents'),
   ('google/gemini-2.0-flash-lite-001', 'openrouter', 0.075, 0.30,  'text', false, 'Gemini 2.0 Flash Lite'),
   ('google/gemini-2.5-flash',          'openrouter', 0.10,  0.40,  'vlm',  false, 'Gemini 2.5 Flash VLM'),
   ('openai/gpt-4.1',                   'openrouter', 2.00,  8.00,  'text', false, 'GPT-4.1'),
@@ -56,6 +58,12 @@ ON CONFLICT (model) DO UPDATE SET
   output_per_million = EXCLUDED.output_per_million,
   modality = EXCLUDED.modality,
   updated_at = now();
+
+-- Remove dead free models that OpenRouter no longer serves (2026-04-15 cleanup)
+DELETE FROM model_pricing WHERE model IN (
+  'qwen/qwen3-8b:free',
+  'deepseek/deepseek-r1-0528-qwen3-8b:free'
+);
 
 -- Set audio/image per-unit costs
 UPDATE model_pricing SET unit = 'audio_minute', per_unit_cost = 0.00067

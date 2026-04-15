@@ -28,8 +28,10 @@ NEW_DICT = """_MODEL_PRICING = {
     'minimax/minimax-m2.1':            {'input': 0.29,  'output':  0.95},
     'minimax/minimax-m2':              {'input': 0.255, 'output':  1.00},
     'qwen/qwen3-8b':                   {'input': 0.05,  'output':  0.40},
-    'qwen/qwen3-8b:free':              {'input': 0.00,  'output':  0.00},
     'qwen/qwen3-14b':                  {'input': 0.08,  'output':  0.23},
+    # Free models — verified alive on OpenRouter /v1/models 2026-04-15
+    'meta-llama/llama-3.3-70b-instruct:free': {'input': 0.00, 'output': 0.00},
+    'google/gemma-3-4b-it:free':       {'input': 0.00,  'output':  0.00},
     'google/gemini-2.0-flash-lite-001':{'input': 0.075, 'output':  0.30},
     'google/gemini-2.5-flash':         {'input': 0.30,  'output':  2.50},
 

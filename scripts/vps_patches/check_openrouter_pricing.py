@@ -29,15 +29,16 @@ TARGETS = {
     'deepseek/deepseek-chat-v3-0324',
     'deepseek/deepseek-v3.2',
     'deepseek/deepseek-r1',
-    'deepseek/deepseek-r1-0528-qwen3-8b:free',
     'google/gemini-2.0-flash-lite-001',
     'google/gemini-2.5-flash',
     'x-ai/grok-4.1-fast',
     'x-ai/grok-3',
     'qwen/qwen3-8b',
-    'qwen/qwen3-8b:free',
     'minimax/minimax-m2.1',
     'minimax/minimax-m2',
+    # Free models — verified alive 2026-04-15
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'google/gemma-3-4b-it:free',
 }
 
 # Our current rates (mirror of VPS _MODEL_PRICING + Supabase)
@@ -52,9 +53,10 @@ OUR_RATES = {
     'x-ai/grok-4.1-fast':                    (0.05,  0.10),
     'x-ai/grok-3':                           (3.00,  15.00),
     'qwen/qwen3-8b':                         (0.04,  0.09),
-    'qwen/qwen3-8b:free':                    (0.00,  0.00),
     'minimax/minimax-m2.1':                  (0.30,  1.20),
     'minimax/minimax-m2':                    (0.255, 1.00),
+    'meta-llama/llama-3.3-70b-instruct:free':(0.00,  0.00),
+    'google/gemma-3-4b-it:free':             (0.00,  0.00),
 }
 
 req = urllib.request.Request(

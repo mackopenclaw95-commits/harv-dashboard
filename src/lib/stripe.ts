@@ -12,7 +12,7 @@ export const TIER_LIMITS = {
     weeklyBackstop: 100,
     imagesPerDay: 0,
     primaryModel: "gemini-flash-lite",
-    fallbackModel: "qwen3-8b-free",
+    fallbackModel: "llama-3.3-70b-free",
   },
   pro: {
     primaryMessagesPerDay: 150,
