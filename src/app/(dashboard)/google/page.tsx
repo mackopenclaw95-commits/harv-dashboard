@@ -367,7 +367,7 @@ export default function GooglePage() {
                     </div>
                     <div className="border-t border-white/[0.06] pt-2 mt-2">
                       <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">
-                        {selectedMessage.body || selectedMessage.snippet || "(no body)"}
+                        {selectedMessage.body || "(no body)"}
                       </pre>
                     </div>
                   </div>
