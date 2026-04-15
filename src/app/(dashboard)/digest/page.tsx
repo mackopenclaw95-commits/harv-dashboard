@@ -28,6 +28,7 @@ import {
   Trash2,
   Download,
   HelpCircle,
+  Rocket,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
@@ -63,13 +64,55 @@ const MODE_META: Record<Mode, { label: string; icon: React.ComponentType<{ class
   multi: { label: "Multi-Video", icon: Lightbulb, desc: "Synthesize ideas from multiple videos", cta: "Synthesize Ideas", Icon: Lightbulb },
 };
 
-const PROGRESS_STEPS = [
-  { at: 0, label: "Fetching video metadata…" },
-  { at: 4, label: "Downloading audio…" },
-  { at: 12, label: "Transcribing (Whisper)…" },
-  { at: 28, label: "Analyzing content…" },
-  { at: 40, label: "Writing digest…" },
-];
+const PROGRESS_STEPS_BY_MODE: Record<Mode, { at: number; label: string }[]> = {
+  digest: [
+    { at: 0, label: "Fetching video metadata…" },
+    { at: 4, label: "Downloading audio…" },
+    { at: 12, label: "Transcribing (Whisper)…" },
+    { at: 28, label: "Analyzing content…" },
+    { at: 40, label: "Writing digest…" },
+  ],
+  implement: [
+    { at: 0, label: "Fetching video metadata…" },
+    { at: 4, label: "Downloading audio…" },
+    { at: 12, label: "Transcribing (Whisper)…" },
+    { at: 28, label: "Planning implementation steps…" },
+    { at: 42, label: "Writing guide…" },
+  ],
+  visual: [
+    { at: 0, label: "Fetching video metadata…" },
+    { at: 4, label: "Downloading video…" },
+    { at: 15, label: "Sending frames to Gemini…" },
+    { at: 32, label: "Analyzing visuals…" },
+    { at: 48, label: "Writing analysis…" },
+  ],
+  multi: [
+    { at: 0, label: "Fetching videos…" },
+    { at: 8, label: "Downloading audio tracks…" },
+    { at: 22, label: "Transcribing each…" },
+    { at: 42, label: "Finding common themes…" },
+    { at: 58, label: "Writing synthesis…" },
+  ],
+};
+
+// Regex: extract numbered headings from digest output to surface follow-up actions.
+// Matches "## 1. Title", "## Section 2: Title", "### 3) Title", etc.
+const SECTION_RE = /^#{1,4}\s*(?:Section\s+)?(\d+)[.:)]\s+(.+?)\s*$/gim;
+
+function extractSections(md: string): { n: number; title: string }[] {
+  const found = new Map<number, string>();
+  let m: RegExpExecArray | null;
+  SECTION_RE.lastIndex = 0;
+  while ((m = SECTION_RE.exec(md)) !== null) {
+    const n = parseInt(m[1], 10);
+    if (!found.has(n) && n >= 1 && n <= 12) {
+      found.set(n, m[2].replace(/\*+/g, "").trim());
+    }
+  }
+  return Array.from(found.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([n, title]) => ({ n, title }));
+}
 
 function detectPlatform(urlStr: string): string {
   if (urlStr.includes("youtube.com") || urlStr.includes("youtu.be")) return "YouTube";
@@ -113,6 +156,8 @@ export default function DigestPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [howToOpen, setHowToOpen] = useState(true);
+  const [sendingToClaude, setSendingToClaude] = useState(false);
+  const [claudeSessionUrl, setClaudeSessionUrl] = useState<string | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const metaDebounce = useRef<NodeJS.Timeout | null>(null);
 
@@ -169,21 +214,59 @@ export default function DigestPage() {
       setElapsed(0);
       return;
     }
+    const steps = PROGRESS_STEPS_BY_MODE[mode];
     const start = Date.now();
     progressInterval.current = setInterval(() => {
       const secs = Math.floor((Date.now() - start) / 1000);
       setElapsed(secs);
-      const step = PROGRESS_STEPS.filter((s) => s.at <= secs).length - 1;
+      const step = steps.filter((s) => s.at <= secs).length - 1;
       setProgressStep(Math.max(0, step));
     }, 500);
     return () => {
       if (progressInterval.current) clearInterval(progressInterval.current);
     };
-  }, [loading]);
+  }, [loading, mode]);
+
+  async function sendToClaudeCode() {
+    if (!response.trim()) return;
+    setSendingToClaude(true);
+    setClaudeSessionUrl(null);
+    try {
+      const header = videoMeta?.title
+        ? `# Implementation guide for: ${videoMeta.title}\n\n`
+        : `# Implementation guide\n\n`;
+      const sourceLine = url ? `Source video: ${url}\n\n` : "";
+      const prompt = header + sourceLine + response;
+
+      const res = await fetch("/api/digest/implement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: prompt }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.session_url) {
+        toast.error(data.error || "Failed to start Claude Code session");
+        return;
+      }
+      setClaudeSessionUrl(data.session_url);
+      toast.success("Claude Code session started", {
+        description: "Click to open and watch it work",
+        action: {
+          label: "Open",
+          onClick: () => window.open(data.session_url, "_blank", "noopener,noreferrer"),
+        },
+      });
+    } catch (e) {
+      toast.error(`Failed: ${String(e)}`);
+    } finally {
+      setSendingToClaude(false);
+    }
+  }
 
   async function askDigest(message: string, ctx?: { url?: string; multiUrls?: string; mode: Mode }) {
     setLoading(true);
     setResponse("");
+    setClaudeSessionUrl(null);
     try {
       const res = await fetch("/api/chat/agent", {
         method: "POST",
@@ -279,7 +362,14 @@ export default function DigestPage() {
     toast.success("History cleared");
   }
 
-  const currentProgress = useMemo(() => PROGRESS_STEPS[progressStep], [progressStep]);
+  const progressSteps = PROGRESS_STEPS_BY_MODE[mode];
+  const lastStepAt = progressSteps[progressSteps.length - 1].at;
+  const stalled = loading && elapsed > lastStepAt + 20;
+  const currentProgress = useMemo(
+    () => progressSteps[progressStep] ?? progressSteps[0],
+    [progressStep, progressSteps]
+  );
+  const sections = useMemo(() => extractSections(response), [response]);
 
   // Admin gate
   if (authLoading) {
@@ -450,9 +540,15 @@ export default function DigestPage() {
         <CardContent className="space-y-3">
           {mode === "multi" ? (
             <Textarea
-              placeholder={"Paste 2+ video URLs (one per line or space-separated):\nhttps://youtube.com/watch?v=...\nhttps://tiktok.com/@user/video/...\nhttps://x.com/user/status/..."}
+              placeholder={"Paste 2+ video URLs (one per line or space-separated):\nhttps://youtube.com/watch?v=...\nhttps://tiktok.com/@user/video/...\nhttps://x.com/user/status/...\n\nPress Ctrl+Enter to submit"}
               value={multiUrls}
               onChange={e => setMultiUrls(e.target.value)}
+              onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !loading) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
               className="min-h-[100px] resize-none font-mono text-xs"
             />
           ) : (
@@ -527,13 +623,15 @@ export default function DigestPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3 mb-3">
               <Loader2 className="h-4 w-4 animate-spin text-violet-400 shrink-0" />
-              <p className="text-sm font-medium text-violet-400">{currentProgress.label}</p>
+              <p className="text-sm font-medium text-violet-400">
+                {stalled ? "Still working — long videos can take 60–90s" : currentProgress.label}
+              </p>
               <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">{elapsed}s</span>
             </div>
             <div className="space-y-1.5">
-              {PROGRESS_STEPS.map((step, i) => {
-                const done = i < progressStep;
-                const active = i === progressStep;
+              {progressSteps.map((step, i) => {
+                const done = stalled || i < progressStep;
+                const active = !stalled && i === progressStep;
                 return (
                   <div
                     key={step.label}
@@ -631,29 +729,75 @@ export default function DigestPage() {
               <MarkdownMessage content={response} />
             </div>
 
+            {/* Send to Claude Code — implement mode only */}
+            {mode === "implement" && (
+              <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-2">
+                {claudeSessionUrl ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                    <Rocket className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-emerald-400">Claude Code session running</p>
+                      <p className="text-[10px] text-muted-foreground truncate">It will open a PR on harv-dashboard when done.</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                      onClick={() => window.open(claudeSessionUrl, "_blank", "noopener,noreferrer")}
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Watch session
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3">
+                    <Button
+                      onClick={sendToClaudeCode}
+                      disabled={sendingToClaude}
+                      className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25"
+                    >
+                      {sendingToClaude ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Rocket className="h-4 w-4 mr-2" />
+                      )}
+                      Send to Claude Code
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground/70 pt-2">
+                      Fires a Claude Code session on Anthropic&apos;s cloud. It will implement this guide against harv-dashboard and open a PR.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Follow-up actions */}
-            {mode === "digest" && (
+            {mode === "digest" && url.trim() && (
               <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
                 <Button
                   variant="outline"
                   size="sm"
                   className="text-xs"
-                  onClick={() => { setMode("implement"); handleSubmit(); }}
+                  onClick={() => {
+                    setMode("implement");
+                    askDigest(`implement this video: ${url}`, { url, mode: "implement" });
+                  }}
                   disabled={loading}
                 >
                   <Wrench className="h-3 w-3 mr-1" />
                   Generate Implementation Guide
                 </Button>
-                {[1, 2, 3].map(n => (
+                {sections.slice(0, 5).map(({ n, title }) => (
                   <Button
                     key={n}
                     variant="ghost"
                     size="sm"
                     className="text-xs"
-                    onClick={() => askDigest(`implement section ${n}`)}
+                    onClick={() => askDigest(`implement section ${n}: ${title}`)}
                     disabled={loading}
+                    title={title}
                   >
-                    Implement Section {n}
+                    Implement: {title.length > 28 ? title.slice(0, 28) + "…" : title}
                   </Button>
                 ))}
               </div>
