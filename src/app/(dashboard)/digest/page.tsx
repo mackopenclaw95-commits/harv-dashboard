@@ -20,6 +20,7 @@ import {
   Lightbulb,
   Link,
   ExternalLink,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
@@ -31,7 +32,7 @@ export default function DigestPage() {
   const [multiUrls, setMultiUrls] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"digest" | "implement" | "multi">("digest");
+  const [mode, setMode] = useState<"digest" | "implement" | "multi" | "visual">("digest");
 
   async function askDigest(message: string) {
     setLoading(true);
@@ -64,6 +65,13 @@ export default function DigestPage() {
         return;
       }
       askDigest(`implement this video: ${url}`);
+    } else if (mode === "visual") {
+      if (!url.trim()) {
+        toast.error("Paste a URL");
+        return;
+      }
+      // Gemini VLM path — reads what's on screen (code, UI, charts, demos)
+      askDigest(`[vlm] ${url}`);
     } else {
       if (!url.trim()) {
         toast.error("Paste a URL");
@@ -130,10 +138,11 @@ export default function DigestPage() {
       </header>
 
       {/* Mode Selector */}
-      <div className="flex gap-2 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
         {[
           { id: "digest" as const, label: "Digest", icon: FileText, desc: "Summarize & break into sections" },
           { id: "implement" as const, label: "Implement", icon: Wrench, desc: "Step-by-step implementation guide" },
+          { id: "visual" as const, label: "Visual", icon: Eye, desc: "Read what's on screen (Gemini VLM)" },
           { id: "multi" as const, label: "Multi-Video", icon: Lightbulb, desc: "Synthesize ideas from multiple videos" },
         ].map(({ id, label, icon: Icon, desc }) => (
           <button
@@ -202,10 +211,18 @@ export default function DigestPage() {
               <Play className="h-4 w-4 mr-2" />
             ) : mode === "implement" ? (
               <Wrench className="h-4 w-4 mr-2" />
+            ) : mode === "visual" ? (
+              <Eye className="h-4 w-4 mr-2" />
             ) : (
               <Lightbulb className="h-4 w-4 mr-2" />
             )}
-            {mode === "digest" ? "Digest Video" : mode === "implement" ? "Generate Implementation Guide" : "Synthesize Ideas"}
+            {mode === "digest"
+              ? "Digest Video"
+              : mode === "implement"
+              ? "Generate Implementation Guide"
+              : mode === "visual"
+              ? "Analyze Visually"
+              : "Synthesize Ideas"}
           </Button>
         </CardContent>
       </Card>
@@ -223,6 +240,9 @@ export default function DigestPage() {
               </div>
               <div>
                 <span className="font-medium text-violet-400">Implement:</span> Same as digest but generates a complete step-by-step guide with code, commands, and configs. You can follow it without watching the video.
+              </div>
+              <div>
+                <span className="font-medium text-violet-400">Visual:</span> Sends the actual video frames to Gemini instead of just the transcript. Reads code on screen, UI demos, charts, and diagrams — catches anything a silent demo would show. Best for tutorials and product walkthroughs. Works best on TikTok/Twitter; YouTube bot-gates datacenter IPs.
               </div>
               <div>
                 <span className="font-medium text-violet-400">Multi-Video:</span> Paste 2-5 URLs from different videos. The agent summarizes each, finds common themes, and creates a combined action plan.
