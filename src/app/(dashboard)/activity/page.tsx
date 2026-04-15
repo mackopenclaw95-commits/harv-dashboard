@@ -184,23 +184,29 @@ export default function ActivityPage() {
   const [showPicker, setShowPicker] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  // Fetch daily counts for heat map (once) — merge VPS + dashboard events
+  // Fetch daily counts for heat map.
+  // Admins: merge VPS system events + their own dashboard events (scope=all).
+  // Regular users: only their own dashboard events.
   useEffect(() => {
-    if (!isAdmin) { setLoading(false); return; }
     async function loadCounts() {
       try {
-        const [vpsRes, dashRes] = await Promise.all([
-          fetch("/api/proxy?path=/api/events/daily-counts?days=90"),
-          fetch("/api/activity/dashboard?mode=counts"),
-        ]);
-        const merged: Record<string, number> = {};
-        if (vpsRes.ok) {
-          const vps = await vpsRes.json();
-          for (const [k, v] of Object.entries(vps.counts || {})) merged[k] = (merged[k] || 0) + (v as number);
+        const dashUrl = isAdmin
+          ? "/api/activity/dashboard?mode=counts&scope=all"
+          : "/api/activity/dashboard?mode=counts";
+        const requests: Promise<Response>[] = [fetch(dashUrl)];
+        if (isAdmin) {
+          requests.push(fetch("/api/proxy?path=/api/events/daily-counts?days=90"));
         }
-        if (dashRes.ok) {
+        const results = await Promise.all(requests);
+        const merged: Record<string, number> = {};
+        const [dashRes, vpsRes] = [results[0], results[1]];
+        if (dashRes?.ok) {
           const dash = await dashRes.json();
           for (const [k, v] of Object.entries(dash.counts || {})) merged[k] = (merged[k] || 0) + (v as number);
+        }
+        if (vpsRes?.ok) {
+          const vps = await vpsRes.json();
+          for (const [k, v] of Object.entries(vps.counts || {})) merged[k] = (merged[k] || 0) + (v as number);
         }
         setDailyCounts(new Map(Object.entries(merged)));
       } catch { /* silent */ }
@@ -208,24 +214,28 @@ export default function ActivityPage() {
     loadCounts();
   }, [isAdmin]);
 
-  // Fetch events for selected date — merge VPS + dashboard events
+  // Fetch events for selected date.
   useEffect(() => {
-    if (!isAdmin) { setLoading(false); return; }
     async function loadDate() {
       setLoading(true);
       try {
-        const [vpsRes, dashRes] = await Promise.all([
-          fetch(`/api/proxy?path=/api/events/by-date?date=${pickerDate}`),
-          fetch(`/api/activity/dashboard?date=${pickerDate}`),
-        ]);
-        let all: AgentEvent[] = [];
-        if (vpsRes.ok) {
-          const vps = await vpsRes.json();
-          all.push(...(vps.events || []).map((e: AgentEvent) => ({ ...e, source: "vps" as const })));
+        const dashUrl = isAdmin
+          ? `/api/activity/dashboard?date=${pickerDate}&scope=all`
+          : `/api/activity/dashboard?date=${pickerDate}`;
+        const requests: Promise<Response>[] = [fetch(dashUrl)];
+        if (isAdmin) {
+          requests.push(fetch(`/api/proxy?path=/api/events/by-date?date=${pickerDate}`));
         }
-        if (dashRes.ok) {
+        const results = await Promise.all(requests);
+        const [dashRes, vpsRes] = [results[0], results[1]];
+        let all: AgentEvent[] = [];
+        if (dashRes?.ok) {
           const dash = await dashRes.json();
           all.push(...(dash.events || []));
+        }
+        if (vpsRes?.ok) {
+          const vps = await vpsRes.json();
+          all.push(...(vps.events || []).map((e: AgentEvent) => ({ ...e, source: "vps" as const })));
         }
         // Filter hidden agents and sort by timestamp descending
         all = all

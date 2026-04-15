@@ -27,16 +27,32 @@ export async function GET(req: NextRequest) {
 
     const service = createServiceClient();
 
+    // Check if user is owner/admin — owners optionally see global stats
+    const { data: profile } = await service
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    const isOwner = profile?.role === "owner";
+
+    // When scope=all is passed by an owner, return global stats.
+    // Otherwise always scope to the current user's own events.
+    const scopeParam = req.nextUrl.searchParams.get("scope");
+    const scopeAll = scopeParam === "all" && isOwner;
+
     if (mode === "counts") {
       // Return daily counts for last 90 days
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - 90);
 
-      const { data, error } = await service
+      let q = service
         .from("usage_logs")
         .select("created_at")
         .gte("created_at", daysAgo.toISOString())
         .order("created_at", { ascending: true });
+      if (!scopeAll) q = q.eq("user_id", user.id);
+
+      const { data, error } = await q;
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -60,12 +76,15 @@ export async function GET(req: NextRequest) {
     const startOfDay = `${date}T00:00:00.000Z`;
     const endOfDay = `${date}T23:59:59.999Z`;
 
-    const { data, error } = await service
+    let q = service
       .from("usage_logs")
       .select("*")
       .gte("created_at", startOfDay)
       .lte("created_at", endOfDay)
       .order("created_at", { ascending: false });
+    if (!scopeAll) q = q.eq("user_id", user.id);
+
+    const { data, error } = await q;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
