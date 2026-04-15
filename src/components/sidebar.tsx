@@ -32,6 +32,8 @@ import {
   Plane,
   Sparkles,
   Video,
+  GraduationCap,
+  HardDrive,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +57,7 @@ const PROFILE_MENU_ITEMS = [
   { href: "/journal", label: "Journal", icon: FileText },
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/activity", label: "Activity", icon: Activity },
+  { href: "/google", label: "Google Workspace", icon: HardDrive },
   { href: "/team", label: "Meet the Team", icon: Users2 },
   { href: "/integrations", label: "Integrations", icon: Link2 },
 ];
@@ -64,6 +67,7 @@ const PERSONAL_AGENT_ITEMS = [
   { href: "/music", label: "Music", icon: Music },
   { href: "/finance", label: "Finance", icon: DollarSign },
   { href: "/travel", label: "Travel", icon: Plane },
+  { href: "/learning", label: "Learning", icon: GraduationCap },
 ];
 
 const ADMIN_ITEMS = [
@@ -79,7 +83,7 @@ export const Sidebar = React.memo(function Sidebar() {
   const { isAdmin, profile, signOut } = useAuth();
   const [isKachow, setIsKachow] = useState(false);
   const [personalOpen, setPersonalOpen] = useState(() => {
-    return pathname?.startsWith("/sports") || pathname?.startsWith("/music") || pathname?.startsWith("/finance") || pathname?.startsWith("/travel") || false;
+    return pathname?.startsWith("/sports") || pathname?.startsWith("/music") || pathname?.startsWith("/finance") || pathname?.startsWith("/travel") || pathname?.startsWith("/learning") || false;
   });
   const [adminOpen, setAdminOpen] = useState(() => {
     return pathname?.startsWith("/admin") || pathname?.startsWith("/analytics") || pathname?.startsWith("/marketing") || pathname?.startsWith("/digest") || false;
