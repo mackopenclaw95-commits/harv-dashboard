@@ -171,17 +171,25 @@ export default function DashboardPage() {
     else setRefreshing(false);
   }, []);
 
+  // Fetch dashboard data once on mount + poll every 2min.
+  // Note: DO NOT add `profile` to deps — profile object identity changes
+  // multiple times during auth bootstrap, which used to cause 4x duplicate
+  // fetches to /api/proxy on every dashboard load.
   useEffect(() => {
     load(false);
     intervalRef.current = setInterval(() => load(true), 120000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [load]);
+
+  // Trial days — runs whenever the profile resolves.
+  useEffect(() => {
     if (profile) {
       ensureTrialStarted();
       setTrialDays(getTrialDaysRemaining());
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [load, profile]);
+  }, [profile]);
 
   function timeSinceRefresh(): string {
     if (!lastRefreshed) return "";

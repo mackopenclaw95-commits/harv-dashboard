@@ -93,31 +93,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        setTokenUserId(s.user.id);
-        loadProfile(s.user.id).finally(() => setIsLoading(false));
-      } else {
-        setIsLoading(false);
-      }
-    });
+    // Supabase fires onAuthStateChange with an INITIAL_SESSION event on
+    // mount — use that as the single source of truth. No separate
+    // getSession() call, which would cause loadProfile() to run twice
+    // (the previous implementation triple-fetched /profiles on every load).
+    let cancelled = false;
+    const seenUserIds = new Set<string>();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
+      if (cancelled) return;
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) {
-        setTokenUserId(s.user.id);
-        loadProfile(s.user.id);
-      } else {
+
+      if (!s?.user) {
         setProfile(null);
+        if (event === "INITIAL_SESSION") setIsLoading(false);
+        return;
       }
+
+      setTokenUserId(s.user.id);
+
+      // Skip profile re-fetch on events that don't imply a user change
+      // (TOKEN_REFRESHED, USER_UPDATED, etc. for the same user).
+      if (seenUserIds.has(s.user.id) && event !== "SIGNED_IN") {
+        if (event === "INITIAL_SESSION") setIsLoading(false);
+        return;
+      }
+      seenUserIds.add(s.user.id);
+
+      loadProfile(s.user.id).finally(() => {
+        if (!cancelled && event === "INITIAL_SESSION") setIsLoading(false);
+      });
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
   async function signInWithEmail(email: string, password: string) {
