@@ -225,20 +225,22 @@ class MarketingAgent(BaseAgent):
     # ------------------------------------------------------------------
     # Reddit handlers
     # ------------------------------------------------------------------
-    def _handle_reddit_draft(self, task: str) -> str:
-        """Generate a Reddit title+body for a specific subreddit."""
+    def _handle_reddit_draft(self, task: str, rules: list = None) -> str:
+        """Generate a Reddit title+body for a specific subreddit.
+
+        Accepts an optional `rules` list — callers (blueprint) can pass
+        rules fetched client-side so the LLM can respect them. VPS-side
+        Reddit calls get rate-limited, so we don't try to fetch rules
+        here unless explicitly provided.
+        """
         subreddit = _extract_subreddit(task) or 'SaaS'
         topic = _extract_topic(task)
 
-        # Try to fetch subreddit rules for context
         rules_context = ''
-        try:
-            from lib.reddit_client import get_subreddit_rules
-            rules = get_subreddit_rules(subreddit)
-            if rules:
-                rules_context = '\n\nSubreddit rules to respect:\n' + '\n'.join(f'- {r}' for r in rules[:8])
-        except Exception:
-            pass  # Missing PRAW or creds — draft without rule context
+        if rules:
+            rules_context = '\n\nSubreddit rules to respect:\n' + '\n'.join(
+                f'- {r}' for r in rules[:10]
+            )
 
         messages = [
             {'role': 'system', 'content': REDDIT_SYSTEM_PROMPT + rules_context},
@@ -276,23 +278,21 @@ class MarketingAgent(BaseAgent):
         )
 
     def _handle_reddit_post(self, task: str) -> str:
-        """Publish the last Reddit draft."""
+        """Return a Reddit submit URL for the last draft (public mode)."""
         if not self._last_reddit_draft:
             return 'No Reddit draft ready. Generate one with "draft a reddit post for /r/[subreddit] about [topic]".'
 
         d = self._last_reddit_draft
         try:
-            from lib.reddit_client import post_to_subreddit
-            result = post_to_subreddit(d['subreddit'], d['title'], d['body'])
-        except ImportError:
-            return 'Reddit client not available. Run: pip install praw'
+            from lib.reddit_client import build_submit_url
+            url = build_submit_url(d['subreddit'], d['title'], d['body'])
         except Exception as e:
-            return f'Reddit post failed: {e}'
+            return f'Could not build submit URL: {e}'
 
-        if result.get('ok'):
-            url = result.get('url', '')
-            return f'Posted to r/{d["subreddit"]}. {url}'
-        return f'Reddit post failed: {result.get("error", "unknown")}'
+        return (
+            f'Submit URL for r/{d["subreddit"]}:\n{url}\n\n'
+            f'Open that link to complete the post in Reddit.'
+        )
 
     def _handle_reddit_monitor(self, task: str) -> str:
         """Search Reddit for mentions of a query."""
@@ -308,8 +308,6 @@ class MarketingAgent(BaseAgent):
         try:
             from lib.reddit_client import search_subreddit
             results = search_subreddit(subreddit, query, limit=10)
-        except ImportError:
-            return 'Reddit client not available. Run: pip install praw'
         except Exception as e:
             return f'Reddit search failed: {e}'
 

@@ -75,7 +75,7 @@ interface RedditDraft {
 interface QueueItem {
   id: string;
   platform: "twitter" | "reddit";
-  status: "draft" | "scheduled" | "posted" | "failed" | "rejected";
+  status: "draft" | "scheduled" | "posted" | "failed" | "rejected" | "submit_url_ready";
   content: string;
   title: string | null;
   subreddit: string | null;
@@ -115,7 +115,7 @@ export default function MarketingPage() {
   const [loadingIdeas, setLoadingIdeas] = useState(false);
 
   // Reddit state
-  const [redditVerified, setRedditVerified] = useState<{ ok: boolean; username?: string; error?: string } | null>(null);
+  const [redditVerified, setRedditVerified] = useState<{ ok: boolean; mode?: string; note?: string; username?: string; error?: string } | null>(null);
   const [subredditName, setSubredditName] = useState("SaaS");
   const [subredditInfo, setSubredditInfo] = useState<SubredditInfo | null>(null);
   const [loadingSubreddit, setLoadingSubreddit] = useState(false);
@@ -151,8 +151,12 @@ export default function MarketingPage() {
   }, []);
 
   const fetchRedditVerify = useCallback(async () => {
-    const res = await fetch("/api/marketing?action=reddit-verify");
-    if (res.ok) setRedditVerified(await res.json());
+    // Public mode — no VPS call needed. Always available.
+    setRedditVerified({
+      ok: true,
+      mode: "public",
+      note: "Using Reddit public JSON API. Posts open Reddit's submit form in a new tab.",
+    });
   }, []);
 
   const fetchQueue = useCallback(async () => {
@@ -256,9 +260,39 @@ export default function MarketingPage() {
     if (!name) return toast.error("Enter a subreddit");
     setLoadingSubreddit(true);
     try {
-      const res = await fetch(`/api/marketing?action=reddit-subreddit&name=${encodeURIComponent(name)}`);
-      const data = await res.json();
-      setSubredditInfo(data);
+      // Fetch directly from Reddit's public JSON in the browser (residential IP).
+      // VPS IPs get blocked by Reddit's unauthenticated rate limits; the user's
+      // browser does not.
+      const [aboutRes, rulesRes] = await Promise.all([
+        fetch(`https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`),
+        fetch(`https://www.reddit.com/r/${encodeURIComponent(name)}/about/rules.json`),
+      ]);
+
+      if (!aboutRes.ok) {
+        setSubredditInfo({ ok: false, error: `Reddit returned ${aboutRes.status}` });
+        return;
+      }
+
+      const about = (await aboutRes.json()).data || {};
+      const rulesData = rulesRes.ok ? await rulesRes.json() : { rules: [] };
+      const rules = (rulesData.rules || [])
+        .map((r: { short_name?: string; description?: string }) => {
+          const short = r.short_name || "";
+          const desc = r.description || "";
+          return `${short}: ${desc}`.replace(/^:\s*/, "").trim();
+        })
+        .filter(Boolean);
+
+      setSubredditInfo({
+        ok: true,
+        name: about.display_name || name,
+        title: about.title || "",
+        subscribers: about.subscribers || 0,
+        description: (about.public_description || about.description || "").slice(0, 500),
+        rules,
+      });
+    } catch (e) {
+      setSubredditInfo({ ok: false, error: String(e) });
     } finally {
       setLoadingSubreddit(false);
     }
@@ -270,6 +304,12 @@ export default function MarketingPage() {
     setRedditDrafting(true);
     setRedditDraft(null);
     try {
+      // Pass any rules we've fetched client-side so the LLM can respect them
+      const rules =
+        subredditInfo && subredditInfo.ok && subredditInfo.name?.toLowerCase() === name.toLowerCase()
+          ? subredditInfo.rules || []
+          : [];
+
       const res = await fetch("/api/marketing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -277,6 +317,7 @@ export default function MarketingPage() {
           action: "reddit-draft",
           topic: redditTopic.trim(),
           subreddit: name,
+          rules,
         }),
       });
       const data = await res.json();
@@ -306,14 +347,15 @@ export default function MarketingPage() {
         }),
       });
       const data = await res.json();
-      if (data.ok) {
-        toast.success(`Posted to r/${redditDraft.subreddit}`);
-        if (data.url) window.open(data.url, "_blank");
+      if (data.ok && data.submit_url) {
+        // Public mode: open Reddit's submit form with title + body prefilled
+        window.open(data.submit_url, "_blank", "noopener,noreferrer");
+        toast.success(`Opening r/${redditDraft.subreddit} submit form…`);
         setRedditDraft(null);
         setRedditTopic("");
         fetchQueue();
       } else {
-        toast.error(data.error || "Post failed");
+        toast.error(data.error || "Could not build submit URL");
       }
     } finally {
       setRedditPosting(false);
@@ -379,17 +421,47 @@ export default function MarketingPage() {
     setMonitoring(true);
     setMonitorResults([]);
     try {
-      const res = await fetch("/api/marketing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "reddit-monitor",
-          query: monitorQuery.trim(),
-          subreddit: "all",
-        }),
+      // Browser-side fetch to avoid VPS IP rate limits
+      const params = new URLSearchParams({
+        q: monitorQuery.trim(),
+        sort: "new",
+        t: "month",
+        limit: "15",
       });
+      const res = await fetch(`https://www.reddit.com/search.json?${params}`);
+      if (!res.ok) {
+        toast.error(`Reddit returned ${res.status}`);
+        return;
+      }
       const data = await res.json();
-      setMonitorResults(data.results || []);
+      type RedditChild = {
+        data?: {
+          title?: string;
+          permalink?: string;
+          url?: string;
+          subreddit?: string;
+          author?: string;
+          score?: number;
+          num_comments?: number;
+          selftext?: string;
+        };
+      };
+      const children: RedditChild[] = data?.data?.children || [];
+      const results: RedditMention[] = children.map((c) => {
+        const p = c.data || {};
+        return {
+          title: p.title || "",
+          url: p.permalink ? `https://www.reddit.com${p.permalink}` : p.url || "",
+          subreddit: p.subreddit || "",
+          author: p.author || "[deleted]",
+          score: p.score || 0,
+          num_comments: p.num_comments || 0,
+          selftext: (p.selftext || "").slice(0, 500),
+        };
+      });
+      setMonitorResults(results);
+    } catch (e) {
+      toast.error(`Monitor failed: ${e}`);
     } finally {
       setMonitoring(false);
     }
@@ -407,7 +479,15 @@ export default function MarketingPage() {
       });
       const data = await res.json();
       if (data.ok) {
-        toast.success("Published");
+        // Reddit items return a submit URL — open it in a new tab so the
+        // user can complete the post via Reddit's own form.
+        const submitUrl = data.result?.submit_url;
+        if (submitUrl) {
+          window.open(submitUrl, "_blank", "noopener,noreferrer");
+          toast.success("Opening Reddit submit form…");
+        } else {
+          toast.success("Published");
+        }
         fetchQueue();
       } else {
         toast.error(data.result?.error || data.error || "Failed");
@@ -660,18 +740,32 @@ export default function MarketingPage() {
           <Card>
             <CardContent className="py-4">
               {redditVerified?.ok ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  <span className="text-muted-foreground">Connected as</span>
-                  <span className="font-medium">u/{redditVerified.username}</span>
+                <div className="flex items-start gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5" />
+                  <div className="flex-1">
+                    {redditVerified.mode === "public" ? (
+                      <>
+                        <p className="font-medium text-emerald-400 mb-1">Public mode active</p>
+                        <p className="text-xs text-muted-foreground">
+                          Drafts, subreddit info, and mention monitoring work without API keys.
+                          Posts open Reddit&apos;s own submit form in a new tab — click once to publish.
+                        </p>
+                      </>
+                    ) : (
+                      <p>
+                        <span className="text-muted-foreground">Connected as </span>
+                        <span className="font-medium">u/{redditVerified.username}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-start gap-2 text-sm">
                   <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="font-medium text-amber-400 mb-1">Reddit not connected</p>
+                    <p className="font-medium text-amber-400 mb-1">Reddit check failed</p>
                     <p className="text-xs text-muted-foreground">
-                      {redditVerified?.error || "Add credentials to /root/harv/credentials/reddit_keys.json"}
+                      {redditVerified?.error || "Could not reach Reddit's public API."}
                     </p>
                   </div>
                 </div>
@@ -776,11 +870,11 @@ export default function MarketingPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       onClick={handlePostReddit}
-                      disabled={redditPosting || !redditVerified?.ok}
+                      disabled={redditPosting}
                       className="bg-sky-500/20 text-sky-400 border border-sky-500/30 hover:bg-sky-500/30"
                     >
-                      {redditPosting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                      Post Now
+                      {redditPosting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+                      Open Submit Form
                     </Button>
                     <Button variant="outline" onClick={handleQueueReddit}>
                       <ListChecks className="h-4 w-4 mr-2" />
@@ -1021,8 +1115,17 @@ function QueueCard({
     draft: "bg-amber-500/10 text-amber-400 border-amber-500/30",
     scheduled: "bg-blue-500/10 text-blue-400 border-blue-500/30",
     posted: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    submit_url_ready: "bg-sky-500/10 text-sky-400 border-sky-500/30",
     failed: "bg-red-500/10 text-red-400 border-red-500/30",
     rejected: "bg-white/[0.04] text-muted-foreground border-white/[0.1]",
+  };
+  const statusLabels: Record<string, string> = {
+    draft: "draft",
+    scheduled: "scheduled",
+    posted: "posted",
+    submit_url_ready: "ready to submit",
+    failed: "failed",
+    rejected: "rejected",
   };
   const isActionable = item.status === "draft" || item.status === "scheduled";
 
@@ -1042,7 +1145,7 @@ function QueueCard({
             <span className="text-[10px] text-muted-foreground">r/{item.subreddit}</span>
           )}
           <Badge variant="outline" className={cn("text-[10px] uppercase", statusStyles[item.status])}>
-            {item.status}
+            {statusLabels[item.status] || item.status}
           </Badge>
         </div>
         <span className="text-[10px] text-muted-foreground/50">

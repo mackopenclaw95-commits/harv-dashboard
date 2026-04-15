@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS marketing_queue (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   platform text NOT NULL CHECK (platform IN ('twitter', 'reddit')),
   status text NOT NULL DEFAULT 'draft'
-    CHECK (status IN ('draft', 'scheduled', 'posted', 'failed', 'rejected')),
+    CHECK (status IN ('draft', 'scheduled', 'posted', 'failed', 'rejected', 'submit_url_ready')),
   scheduled_for timestamptz,           -- null = manual approve only
   content text NOT NULL,                -- tweet body or reddit self-text
   title text,                            -- reddit title (null for tweets)

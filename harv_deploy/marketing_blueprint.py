@@ -197,17 +197,26 @@ def reddit_subreddit_info():
 
 @marketing_bp.route('/reddit/draft', methods=['POST'])
 def reddit_draft():
-    """Generate a Reddit post draft (title + body) for a subreddit."""
+    """Generate a Reddit post draft (title + body) for a subreddit.
+
+    Clients may pass a `rules` array (fetched client-side from Reddit's
+    public JSON) so the LLM can respect them. VPS cannot fetch rules
+    directly because Reddit rate-limits datacenter IPs.
+    """
     try:
         data = request.get_json() or {}
         topic = (data.get('topic') or '').strip()
         subreddit = (data.get('subreddit') or 'SaaS').strip().lstrip('r/').lstrip('/')
+        rules = data.get('rules') or []
         if not topic:
             return jsonify({'error': 'topic is required'}), 400
 
         from agents.auto_marketing import MarketingAgent
         agent = MarketingAgent()
-        result = agent._handle_reddit_draft(f'draft a reddit post for /r/{subreddit} about {topic}')
+        result = agent._handle_reddit_draft(
+            f'draft a reddit post for /r/{subreddit} about {topic}',
+            rules=rules if isinstance(rules, list) else [],
+        )
 
         d = agent._last_reddit_draft or {}
         return jsonify({
@@ -221,7 +230,7 @@ def reddit_draft():
 
 @marketing_bp.route('/reddit/post', methods=['POST'])
 def reddit_post():
-    """Publish a Reddit post directly."""
+    """Build a Reddit submit URL (public mode — user clicks through to post)."""
     try:
         data = request.get_json() or {}
         subreddit = (data.get('subreddit') or '').strip().lstrip('r/').lstrip('/')
@@ -233,11 +242,8 @@ def reddit_post():
 
         from lib.reddit_client import post_to_subreddit
         result = post_to_subreddit(subreddit, title, body)
-        if result.get('ok'):
-            return jsonify(result)
-        return jsonify(result), 500
-    except ImportError as e:
-        return jsonify({'ok': False, 'error': f'Reddit client not available: {e}'}), 500
+        # result contains {'ok': True, 'submit_url': '...', 'mode': 'public-submit-url'}
+        return jsonify(result), 200 if result.get('ok') else 500
     except Exception as e:
         log.error(f'Reddit post error: {e}')
         return jsonify({'ok': False, 'error': str(e)}), 500
@@ -342,18 +348,25 @@ def queue_approve():
             result = tw_post(item['content'])
             ok = result.get('ok', False)
             url = result.get('url', '')
+            # Twitter posts programmatically — mark as 'posted' on success
+            new_status = 'posted' if ok else 'failed'
+            posted_at_val = datetime.now(EST).isoformat() if ok else None
         elif item['platform'] == 'reddit':
-            from lib.reddit_client import post_to_subreddit
-            result = post_to_subreddit(item['subreddit'], item['title'], item['content'])
-            ok = result.get('ok', False)
-            url = result.get('url', '')
+            # Public mode: we can only return a submit URL — the user
+            # completes the post in their browser. Mark as 'pending_submit'
+            # to signal the dashboard to open the URL in a new tab.
+            from lib.reddit_client import build_submit_url
+            url = build_submit_url(item['subreddit'], item['title'], item['content'])
+            ok = True
+            result = {'ok': True, 'submit_url': url, 'mode': 'public-submit-url'}
+            new_status = 'submit_url_ready'
+            posted_at_val = None
         else:
             return jsonify({'error': 'unknown platform'}), 400
 
-        new_status = 'posted' if ok else 'failed'
         sb.table('marketing_queue').update({
             'status': new_status,
-            'posted_at': datetime.now(EST).isoformat() if ok else None,
+            'posted_at': posted_at_val,
             'post_url': url,
             'error': None if ok else result.get('error', ''),
         }).eq('id', item_id).execute()

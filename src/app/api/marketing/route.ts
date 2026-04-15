@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
     return proxyPost("reddit/draft", {
       topic: body.topic,
       subreddit: body.subreddit,
+      rules: body.rules || [],
     });
   }
   if (action === "reddit-post") {

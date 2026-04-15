@@ -48,12 +48,9 @@ def _publish(item: dict) -> dict:
         from lib.twitter_client import post_tweet
         return post_tweet(item.get('content', ''))
     if platform == 'reddit':
-        from lib.reddit_client import post_to_subreddit
-        return post_to_subreddit(
-            item.get('subreddit', ''),
-            item.get('title', ''),
-            item.get('content', ''),
-        )
+        # Public mode: we can't auto-post. Skip — the user must click
+        # Approve from the dashboard to open the submit URL manually.
+        return {'ok': False, 'skip': True, 'error': 'reddit items require manual browser submit (public mode)'}
     return {'ok': False, 'error': f'unknown platform: {platform}'}
 
 
@@ -84,6 +81,12 @@ def main() -> int:
             result = _publish(item)
         except Exception as e:
             result = {'ok': False, 'error': str(e)}
+
+        # Reddit items in public mode: leave as-is, they'll be handled
+        # manually via the dashboard "Approve" button.
+        if result.get('skip'):
+            log.info(f'{item["platform"]} {item["id"][:8]} -> skipped (manual submit required)')
+            continue
 
         ok = bool(result.get('ok'))
         update = {
