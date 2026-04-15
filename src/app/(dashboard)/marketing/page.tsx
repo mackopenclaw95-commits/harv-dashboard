@@ -260,12 +260,11 @@ export default function MarketingPage() {
     if (!name) return toast.error("Enter a subreddit");
     setLoadingSubreddit(true);
     try {
-      // Fetch directly from Reddit's public JSON in the browser (residential IP).
-      // VPS IPs get blocked by Reddit's unauthenticated rate limits; the user's
-      // browser does not.
+      // Go through our /api/reddit proxy — Reddit.com has no CORS headers
+      // and our VPS IP gets rate-limited, but Vercel edge works.
       const [aboutRes, rulesRes] = await Promise.all([
-        fetch(`https://www.reddit.com/r/${encodeURIComponent(name)}/about.json`),
-        fetch(`https://www.reddit.com/r/${encodeURIComponent(name)}/about/rules.json`),
+        fetch(`/api/reddit?path=${encodeURIComponent(`/r/${name}/about.json`)}`),
+        fetch(`/api/reddit?path=${encodeURIComponent(`/r/${name}/about/rules.json`)}`),
       ]);
 
       if (!aboutRes.ok) {
@@ -421,14 +420,15 @@ export default function MarketingPage() {
     setMonitoring(true);
     setMonitorResults([]);
     try {
-      // Browser-side fetch to avoid VPS IP rate limits
+      // Via /api/reddit proxy (CORS + VPS rate limit workaround)
       const params = new URLSearchParams({
+        path: "/search.json",
         q: monitorQuery.trim(),
         sort: "new",
         t: "month",
         limit: "15",
       });
-      const res = await fetch(`https://www.reddit.com/search.json?${params}`);
+      const res = await fetch(`/api/reddit?${params}`);
       if (!res.ok) {
         toast.error(`Reddit returned ${res.status}`);
         return;
