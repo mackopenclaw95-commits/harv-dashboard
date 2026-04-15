@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,6 +28,7 @@ import {
   FolderKanban,
   CreditCard,
   User,
+  Download,
 } from "lucide-react";
 import {
   Dialog,
@@ -79,6 +80,10 @@ export default function AdminPage() {
   const [sortBy, setSortBy] = useState<"joined" | "tokens" | "cost">("joined");
   const [filterPlan, setFilterPlan] = useState<"all" | "free" | "pro" | "max">("all");
   const [costDetailOpen, setCostDetailOpen] = useState(false);
+  const [exportMonth, setExportMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [userDetailId, setUserDetailId] = useState<string | null>(null);
   const [userDetail, setUserDetail] = useState<{
     profile: Profile;
@@ -222,10 +227,27 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">God mode — see everything</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => { setLoading(true); load(); }}>
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Month picker + export button for admin usage CSV (tax/bookkeeping) */}
+          <input
+            type="month"
+            value={exportMonth}
+            onChange={(e) => setExportMonth(e.target.value)}
+            className="h-8 rounded-md bg-white/[0.04] ring-1 ring-white/[0.06] px-2 text-xs text-foreground/80 hover:bg-white/[0.08] focus:outline-none focus:ring-primary/40 [color-scheme:dark]"
+          />
+          <a
+            href={`/api/admin/usage/export?month=${exportMonth}`}
+            download
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2")}
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export Usage
+          </a>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => { setLoading(true); load(); }}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats grid */}
