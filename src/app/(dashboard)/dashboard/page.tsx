@@ -39,6 +39,43 @@ import { cn, timeAgo } from "@/lib/utils";
 import { AGENT_ICONS, PLANNED_AGENTS, SUB_AGENT_MAP } from "@/lib/agent-data";
 import { useAuth } from "@/components/auth-provider";
 import { ensureTrialStarted, getTrialDaysRemaining, getCustomAutomations } from "@/lib/preferences";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+/**
+ * Wraps children with dnd-kit sortable bindings. Drag handle is the whole
+ * wrapper in edit mode — the parent disables the inner Link so clicks don't
+ * fire while dragging.
+ */
+function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : "auto",
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
+      {children}
+    </div>
+  );
+}
 
 interface QuickStats {
   agents: number;
@@ -239,7 +276,24 @@ export default function DashboardPage() {
     });
   }
 
-  const visibleCards = allStatCards.filter((c) => selectedCardIds.includes(c.id));
+  // Preserve the user's chosen order by mapping IDs -> cards (instead of filter,
+  // which would force the definition order from allStatCards).
+  const visibleCards = selectedCardIds
+    .map((id) => allStatCards.find((c) => c.id === id))
+    .filter((c): c is (typeof allStatCards)[number] => Boolean(c));
+
+  function handleCardDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setSelectedCardIds((prev) => {
+      const oldIndex = prev.indexOf(active.id as string);
+      const newIndex = prev.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      const next = arrayMove(prev, oldIndex, newIndex);
+      localStorage.setItem("harv-dashboard-cards", JSON.stringify(next));
+      return next;
+    });
+  }
 
   const allQuickLinks = [
     { id: "chat", href: "/chat", label: "Chat with Harv", description: "Start a conversation with your AI assistant", icon: MessageSquare, color: "text-sky-400", bg: "bg-sky-500/10 ring-1 ring-sky-500/20" },
@@ -276,7 +330,28 @@ export default function DashboardPage() {
       return next;
     });
   }
-  const visibleQuickLinks = allQuickLinks.filter((l) => selectedQuickIds.includes(l.id));
+  const visibleQuickLinks = selectedQuickIds
+    .map((id) => allQuickLinks.find((l) => l.id === id))
+    .filter((l): l is (typeof allQuickLinks)[number] => Boolean(l));
+
+  function handleQuickDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setSelectedQuickIds((prev) => {
+      const oldIndex = prev.indexOf(active.id as string);
+      const newIndex = prev.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      const next = arrayMove(prev, oldIndex, newIndex);
+      localStorage.setItem("harv-dashboard-quick-links", JSON.stringify(next));
+      return next;
+    });
+  }
+
+  // dnd-kit sensors — distance 6px to avoid snagging clicks as drags
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   return (
     <div className="p-6 space-y-8 max-w-6xl mx-auto">
@@ -398,35 +473,52 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div data-tour="dashboard-stats" className={cn(
-          "grid gap-4",
-          visibleCards.length <= 2 ? "grid-cols-2" : visibleCards.length === 3 ? "grid-cols-3" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-        )}>
-          {visibleCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <Link key={card.id} href={card.href}>
-                <Card className="relative overflow-hidden group cursor-pointer transition-all duration-300 hover:ring-primary/15">
-                  <div className={cn("absolute inset-y-0 left-0 w-[2px]", card.color)} />
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {card.label}
-                    </CardTitle>
-                    <Icon className={cn("h-4 w-4", card.textColor)} />
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-9 w-16" />
-                    ) : (
-                      <p className="text-2xl md:text-3xl font-bold tabular-nums truncate">{card.value()}</p>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCardDragEnd}>
+          <SortableContext items={selectedCardIds} strategy={rectSortingStrategy} disabled={!showCardPicker}>
+            <div data-tour="dashboard-stats" className={cn(
+              "grid gap-4",
+              visibleCards.length <= 2 ? "grid-cols-2" : visibleCards.length === 3 ? "grid-cols-3" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+            )}>
+              {visibleCards.map((card) => {
+                const Icon = card.icon;
+                const cardBody = (
+                  <Card className={cn(
+                    "relative overflow-hidden group transition-all duration-300",
+                    showCardPicker
+                      ? "cursor-grab active:cursor-grabbing ring-1 ring-primary/30"
+                      : "cursor-pointer hover:ring-primary/15"
+                  )}>
+                    <div className={cn("absolute inset-y-0 left-0 w-[2px]", card.color)} />
+                    {showCardPicker && (
+                      <div className="absolute right-2 top-2 text-primary/40">
+                        <GripVertical className="h-3.5 w-3.5" />
+                      </div>
                     )}
-                    <p className="text-xs text-muted-foreground mt-0.5">{card.subtitle}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        {card.label}
+                      </CardTitle>
+                      <Icon className={cn("h-4 w-4", card.textColor)} />
+                    </CardHeader>
+                    <CardContent>
+                      {loading ? (
+                        <Skeleton className="h-9 w-16" />
+                      ) : (
+                        <p className="text-2xl md:text-3xl font-bold tabular-nums truncate">{card.value()}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">{card.subtitle}</p>
+                    </CardContent>
+                  </Card>
+                );
+                return showCardPicker ? (
+                  <SortableItem key={card.id} id={card.id}>{cardBody}</SortableItem>
+                ) : (
+                  <Link key={card.id} href={card.href}>{cardBody}</Link>
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Quick Access */}
@@ -476,32 +568,50 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div data-tour="dashboard-quick-access" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleQuickLinks.map(
-            ({ id, href, label, description, icon: Icon, color, bg }) => (
-              <Link key={id} href={href}>
-                <Card className="group cursor-pointer transition-all duration-300 hover:ring-primary/15 h-full">
-                  <CardContent className="flex items-start gap-4 pt-5 pb-5">
-                    <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${bg}`}
-                    >
-                      <Icon className={`h-5 w-5 ${color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-sm">{label}</h3>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                        {description}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          )}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleQuickDragEnd}>
+          <SortableContext items={selectedQuickIds} strategy={rectSortingStrategy} disabled={!showQuickPicker}>
+            <div data-tour="dashboard-quick-access" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleQuickLinks.map(
+                ({ id, href, label, description, icon: Icon, color, bg }) => {
+                  const tileBody = (
+                    <Card className={cn(
+                      "group transition-all duration-300 h-full",
+                      showQuickPicker
+                        ? "cursor-grab active:cursor-grabbing ring-1 ring-primary/30"
+                        : "cursor-pointer hover:ring-primary/15"
+                    )}>
+                      <CardContent className="flex items-start gap-4 pt-5 pb-5">
+                        <div
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${bg}`}
+                        >
+                          <Icon className={`h-5 w-5 ${color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-sm">{label}</h3>
+                            {showQuickPicker ? (
+                              <GripVertical className="h-4 w-4 text-primary/40" />
+                            ) : (
+                              <ArrowRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                            {description}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                  return showQuickPicker ? (
+                    <SortableItem key={id} id={id}>{tileBody}</SortableItem>
+                  ) : (
+                    <Link key={id} href={href}>{tileBody}</Link>
+                  );
+                }
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Activity Feed */}
