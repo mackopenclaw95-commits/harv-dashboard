@@ -91,14 +91,19 @@ export async function GET() {
 
         if (costEvents.length > 0) {
           // Upsert new api_cost events into Supabase (dedup by vps_event_id)
+          // VPS stuffs user_id / tokens_in / etc. into the metadata JSON blob.
           const rows = costEvents.map((evt: Record<string, unknown>) => {
             const summary = String(evt.summary || "");
             const model = summary.split("|")[0]?.trim() || "";
             const tokens = (evt.tokens as number) || 0;
-            const tokensIn = (evt.tokens_in as number) || 0;
-            const tokensOut = (evt.tokens_out as number) || 0;
-            const cachedTokens = (evt.cached_tokens as number) || 0;
-            const units = (evt.units as number) || 0;
+            const meta = (evt.metadata && typeof evt.metadata === "object"
+              ? (evt.metadata as Record<string, unknown>)
+              : {}) as Record<string, unknown>;
+            const tokensIn = (meta.input_tokens as number) || (evt.tokens_in as number) || 0;
+            const tokensOut = (meta.output_tokens as number) || (evt.tokens_out as number) || 0;
+            const cachedTokens = (meta.cached_tokens as number) || 0;
+            const units = (meta.units as number) || 0;
+            const modality = (meta.modality as string) || "text";
             let cost = (evt.cost as number) || 0;
             if (cost === 0) {
               if (tokensIn || tokensOut) {
@@ -120,9 +125,9 @@ export async function GET() {
               units,
               cost,
               agent: String(evt.agent || ""),
-              parent_agent: (evt.parent_agent as string) || null,
-              user_id: (evt.user_id as string) || null,
-              modality: (evt.modality as string) || "text",
+              parent_agent: (meta.parent_agent as string) || null,
+              user_id: (meta.user_id as string) || null,
+              modality,
               summary,
               event_timestamp: evt.timestamp as string,
             };
