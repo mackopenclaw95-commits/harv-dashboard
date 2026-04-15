@@ -1,19 +1,17 @@
-"""Patch video_digest.py to use Gemini VLM when an admin triggers visual mode.
+"""Patch video_digest.py to use Gemini VLM for visual video analysis.
 
-Trigger rules:
-  - Task text contains keyword `vlm:` or `visual:` or `[vlm]` or `[visual]`
-  - Caller role is 'admin' or 'owner' (checked in BaseAgent context)
-  - Otherwise the existing Whisper/caption path runs unchanged
+Gate model (admin-only testing phase):
+  - Env var HARV_VLM_ENABLED=1 must be set in /root/harv/.env
+  - AND task text must contain one of: `[vlm]`, `[visual]`, `vlm:`, `visual:`
+  - If either is missing, the normal Whisper/caption path runs unchanged
 
-When triggered:
-  - Calls gemini_vlm_client.analyze_url(url, prompt=...) INSTEAD of the normal
-    transcript-only flow. The VLM response becomes the "transcript" field so
-    downstream summarization still works, but is also stored separately as
-    `vlm_text` for cleaner presentation.
-  - Emits an api_cost event with the actual Gemini cost so it shows in
-    /admin analytics.
+This is a pragmatic gate — the agent layer doesn't currently know the caller's
+role, so we rely on (a) the feature flag being off by default, and (b) a
+keyword that a regular user won't accidentally type. When we're ready to ship
+this to users, we'll plumb user_role through the router and replace the
+keyword with a UI toggle.
 
-This patch is IDEMPOTENT — re-running is a no-op once applied.
+The patch is IDEMPOTENT — re-running is a no-op once applied.
 """
 import re
 import sys
@@ -55,55 +53,57 @@ if old_import_block not in content:
     sys.exit(1)
 content = content.replace(old_import_block, new_import_block, 1)
 
-# --- 2. Add a helper to detect the VLM trigger at module level ---
+# --- 2. Module-level helpers: detect trigger, strip keyword, check env gate ---
 helper_block = '''
 
-def _should_use_vlm(task_text: str, user_role: str = '') -> bool:
-    """Return True if the task is admin-triggered for visual/VLM analysis."""
-    if not task_text or not _vlm_ok() or _vlm_analyze is None:
-        return False
-    if user_role not in ('admin', 'owner'):
+def _vlm_feature_enabled() -> bool:
+    """Admin-only feature flag — must be explicitly enabled in env."""
+    import os as _os
+    return _os.environ.get('HARV_VLM_ENABLED', '').strip() in ('1', 'true', 'yes')
+
+
+def _vlm_keyword_triggered(task_text: str) -> bool:
+    """True if the task text contains an explicit VLM trigger keyword."""
+    if not task_text:
         return False
     t = task_text.lower()
-    return any(kw in t for kw in ('vlm:', 'visual:', '[vlm]', '[visual]', ' --vlm', ' --visual'))
+    return any(kw in t for kw in ('[vlm]', '[visual]', 'vlm:', 'visual:'))
+
+
+def _should_use_vlm(task_text: str) -> bool:
+    if not _vlm_ok() or _vlm_analyze is None:
+        return False
+    if not _vlm_feature_enabled():
+        return False
+    return _vlm_keyword_triggered(task_text)
 
 
 def _strip_vlm_flags(task_text: str) -> str:
-    """Remove the trigger keywords so downstream URL extraction still works."""
     out = task_text
-    for kw in ('vlm:', 'visual:', '[vlm]', '[visual]', '--vlm', '--visual', 'VLM:', 'VISUAL:'):
+    for kw in ('[vlm]', '[visual]', '[VLM]', '[VISUAL]', 'vlm:', 'visual:', 'VLM:', 'VISUAL:'):
         out = out.replace(kw, '')
     return out.strip()
 
 '''
 
-# Insert the helper right after the import block
 content = content.replace(new_import_block, new_import_block + helper_block, 1)
 
-# --- 3. In _resolve_video, check for VLM mode and run it for any platform ---
-# We insert a branch at the top of _resolve_video that short-circuits when
-# the user is admin and used the keyword. The platform is still detected
-# normally for URL extraction.
-
-# Find the start of _resolve_video — match the signature line
-sig_match = re.search(r'(    def _resolve_video\(self,[^\n]*\):\n)', content)
+# --- 3. Insert VLM branch at the top of _resolve_video ---
+# Signature on the VPS: `    def _resolve_video(self, task: str) -> dict:`
+sig_match = re.search(r'(    def _resolve_video\(self,[^\n]*?\)[^\n]*:\n)', content)
 if not sig_match:
     print('ERROR: _resolve_video method not found')
     sys.exit(1)
 
 sig_end = sig_match.end()
 
-vlm_branch = '''        # --- VLM MODE (admin-only testing) ---
-        user_role = getattr(task, 'user_role', '') or getattr(self, 'current_user_role', '') or ''
-        task_text = getattr(task, 'text', '') or getattr(task, 'task', '') or str(task)
-        if _should_use_vlm(task_text, user_role):
-            clean_text = _strip_vlm_flags(task_text)
-            # Reuse platform detection on the cleaned text
+vlm_branch = '''        # --- VLM MODE (env-flagged, admin-only testing) ---
+        if isinstance(task, str) and _should_use_vlm(task):
+            clean_text = _strip_vlm_flags(task)
             try:
                 platform = detect_platform(clean_text)
             except Exception:
                 platform = PLATFORM_YOUTUBE
-            # Resolve URL the same way the normal branches would
             url = ''
             video_id = ''
             try:
@@ -121,16 +121,17 @@ vlm_branch = '''        # --- VLM MODE (admin-only testing) ---
 
             if not url:
                 return {'platform': platform, 'video_id': video_id, 'url': '',
-                        'meta': {}, 'transcript': '', 'error': 'VLM mode: could not resolve URL'}
+                        'meta': {}, 'transcript': '',
+                        'error': 'VLM mode: could not resolve URL from task'}
 
-            self.log(f'VLM mode: analyzing {url} for admin {user_role}')
+            self.log(f'VLM mode engaged for {url}')
             vlm_result = _vlm_analyze(url, max_duration_sec=900)
             if vlm_result.get('error'):
                 return {'platform': platform, 'video_id': video_id, 'url': url,
                         'meta': {}, 'transcript': '',
                         'error': f"VLM failed: {vlm_result['error']}"}
 
-            # Emit an api_cost event so this shows in /admin analytics
+            # Emit an api_cost event so VLM spend shows in /admin analytics
             try:
                 from lib.event_log import log_event
                 log_event(
@@ -150,7 +151,6 @@ vlm_branch = '''        # --- VLM MODE (admin-only testing) ---
                 'url': url,
                 'meta': {'vlm': True, 'model': vlm_result['model']},
                 'transcript': vlm_result['text'],
-                'vlm_text': vlm_result['text'],
                 'error': '',
             }
         # --- END VLM MODE ---
@@ -159,7 +159,6 @@ vlm_branch = '''        # --- VLM MODE (admin-only testing) ---
 
 content = content[:sig_end] + vlm_branch + content[sig_end:]
 
-# --- 4. Write + syntax check ---
 with open(PATH, 'w') as f:
     f.write(content)
 

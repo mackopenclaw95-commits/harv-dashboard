@@ -35,7 +35,7 @@ sys.path.insert(0, '/root/harv')
 
 log = logging.getLogger('gemini_vlm_client')
 
-GEMINI_MODEL = 'gemini-2.0-flash-exp'
+GEMINI_MODEL = 'gemini-2.5-flash'
 GEMINI_BASE = 'https://generativelanguage.googleapis.com'
 UPLOAD_URL = f'{GEMINI_BASE}/upload/v1beta/files'
 GENERATE_URL = f'{GEMINI_BASE}/v1beta/models/{GEMINI_MODEL}:generateContent'
@@ -44,9 +44,9 @@ FILE_GET_URL = f'{GEMINI_BASE}/v1beta/files'
 # Gemini file upload limit is 2GB but practically we cap far below
 MAX_FILE_BYTES = 500 * 1024 * 1024  # 500MB safety cap
 
-# Pricing per million tokens
-INPUT_PRICE_PER_M = 0.10
-OUTPUT_PRICE_PER_M = 0.40
+# Pricing per million tokens (gemini-2.5-flash, 2026-04 public rates)
+INPUT_PRICE_PER_M = 0.30
+OUTPUT_PRICE_PER_M = 2.50
 
 # Default prompt when the caller doesn't supply one — tuned for Harv's
 # "implementation assistant" use case.
