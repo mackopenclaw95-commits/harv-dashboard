@@ -145,6 +145,8 @@ export default function AdminPage() {
     } catch {}
   }, []);
 
+  const [syncing, setSyncing] = useState(false);
+
   const checkDrift = useCallback(async () => {
     setDriftLoading(true);
     setDriftError(null);
@@ -209,6 +211,27 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, []);
+
+  const forceSyncCosts = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/sync-costs", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(
+          `Synced — fetched ${data.fetched || 0}, wrote ${data.synced || 0} cost events`
+        );
+        setLoading(true);
+        load();
+      } else {
+        toast.error(data.error || "Sync failed");
+      }
+    } catch (e) {
+      toast.error(String(e));
+    } finally {
+      setSyncing(false);
+    }
+  }, [load]);
 
   useEffect(() => {
     load();
@@ -292,10 +315,23 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">God mode — see everything</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => { setLoading(true); load(); }}>
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={forceSyncCosts}
+            disabled={syncing}
+            title="Force-pull cost events from VPS → Supabase right now"
+          >
+            <DollarSign className={cn("h-3.5 w-3.5", syncing && "animate-pulse")} />
+            {syncing ? "Syncing" : "Sync costs"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => { setLoading(true); load(); }}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats grid */}
