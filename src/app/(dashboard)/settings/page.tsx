@@ -175,6 +175,9 @@ function SettingsPage() {
     weekly_used: number; weekly_limit: number;
     image_remaining: number; degraded: boolean;
     model_tier: string;
+    daily_cost_usd?: number;
+    daily_cost_cap_usd?: number;
+    cost_exceeded?: boolean;
   } | null>(null);
 
   // Cost breakdown from /api/usage/breakdown
@@ -1045,6 +1048,89 @@ function SettingsPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Daily Spend Cap — today's budget meter */}
+                {(() => {
+                  const cap = usageData?.daily_cost_cap_usd ?? 0;
+                  const spent = usageData?.daily_cost_usd ?? 0;
+                  const isUnlimited = usageData?.limit === -1; // owner/tester
+                  if (isUnlimited) {
+                    return (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                            <DollarSign className="h-4 w-4 text-emerald-400" />
+                            Daily Spend Cap
+                          </CardTitle>
+                          <CardDescription>
+                            Unlimited — owner/tester accounts bypass the daily cost cap.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-2xl font-bold text-emerald-400 font-mono">
+                            ${spent.toFixed(4)} <span className="text-xs text-muted-foreground font-normal">spent today</span>
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  if (cap <= 0) return null;
+                  const pct = Math.min((spent / cap) * 100, 100);
+                  const exceeded = usageData?.cost_exceeded || spent >= cap;
+                  const warning = !exceeded && pct >= 80;
+                  const barColor = exceeded
+                    ? "bg-red-500"
+                    : warning
+                      ? "bg-amber-400"
+                      : "bg-emerald-500/70";
+                  const valueColor = exceeded
+                    ? "text-red-400"
+                    : warning
+                      ? "text-amber-400"
+                      : "text-yellow-400";
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                          <DollarSign className="h-4 w-4 text-yellow-400" />
+                          Daily Spend Cap
+                        </CardTitle>
+                        <CardDescription>
+                          Your plan has a ${cap.toFixed(2)}/day API cost cap. When you hit it, chats are blocked until midnight.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-baseline justify-between">
+                          <p className={`text-2xl font-bold font-mono ${valueColor}`}>
+                            ${spent.toFixed(4)}
+                          </p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            of ${cap.toFixed(2)} · {pct.toFixed(0)}%
+                          </p>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-white/[0.06]">
+                          <div
+                            className={`h-2.5 rounded-full transition-all ${barColor}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        {exceeded ? (
+                          <p className="text-xs text-red-400">
+                            Daily cap reached. Chats are blocked until midnight, or upgrade your plan for a higher cap.
+                          </p>
+                        ) : warning ? (
+                          <p className="text-xs text-amber-400">
+                            You&apos;ve used over 80% of today&apos;s cost cap.
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Resets daily at midnight.
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
 
                 {/* Cost Breakdown — last 30 days */}
                 <Card>
