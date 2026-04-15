@@ -792,7 +792,7 @@ function AgentDetailsModal({ agent, onClose, harvPlanModel }: { agent: Agent | n
 // ─── Main Page ──────────────────────────────────────────
 
 export default function AgentsPage() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const userPlan = (profile?.plan || "free") as TierKey;
   // Only Harv uses the plan-based model — other agents keep their specialized models
   const harvPlanModel = simplifyModel(TIER_LIMITS[userPlan]?.primaryModel || TIER_LIMITS.free.primaryModel);
@@ -933,13 +933,15 @@ export default function AgentsPage() {
     load();
   }, []);
 
-  const activeAgents = agents.filter((a) => a.type === "agent" && !COMING_SOON_AGENTS.has(a.name));
-  const comingSoonPersonalGroup = agents.filter((a) => COMING_SOON_PERSONAL.has(a.name));
-  const comingSoonBusinessGroup = agents.filter((a) => COMING_SOON_BUSINESS.has(a.name));
+  const ADMIN_ONLY_AGENTS = new Set(["Auto Marketing", "Marketing"]);
+  const visibleAgents = isAdmin ? agents : agents.filter((a) => !ADMIN_ONLY_AGENTS.has(a.name));
+  const activeAgents = visibleAgents.filter((a) => a.type === "agent" && !COMING_SOON_AGENTS.has(a.name));
+  const comingSoonPersonalGroup = visibleAgents.filter((a) => COMING_SOON_PERSONAL.has(a.name));
+  const comingSoonBusinessGroup = visibleAgents.filter((a) => COMING_SOON_BUSINESS.has(a.name));
   const comingSoonGroup = [...comingSoonPersonalGroup, ...comingSoonBusinessGroup];
   const HIDDEN_TOOLS = new Set(["Analytics", "Memory", "Scribe", "Ledger", "Drive"]);
-  const toolGroup = agents.filter((a) => a.type === "tool" && !HIDDEN_TOOLS.has(a.name));
-  const bgGroup = agents.filter((a) => a.type === "background");
+  const toolGroup = visibleAgents.filter((a) => a.type === "tool" && !HIDDEN_TOOLS.has(a.name));
+  const bgGroup = visibleAgents.filter((a) => a.type === "background");
 
   const subAgentNames = new Set(Object.values(SUB_AGENT_MAP).flat());
   const topLevelAgents = activeAgents.filter((a) => !subAgentNames.has(a.name));

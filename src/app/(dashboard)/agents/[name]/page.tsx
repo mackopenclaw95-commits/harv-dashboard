@@ -1,7 +1,9 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +81,15 @@ export default function AgentDetailPage({
 }) {
   const { name: rawName } = use(params);
   const agentName = decodeURIComponent(rawName);
+  const router = useRouter();
+  const { isAdmin, isLoading: authLoading } = useAuth();
+
+  const ADMIN_ONLY_AGENTS = new Set(["marketing", "auto marketing"]);
+  useEffect(() => {
+    if (!authLoading && !isAdmin && ADMIN_ONLY_AGENTS.has(agentName.toLowerCase())) {
+      router.replace("/agents");
+    }
+  }, [authLoading, isAdmin, agentName, router]);
 
   const [agent, setAgent] = useState<Agent | null>(null);
   const [lastEvent, setLastEvent] = useState<LastEvent | null>(null);
