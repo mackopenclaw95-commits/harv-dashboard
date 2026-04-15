@@ -154,6 +154,10 @@ export default function SupportPage() {
 
   useEffect(() => {
     loadTickets();
+    // Mark all admin responses as seen + refresh the sidebar badge
+    fetch("/api/support/unread", { method: "POST" }).then(() => {
+      window.dispatchEvent(new CustomEvent("support-unread-refresh"));
+    }).catch(() => {});
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

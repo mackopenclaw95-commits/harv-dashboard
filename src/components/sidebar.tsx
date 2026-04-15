@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-provider";
 import { getSidebarOrder } from "@/lib/sidebar-order";
 import { NotificationBell } from "@/components/notification-bell";
+import { useNotifications } from "@/components/notification-store";
 
 // Core tabs — always visible in sidebar
 const NAV_ITEMS = [
@@ -84,6 +85,7 @@ export const Sidebar = React.memo(function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAdmin, profile, signOut } = useAuth();
+  const { supportUnreadCount } = useNotifications();
   const [isKachow, setIsKachow] = useState(false);
   const [personalOpen, setPersonalOpen] = useState(() => {
     return pathname?.startsWith("/sports") || pathname?.startsWith("/music") || pathname?.startsWith("/finance") || pathname?.startsWith("/travel") || pathname?.startsWith("/learning") || false;
@@ -315,6 +317,7 @@ export const Sidebar = React.memo(function Sidebar() {
             {/* Secondary nav items */}
             {PROFILE_MENU_ITEMS.map(({ href, label, icon: Icon }) => {
               const active = pathname.startsWith(href);
+              const showBadge = href === "/support" && supportUnreadCount > 0;
               return (
                 <Link
                   key={href}
@@ -328,7 +331,12 @@ export const Sidebar = React.memo(function Sidebar() {
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  <span className="hidden md:inline">{label}</span>
+                  <span className="hidden md:inline flex-1">{label}</span>
+                  {showBadge && (
+                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {supportUnreadCount > 99 ? "99+" : supportUnreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -381,8 +389,15 @@ export const Sidebar = React.memo(function Sidebar() {
               : "hover:bg-white/[0.04]"
           )}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary ring-1 ring-primary/20">
-            {userInitial}
+          <div className="relative shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary ring-1 ring-primary/20">
+              {userInitial}
+            </div>
+            {supportUnreadCount > 0 && !profileMenuOpen && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-background">
+                {supportUnreadCount > 99 ? "99+" : supportUnreadCount}
+              </span>
+            )}
           </div>
           <div className="hidden md:flex flex-1 flex-col items-start min-w-0">
             <span className="text-xs font-medium truncate w-full text-left">{userName}</span>

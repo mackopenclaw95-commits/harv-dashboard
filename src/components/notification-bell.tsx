@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, Check, X, LifeBuoy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "./notification-store";
 import { AGENT_ICONS } from "@/lib/agent-data";
@@ -24,6 +25,7 @@ function actionIcon(action: string) {
     case "auto_repair": return "🔧";
     case "heartbeat": return "💚";
     case "task_completed": return "✅";
+    case "support_response": return "💬";
     default: return "📡";
   }
 }
@@ -32,6 +34,7 @@ export function NotificationBell() {
   const { notifications, unreadCount, markAllRead, dismiss } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -84,17 +87,29 @@ export function NotificationBell() {
               </div>
             ) : (
               notifications.map((n) => {
-                const Icon = AGENT_ICONS[n.agent] || Bot;
+                const isSupport = n.action === "support_response";
+                const Icon = isSupport ? LifeBuoy : (AGENT_ICONS[n.agent] || Bot);
+                const handleClick = () => {
+                  if (n.href) {
+                    setOpen(false);
+                    router.push(n.href);
+                  }
+                };
                 return (
                   <div
                     key={n.id}
+                    onClick={handleClick}
                     className={cn(
                       "flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors group",
-                      !n.read && "bg-primary/[0.03]"
+                      !n.read && "bg-primary/[0.03]",
+                      n.href && "cursor-pointer"
                     )}
                   >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] mt-0.5">
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className={cn(
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5",
+                      isSupport ? "bg-primary/10" : "bg-white/[0.04]"
+                    )}>
+                      <Icon className={cn("h-3.5 w-3.5", isSupport ? "text-primary" : "text-muted-foreground")} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
@@ -110,7 +125,7 @@ export function NotificationBell() {
                       </span>
                     </div>
                     <button
-                      onClick={() => dismiss(n.id)}
+                      onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
                       className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/[0.06] transition-all shrink-0"
                     >
                       <X className="h-3 w-3 text-muted-foreground/40" />
