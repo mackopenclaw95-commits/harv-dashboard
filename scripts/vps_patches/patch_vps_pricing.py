@@ -20,7 +20,6 @@ NEW_DICT = """_MODEL_PRICING = {
     # OpenRouter — text (live-verified rates)
     'deepseek/deepseek-chat':          {'input': 0.32,  'output':  0.89},
     'deepseek/deepseek-chat-v3-0324':  {'input': 0.20,  'output':  0.77},
-    'deepseek/deepseek-v3':            {'input': 0.27,  'output':  1.10},
     'deepseek/deepseek-v3.2':          {'input': 0.26,  'output':  0.38},
     'deepseek/deepseek-r1':            {'input': 0.70,  'output':  2.50},
     'x-ai/grok-4.1-fast':              {'input': 0.20,  'output':  0.50},

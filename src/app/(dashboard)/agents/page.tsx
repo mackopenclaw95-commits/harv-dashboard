@@ -70,7 +70,6 @@ function simplifyModel(model: string): string {
   if (m.includes("grok-3")) return "Grok 3";
   if (m.includes("deepseek-chat")) return "DeepSeek Chat";
   if (m.includes("deepseek-v3.2")) return "DeepSeek V3.2";
-  if (m.includes("deepseek-v3")) return "DeepSeek V3";
   if (m.includes("deepseek-r1")) return "DeepSeek R1";
   if (m.includes("minimax-m2")) return "MiniMax M2.1";
   if (m.includes("qwen3-8b")) return "Qwen3 8B";

@@ -28,7 +28,6 @@ export type PricingMap = Record<string, ModelPrice>;
 const FALLBACK: PricingMap = {
   "deepseek/deepseek-chat":           mk("deepseek/deepseek-chat", 0.32, 0.89),
   "deepseek/deepseek-chat-v3-0324":   mk("deepseek/deepseek-chat-v3-0324", 0.20, 0.77),
-  "deepseek/deepseek-v3":             mk("deepseek/deepseek-v3", 0.27, 1.10),
   "deepseek/deepseek-v3.2":           mk("deepseek/deepseek-v3.2", 0.26, 0.38),
   "deepseek/deepseek-r1":             mk("deepseek/deepseek-r1", 0.70, 2.50),
   "x-ai/grok-4.1-fast":               mk("x-ai/grok-4.1-fast", 0.20, 0.50),

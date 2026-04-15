@@ -37,7 +37,6 @@ INSERT INTO model_pricing (model, provider, input_per_million, output_per_millio
   -- Text models via OpenRouter
   ('deepseek/deepseek-chat',           'openrouter', 0.32,  0.89,  'text', false, 'DeepSeek Chat'),
   ('deepseek/deepseek-chat-v3-0324',   'openrouter', 0.27,  1.10,  'text', false, 'DeepSeek V3 0324 (help-chat)'),
-  ('deepseek/deepseek-v3',             'openrouter', 0.27,  1.10,  'text', false, 'DeepSeek V3'),
   ('deepseek/deepseek-v3.2',           'openrouter', 0.26,  0.38,  'text', false, 'DeepSeek V3.2 (Marketing)'),
   ('deepseek/deepseek-r1',             'openrouter', 0.55,  2.19,  'text', false, 'DeepSeek R1 reasoning'),
   ('x-ai/grok-4.1-fast',               'openrouter', 0.05,  0.10,  'text', false, 'Grok 4.1 Fast'),
@@ -59,10 +58,11 @@ ON CONFLICT (model) DO UPDATE SET
   modality = EXCLUDED.modality,
   updated_at = now();
 
--- Remove dead free models that OpenRouter no longer serves (2026-04-15 cleanup)
+-- Remove dead models that OpenRouter no longer serves (2026-04-15 cleanup)
 DELETE FROM model_pricing WHERE model IN (
   'qwen/qwen3-8b:free',
-  'deepseek/deepseek-r1-0528-qwen3-8b:free'
+  'deepseek/deepseek-r1-0528-qwen3-8b:free',
+  'deepseek/deepseek-v3'
 );
 
 -- Set audio/image per-unit costs
