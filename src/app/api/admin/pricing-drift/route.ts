@@ -167,6 +167,20 @@ export async function GET() {
       drifts,
     };
 
+    // Append to drift history — best-effort, don't fail the check if logging fails.
+    try {
+      await supabase.from("pricing_drift_log").insert({
+        source: "admin_ui",
+        rows_checked: report.rows_checked,
+        live_models: report.live_models,
+        is_clean: report.ok,
+        zombies_count: zombies.length,
+        free_wrong_count: free_wrong.length,
+        drifts_count: drifts.length,
+        details: { zombies, free_wrong, drifts },
+      });
+    } catch {}
+
     return NextResponse.json(report);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

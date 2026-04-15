@@ -39,6 +39,31 @@ import { cn, timeAgo } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Profile } from "@/components/auth-provider";
 
+function Sparkline({ points, className }: { points: number[]; className?: string }) {
+  if (!points || points.length < 2) {
+    return <div className={cn("h-6", className)} />;
+  }
+  const w = 100;
+  const h = 20;
+  const max = Math.max(...points, 0.0001);
+  const min = Math.min(...points, 0);
+  const range = max - min || 1;
+  const step = w / (points.length - 1);
+  const coords = points.map((v, i) => {
+    const x = i * step;
+    const y = h - ((v - min) / range) * h;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  const path = `M ${coords.join(" L ")}`;
+  const area = `${path} L ${w},${h} L 0,${h} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className={cn("h-6 w-full", className)} preserveAspectRatio="none">
+      <path d={area} fill="currentColor" className="text-yellow-400/15" />
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.2" className="text-yellow-400/70" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 interface ModelCost {
   tokens: number;
   cost: number;
@@ -61,6 +86,8 @@ interface AdminStats {
   totalTokens: number;
   costByModel: Record<string, ModelCost>;
   lastCostEvent: string | null;
+  systemCost?: number;
+  systemByAgent?: Array<{ agent: string; cost: number; calls: number }>;
 }
 
 interface VPSHealth {
@@ -88,7 +115,7 @@ export default function AdminPage() {
     usage: { today: number; total: number; totalTokens: number; totalCost: number } | null;
   } | null>(null);
   const [userDetailLoading, setUserDetailLoading] = useState(false);
-  const [costDetailTab, setCostDetailTab] = useState<"model" | "agent" | "daily">("model");
+  const [costDetailTab, setCostDetailTab] = useState<"model" | "agent" | "daily" | "system">("model");
   const [vpsAnalytics, setVpsAnalytics] = useState<{
     by_agent: Record<string, { total_cost: number; calls: number; input_tokens: number; output_tokens: number }>;
     daily_last_30: Array<{ date: string; cost: number; calls: number }>;
@@ -105,6 +132,18 @@ export default function AdminPage() {
   } | null>(null);
   const [driftLoading, setDriftLoading] = useState(false);
   const [driftError, setDriftError] = useState<string | null>(null);
+  const [driftHistory, setDriftHistory] = useState<{
+    clean_streak: number;
+    days_since_dirty: number | null;
+    entries: Array<{ id: number; checked_at: string; is_clean: boolean }>;
+  } | null>(null);
+
+  const loadDriftHistory = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/pricing-drift/history");
+      if (res.ok) setDriftHistory(await res.json());
+    } catch {}
+  }, []);
 
   const checkDrift = useCallback(async () => {
     setDriftLoading(true);
@@ -121,8 +160,9 @@ export default function AdminPage() {
       setDriftError(String(e));
     } finally {
       setDriftLoading(false);
+      loadDriftHistory();
     }
-  }, []);
+  }, [loadDriftHistory]);
 
   const load = useCallback(async () => {
     try {
@@ -305,12 +345,19 @@ export default function AdminPage() {
               <span className="text-[9px] text-primary/60 ml-auto">Details →</span>
             </div>
             <p className="text-2xl font-bold mt-1">${(stats?.totalApiCost || 0).toFixed(4)}</p>
+            <Sparkline
+              points={vpsAnalytics?.daily_last_30?.map((d) => d.cost) || []}
+              className="mt-1.5"
+            />
             <p className="text-[10px] text-muted-foreground/50 mt-0.5">
-              OpenRouter (pay-per-use)
+              30-day burn
+              {vpsAnalytics?.burn_rate?.daily_avg_usd
+                ? ` · avg $${vpsAnalytics.burn_rate.daily_avg_usd.toFixed(4)}/day`
+                : ""}
             </p>
-            {stats?.lastCostEvent && (
-              <p className="text-[9px] text-muted-foreground/30 mt-0.5">
-                Last tracked: {timeAgo(stats.lastCostEvent)}
+            {stats?.systemCost !== undefined && stats.systemCost > 0 && (
+              <p className="text-[9px] text-muted-foreground/40 mt-0.5">
+                System overhead: ${stats.systemCost.toFixed(4)}
               </p>
             )}
           </CardContent>
@@ -560,6 +607,14 @@ export default function AdminPage() {
                   <p className="text-[10px] text-muted-foreground/50 mt-1">
                     {drift.rows_checked} rows · {drift.live_models} live models
                   </p>
+                  {driftHistory && driftHistory.clean_streak > 1 && (
+                    <p className="text-[10px] text-emerald-400/70 mt-1">
+                      Clean streak: {driftHistory.clean_streak} check{driftHistory.clean_streak === 1 ? "" : "s"}
+                      {driftHistory.days_since_dirty !== null && driftHistory.days_since_dirty > 0
+                        ? ` (${driftHistory.days_since_dirty}d stable)`
+                        : ""}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -666,7 +721,7 @@ export default function AdminPage() {
 
             {/* Tab buttons */}
             <div className="flex gap-1 p-1 rounded-lg bg-white/[0.03]">
-              {(["model", "agent", "daily"] as const).map((tab) => (
+              {(["model", "agent", "daily", "system"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setCostDetailTab(tab)}
@@ -677,7 +732,7 @@ export default function AdminPage() {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {tab === "model" ? "By Model" : tab === "agent" ? "By Agent" : "Daily"}
+                  {tab === "model" ? "By Model" : tab === "agent" ? "By Agent" : tab === "daily" ? "Daily" : "System"}
                 </button>
               ))}
             </div>
@@ -758,6 +813,36 @@ export default function AdminPage() {
                       })}
                     {!vpsAnalytics?.daily_last_30?.length && (
                       <p className="text-xs text-muted-foreground/50 text-center py-4">No data</p>
+                    )}
+                  </>
+                )}
+
+                {costDetailTab === "system" && (
+                  <>
+                    <div className="px-3 py-2 mb-1 rounded-lg bg-white/[0.02]">
+                      <p className="text-[10px] text-muted-foreground/70">
+                        Background agents with no user attribution (Guardian, Medic, Heartbeat, Marketing, digest jobs). Counted as platform overhead.
+                      </p>
+                      <p className="text-xs font-mono font-medium text-yellow-400 mt-1">
+                        Total: ${(stats?.systemCost || 0).toFixed(4)}
+                      </p>
+                    </div>
+                    {stats?.systemByAgent && stats.systemByAgent.length > 0 ? (
+                      stats.systemByAgent.map((s) => (
+                        <div key={s.agent} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate">{s.agent}</p>
+                            <p className="text-[10px] text-muted-foreground/50">
+                              {s.calls} call{s.calls === 1 ? "" : "s"}
+                            </p>
+                          </div>
+                          <p className="text-xs font-mono font-medium text-yellow-400 shrink-0">
+                            ${s.cost.toFixed(4)}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground/50 text-center py-4">No system overhead tracked</p>
                     )}
                   </>
                 )}

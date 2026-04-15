@@ -94,6 +94,11 @@ export async function GET() {
     // Per-user cost from api_cost_events (background agents, digest, image gen, etc.)
     const userAgentCost: Record<string, number> = {};
 
+    // System overhead = rows with user_id IS NULL (background agents like
+    // Guardian, Medic, Heartbeat, Marketing, video digest with no user).
+    let systemCost = 0;
+    const systemByAgent: Record<string, { agent: string; cost: number; calls: number }> = {};
+
     for (const row of costRows || []) {
       const model = row.model || "";
       const tokens = row.tokens || 0;
@@ -119,6 +124,13 @@ export async function GET() {
 
       if (row.user_id) {
         userAgentCost[row.user_id] = (userAgentCost[row.user_id] || 0) + cost;
+      } else {
+        // Background agent / system overhead — no user attribution.
+        systemCost += cost;
+        const agent = row.agent || "Unknown";
+        if (!systemByAgent[agent]) systemByAgent[agent] = { agent, cost: 0, calls: 0 };
+        systemByAgent[agent].cost += cost;
+        systemByAgent[agent].calls += 1;
       }
     }
 
@@ -164,6 +176,8 @@ export async function GET() {
         totalTokens,
         costByModel,
         lastCostEvent,
+        systemCost,
+        systemByAgent: Object.values(systemByAgent).sort((a, b) => b.cost - a.cost),
       },
     });
   } catch (err) {

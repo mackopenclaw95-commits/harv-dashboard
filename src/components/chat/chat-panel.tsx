@@ -139,6 +139,7 @@ export function ChatPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isSendingRef = useRef(false);
   const titleSetRef = useRef(false);
+  const nearCapWarnedRef = useRef(false);
 
   const hasMessages = messages.length > 0;
 
@@ -392,6 +393,28 @@ export function ChatPanel({
               onClick: () => window.location.href = "/settings?tab=billing",
             },
           });
+        }
+        // Soft warning at 80% of daily $ cap — once per session
+        const capUsd = Number(usage.daily_cost_cap_usd || 0);
+        const spentUsd = Number(usage.daily_cost_usd || 0);
+        if (
+          capUsd > 0 &&
+          spentUsd / capUsd >= 0.8 &&
+          !usage.cost_exceeded &&
+          !nearCapWarnedRef.current
+        ) {
+          nearCapWarnedRef.current = true;
+          const pct = Math.round((spentUsd / capUsd) * 100);
+          toast(
+            `Heads up — you've used ${pct}% of today's spend cap ($${spentUsd.toFixed(4)} / $${capUsd.toFixed(2)}).`,
+            {
+              duration: 6000,
+              action: {
+                label: "Upgrade",
+                onClick: () => window.location.href = "/settings?tab=billing",
+              },
+            }
+          );
         }
       }
     } catch {} // If usage check fails, allow the message through
