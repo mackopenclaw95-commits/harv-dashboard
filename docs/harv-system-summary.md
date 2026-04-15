@@ -1,6 +1,6 @@
 # Harv AI System — Complete Project Summary
 
-Last updated: 2026-04-07
+Last updated: 2026-04-15 (evening — digest polish + Claude Code routine integration)
 
 ---
 
@@ -363,6 +363,45 @@ TWILIO_AUTH_TOKEN=<redacted>
 SUPABASE_URL=https://ecqlftxcscddyminhylh.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<redacted>
 ```
+
+---
+
+## Recent Changes (2026-04-15 evening) — Digest polish + Claude Code integration
+
+### One-click "Send to Claude Code" on the digest page
+The Digest page's Implement mode now has a **🚀 Send to Claude Code** button that fires a Claude Code Routine on Anthropic's cloud, passing the generated implementation guide as the initial user message. Claude Code spawns a full session against the real `harv-dashboard` repo, makes edits on a `claude/*` branch, and opens a PR. The user can watch the session live via a URL returned in the response and a toast action.
+
+- **Routine:** "Harv Digest Implement" (`trig_018dTGvBTreLDhJuTrzX3G8G`), created at claude.ai/code/routines
+- **Fire URL:** `https://api.anthropic.com/v1/claude_code/routines/trig_018dTGvBTreLDhJuTrzX3G8G/fire`
+- **Auth:** per-routine bearer token (`sk-ant-oat01-...`), generated once in the routine's API trigger settings
+- **Model / tools:** Opus 4.6 1M context, Bash/Read/Write/Edit/Glob/Grep/WebFetch/WebSearch
+- **Headers required:** `anthropic-beta: experimental-cc-routine-2026-04-01`, `anthropic-version: 2023-06-01`
+- **Env vars on Vercel** (Production + Preview, sensitive-flagged):
+  - `CLAUDE_ROUTINE_FIRE_URL`
+  - `CLAUDE_ROUTINE_TOKEN`
+- **Files added/changed:**
+  - `src/app/api/digest/implement/route.ts` — admin-gated, validates text ≤ 65536 chars, forwards to fire URL
+  - `src/app/(dashboard)/digest/page.tsx` — new `sendToClaudeCode()`, green button, session banner + toast
+- **Docs:** https://platform.claude.com/docs/en/api/claude-code/routines-fire
+
+### Hidden SSE parser bug on digest page (now fixed)
+`askDigest()` was calling `res.json()` on `/api/chat/agent`, which returns either `text/event-stream` or `text/plain` — never JSON. Every digest call had been silently throwing with "Failed to get response" since streaming was added to the agent route (probably during the 2026-04-14 MEGA session). Fix mirrors the parser in `chat-panel.tsx` — handles SSE delta events + plain-text fallback.
+
+**Rule of thumb for future work:** any consumer of `/api/chat/agent` must NOT use `res.json()`. Copy the parser from `src/components/chat/chat-panel.tsx:488-562`.
+
+### Digest page polish (5 bugs)
+1. "Generate Implementation Guide" button was broken — stale-closure `setMode + handleSubmit` in same tick. Now calls `askDigest` directly.
+2. Progress labels said "Whisper" on Visual mode (which uses Gemini VLM). `PROGRESS_STEPS_BY_MODE` now has per-mode labels.
+3. Hardcoded "Implement Section 1/2/3" buttons replaced with `extractSections()` that parses numbered markdown headings from the response and renders only real sections labeled with their titles.
+4. Progress card stalled silently after ~40s. Now shows "Still working — long videos can take 60–90s" when elapsed > lastStep + 20.
+5. Ctrl/Cmd+Enter didn't submit the multi-URL textarea — added keydown handler.
+
+### VPS YouTube issue (open, side task spawned)
+yt-dlp is bot-gated on the VPS datacenter IP. YouTube videos return "Unknown Video by Unknown" because metadata extraction fails at the yt-dlp level, before captions or Whisper are even attempted. TikTok and X/Twitter work. Two side tasks spawned to (1) fix the bot-gate with cookies/proxy and (2) unify the Whisper fallback chain across platforms so failures are reported with what-step-failed detail.
+
+### Commits (master)
+- `8025284 feat(digest): Send to Claude Code button — fires routine via API`
+- `e317b67 fix(digest): parse SSE + plain text, not JSON`
 
 ---
 
