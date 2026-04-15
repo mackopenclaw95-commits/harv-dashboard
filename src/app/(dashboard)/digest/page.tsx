@@ -273,8 +273,51 @@ export default function DigestPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, agent: "Video Digest" }),
       });
-      const data = await res.json();
-      const text = data.response || data.text || data.message || JSON.stringify(data);
+
+      if (!res.ok) {
+        throw new Error(`API ${res.status}: ${await res.text().catch(() => "")}`);
+      }
+
+      // /api/chat/agent returns either SSE (text/event-stream) or plain text.
+      // Match the parser in chat-panel.tsx — res.json() does NOT work here.
+      const contentType = res.headers.get("content-type") || "";
+      let text = "";
+
+      if (contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let streamDone = false;
+        while (!streamDone) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() || "";
+          for (const event of events) {
+            const line = event.trim();
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const payload = JSON.parse(line.slice(6));
+              if (payload.type === "delta") {
+                text += payload.text;
+              } else if (payload.type === "done") {
+                text = payload.full_text || text;
+                streamDone = true;
+              }
+            } catch {
+              // skip malformed events
+            }
+          }
+        }
+      } else {
+        text = await res.text();
+      }
+
+      if (!text.trim()) {
+        toast.error("Empty response from Video Digest agent");
+        return;
+      }
       setResponse(text);
 
       // Save to history
@@ -294,8 +337,8 @@ export default function DigestPage() {
         saveHistory(next);
       }
       setHowToOpen(false);
-    } catch {
-      toast.error("Failed to get response");
+    } catch (err) {
+      toast.error(`Failed: ${String(err).slice(0, 120)}`);
     } finally {
       setLoading(false);
     }
