@@ -3,27 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createServiceClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import { API_BASE as API_URL_CFG, API_KEY as API_KEY_CFG } from "@/lib/api-config";
-
-// Model pricing per million tokens (matching OpenRouter rates)
-const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  "deepseek/deepseek-chat": { input: 0.32, output: 0.89 },
-  "deepseek/deepseek-v3.2": { input: 0.26, output: 0.38 },
-  "x-ai/grok-4.1-fast": { input: 0.05, output: 0.10 },
-  "qwen/qwen3-8b": { input: 0.04, output: 0.09 },
-  "google/gemini-2.0-flash-lite-001": { input: 0.075, output: 0.30 },
-  "openai/gpt-4.1": { input: 2.0, output: 8.0 },
-  "claude-sonnet-4-20250514": { input: 3.0, output: 15.0 },
-  "claude-haiku-4-5-20251001": { input: 0.80, output: 4.0 },
-};
-
-function estimateCost(model: string, tokens: number): number {
-  // Rough estimate: assume 60% input, 40% output
-  const pricing = MODEL_PRICING[model];
-  if (!pricing || tokens === 0) return 0;
-  const inTokens = Math.round(tokens * 0.6);
-  const outTokens = tokens - inTokens;
-  return (inTokens * pricing.input + outTokens * pricing.output) / 1_000_000;
-}
+import { getModelPricing, estimateCost as computeCost, splitLegacyTokens } from "@/lib/model-pricing";
 
 export async function GET() {
   try {
@@ -96,6 +76,7 @@ export async function GET() {
     ]);
 
     // --- Sync new api_cost events from VPS into Supabase ---
+    const pricing = await getModelPricing();
     try {
       const eventsRes = await fetch(`${API_URL_CFG}/api/events/recent?limit=500`, {
         headers: { "X-API-Key": API_KEY_CFG },
@@ -114,16 +95,34 @@ export async function GET() {
             const summary = String(evt.summary || "");
             const model = summary.split("|")[0]?.trim() || "";
             const tokens = (evt.tokens as number) || 0;
+            const tokensIn = (evt.tokens_in as number) || 0;
+            const tokensOut = (evt.tokens_out as number) || 0;
+            const cachedTokens = (evt.cached_tokens as number) || 0;
+            const units = (evt.units as number) || 0;
             let cost = (evt.cost as number) || 0;
-            if (cost === 0 && tokens > 0) {
-              cost = estimateCost(model, tokens);
+            if (cost === 0) {
+              if (tokensIn || tokensOut) {
+                cost = computeCost(pricing, model, { tokensIn, tokensOut, cachedTokens });
+              } else if (tokens > 0) {
+                const split = splitLegacyTokens(tokens);
+                cost = computeCost(pricing, model, split);
+              } else if (units > 0) {
+                cost = computeCost(pricing, model, { units });
+              }
             }
             return {
               vps_event_id: evt.id as number,
               model,
               tokens,
+              tokens_in: tokensIn,
+              tokens_out: tokensOut,
+              cached_tokens: cachedTokens,
+              units,
               cost,
               agent: String(evt.agent || ""),
+              parent_agent: (evt.parent_agent as string) || null,
+              user_id: (evt.user_id as string) || null,
+              modality: (evt.modality as string) || "text",
               summary,
               event_timestamp: evt.timestamp as string,
             };
@@ -149,9 +148,12 @@ export async function GET() {
 
     const { data: costRows } = await supabase
       .from("api_cost_events")
-      .select("model, tokens, cost, event_timestamp")
+      .select("model, tokens, cost, user_id, agent, event_timestamp")
       .not("model", "like", "claude-%")
       .order("event_timestamp", { ascending: false });
+
+    // Per-user cost from api_cost_events (background agents, digest, image gen, etc.)
+    const userAgentCost: Record<string, number> = {};
 
     for (const row of costRows || []) {
       const model = row.model || "";
@@ -175,9 +177,13 @@ export async function GET() {
         costByModel[model].cost += cost;
         costByModel[model].calls += 1;
       }
+
+      if (row.user_id) {
+        userAgentCost[row.user_id] = (userAgentCost[row.user_id] || 0) + cost;
+      }
     }
 
-    // Aggregate usage per user from dashboard usage_logs
+    // Aggregate usage per user from dashboard usage_logs + api_cost_events
     const userUsage: Record<string, { tokens: number; cost: number; messages: number }> = {};
     for (const row of usageByUser.data || []) {
       const uid = row.user_id;
@@ -186,6 +192,11 @@ export async function GET() {
       userUsage[uid].tokens += row.tokens_used || 0;
       userUsage[uid].cost += Number(row.estimated_cost) || 0;
       userUsage[uid].messages += 1;
+    }
+    // Fold in background/agent costs from api_cost_events
+    for (const [uid, cost] of Object.entries(userAgentCost)) {
+      if (!userUsage[uid]) userUsage[uid] = { tokens: 0, cost: 0, messages: 0 };
+      userUsage[uid].cost += cost;
     }
 
     const users = (profiles.data || []).map((p) => ({

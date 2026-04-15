@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { createServiceClient } from "@/lib/supabase";
+import { cookies } from "next/headers";
 import { HARV_HELP_SYSTEM_PROMPT } from "@/lib/harv-help-context";
+import { getModelPricing, estimateCost } from "@/lib/model-pricing";
 
 /**
  * Harv Help chatbot — answers product questions.
  *
  * Calls OpenRouter directly (no VPS roundtrip) using DeepSeek Chat v3 which
- * is cheap and fast. System prompt is a static product-context blob.
+ * is cheap and fast. Cost is logged to usage_logs with the calling user_id.
  *
  * POST body: { messages: [{role, content}, ...] }
  * Returns: { reply: string }
@@ -25,6 +29,26 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
+  }
+
+  // Resolve user (optional — help-chat works logged out too, but we log when possible)
+  let userId: string | null = null;
+  try {
+    const cookieStore = await cookies();
+    const authClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(c) { c.forEach(({ name, value, options }) => { try { cookieStore.set(name, value, options); } catch {} }); },
+        },
+      }
+    );
+    const { data: { user } } = await authClient.auth.getUser();
+    userId = user?.id || null;
+  } catch {
+    // unauthenticated help-chat is allowed — just no attribution
   }
 
   let body: { messages?: Message[] };
@@ -71,6 +95,27 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json();
     const reply = data?.choices?.[0]?.message?.content || "";
+    const tokensIn: number = data?.usage?.prompt_tokens || 0;
+    const tokensOut: number = data?.usage?.completion_tokens || 0;
+    const totalTokens = tokensIn + tokensOut;
+
+    // Log cost if we have a user
+    if (userId && totalTokens > 0) {
+      try {
+        const pricing = await getModelPricing();
+        const cost = estimateCost(pricing, MODEL, { tokensIn, tokensOut });
+        const svc = createServiceClient();
+        await svc.from("usage_logs").insert({
+          user_id: userId,
+          agent_name: "Harv Help",
+          tokens_used: totalTokens,
+          estimated_cost: cost,
+        });
+      } catch (err) {
+        console.error("[help-chat] cost log failed:", err);
+      }
+    }
+
     return NextResponse.json({ reply });
   } catch (e) {
     console.error("[help-chat] exception:", e);

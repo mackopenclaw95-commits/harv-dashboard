@@ -438,6 +438,8 @@ export function ChatPanel({
       const assistantId = (Date.now() + 1).toString();
       let tokensIn = 0;
       let tokensOut = 0;
+      let streamModel = "";
+      let cachedTokens = 0;
 
       if (contentType.includes("text/event-stream") && res.body) {
         // SSE streaming: render text incrementally
@@ -480,6 +482,8 @@ export function ChatPanel({
                 fullText = payload.full_text || fullText;
                 tokensIn = payload.tokens_in || 0;
                 tokensOut = payload.tokens_out || 0;
+                streamModel = payload.model || streamModel;
+                cachedTokens = payload.cached_tokens || 0;
                 streamDone = true;
               }
               // tool events are informational — text keeps streaming after
@@ -520,15 +524,16 @@ export function ChatPanel({
 
       onNewMessage?.();
 
-      // Log usage with token data
-      const estCost = (tokensIn * 3 + tokensOut * 15) / 1_000_000; // Claude Sonnet pricing
+      // Log usage — server computes authoritative cost from model_pricing table
       fetch("/api/usage/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agent_name: agentName || "Harv",
-          tokens_used: tokensIn + tokensOut,
-          estimated_cost: Math.round(estCost * 1_000_000) / 1_000_000,
+          model: streamModel,
+          tokens_in: tokensIn,
+          tokens_out: tokensOut,
+          cached_tokens: cachedTokens,
         }),
       }).then(res => {
         if (!res.ok) console.error("[usage-log] Failed:", res.status);
