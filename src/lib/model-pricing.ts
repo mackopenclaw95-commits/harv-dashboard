@@ -24,20 +24,20 @@ export interface ModelPrice {
 
 export type PricingMap = Record<string, ModelPrice>;
 
-// ── Fallback rates (sync with docs/supabase-model-pricing.sql) ──────────
+// ── Fallback rates (verified against OpenRouter live /v1/models 2026-04-15) ──
 const FALLBACK: PricingMap = {
   "deepseek/deepseek-chat":           mk("deepseek/deepseek-chat", 0.32, 0.89),
-  "deepseek/deepseek-chat-v3-0324":   mk("deepseek/deepseek-chat-v3-0324", 0.27, 1.10),
+  "deepseek/deepseek-chat-v3-0324":   mk("deepseek/deepseek-chat-v3-0324", 0.20, 0.77),
   "deepseek/deepseek-v3":             mk("deepseek/deepseek-v3", 0.27, 1.10),
   "deepseek/deepseek-v3.2":           mk("deepseek/deepseek-v3.2", 0.26, 0.38),
-  "deepseek/deepseek-r1":             mk("deepseek/deepseek-r1", 0.55, 2.19),
-  "x-ai/grok-4.1-fast":               mk("x-ai/grok-4.1-fast", 0.05, 0.10),
+  "deepseek/deepseek-r1":             mk("deepseek/deepseek-r1", 0.70, 2.50),
+  "x-ai/grok-4.1-fast":               mk("x-ai/grok-4.1-fast", 0.20, 0.50),
   "x-ai/grok-3":                      mk("x-ai/grok-3", 3.00, 15.00),
-  "minimax/minimax-m2.1":             mk("minimax/minimax-m2.1", 0.30, 1.20),
-  "qwen/qwen3-8b":                    mk("qwen/qwen3-8b", 0.04, 0.09),
+  "minimax/minimax-m2.1":             mk("minimax/minimax-m2.1", 0.29, 0.95),
+  "qwen/qwen3-8b":                    mk("qwen/qwen3-8b", 0.05, 0.40),
   "qwen/qwen3-8b:free":               { ...mk("qwen/qwen3-8b:free", 0, 0), is_free: true },
   "google/gemini-2.0-flash-lite-001": mk("google/gemini-2.0-flash-lite-001", 0.075, 0.30),
-  "google/gemini-2.5-flash":          { ...mk("google/gemini-2.5-flash", 0.10, 0.40), modality: "vlm" },
+  "google/gemini-2.5-flash":          { ...mk("google/gemini-2.5-flash", 0.30, 2.50), modality: "vlm" },
   "openai/gpt-4.1":                   mk("openai/gpt-4.1", 2.00, 8.00),
   "groq/whisper-large-v3-turbo": {
     model: "groq/whisper-large-v3-turbo", provider: "groq",
