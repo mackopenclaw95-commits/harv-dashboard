@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, DollarSign, Zap, TrendingDown, Clock, PieChart, RefreshCw, WifiOff, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, MessageSquare, Flame, Bot, Activity } from "lucide-react";
+import { BarChart3, DollarSign, Zap, TrendingDown, Clock, PieChart, RefreshCw, WifiOff, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, MessageSquare, Flame, Bot, Activity, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
@@ -357,6 +357,21 @@ export default function AnalyticsPage() {
           </div>
         ) : usageData ? (
           <div className="space-y-6">
+            {/* Export bar */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Last 30 days of activity
+              </p>
+              <a
+                href="/api/analytics/usage/export?days=30"
+                download
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] px-3 py-1.5 text-xs text-foreground/80 hover:text-foreground transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </a>
+            </div>
+
             {/* Usage summary cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="relative overflow-hidden">

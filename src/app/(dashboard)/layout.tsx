@@ -6,6 +6,7 @@ import { PersonalityProvider } from "@/components/personality-provider";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { NotificationStore } from "@/components/notification-store";
 import { Sidebar } from "@/components/sidebar";
+import { HarvHelp } from "@/components/harv-help";
 
 const TourProvider = dynamic(
   () => import("@/components/tour/tour-provider").then((m) => m.TourProvider),
@@ -27,6 +28,7 @@ export default function DashboardLayout({
           <TourProvider>
             <main className="relative flex-1 overflow-auto">{children}</main>
           </TourProvider>
+          <HarvHelp />
         </NotificationStore>
       </div>
     </AuthProvider>
