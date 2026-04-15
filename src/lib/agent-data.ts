@@ -117,8 +117,8 @@ export interface PlannedAgentMeta {
 }
 
 export const PLANNED_AGENTS: Agent[] = [
-  { name: "TikTok Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "TikTok video digest, transcription, and implementation guide", cost_per_call: 0.001 },
-  { name: "Twitter Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Twitter/X thread summarization and implementation guide", cost_per_call: 0.001 },
+  { name: "TikTok Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "TikTok digest — works for captioned videos. Uncaptioned clips need Whisper (coming soon).", cost_per_call: 0.001 },
+  { name: "Twitter Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "X/Twitter digest — threads + captioned videos. Uncaptioned video tweets need Whisper (coming soon).", cost_per_call: 0.001 },
   { name: "Media Manager", status: "LIVE", model: "orchestrator", type: "agent", tier: "AGENTS", provider: "keyword-router", description: "Media orchestrator — routes to Image Gen, Video Gen, and Video Editor", cost_per_call: 0 },
   { name: "Video Gen", status: "LIVE", model: "bytedance/seedance-1-5-pro", type: "agent", tier: "AGENTS", provider: "openrouter", description: "AI video generation from text prompts (Seedance 1.5 Pro)", cost_per_call: 0.005 },
   { name: "Video Editor", status: "LIVE", model: "ffmpeg+deepseek", type: "agent", tier: "AGENTS", provider: "local+openrouter", description: "Video editing — trim, resize, crop, speed, rotate, subtitles, convert", cost_per_call: 0 },
