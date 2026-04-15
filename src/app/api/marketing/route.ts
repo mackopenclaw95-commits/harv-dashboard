@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { API_BASE, API_KEY } from "@/lib/api-config";
 
+// Reddit draft LLM calls take ~10-15s. Vercel hobby tier caps at 10s;
+// pro tier defaults to 15s unless we raise it. 60s is plenty of headroom.
+export const maxDuration = 60;
+
 async function proxyGet(path: string) {
   const res = await fetch(`${API_BASE}/api/marketing/${path}`, {
     headers: { "X-API-Key": API_KEY },
@@ -20,10 +24,24 @@ async function proxyPost(path: string, body: Record<string, unknown>) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(60000),
   });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text);
+    return NextResponse.json(data, { status: res.status });
+  } catch {
+    // Non-JSON response (Flask HTML error page, proxy timeout, etc.)
+    console.error(`[marketing proxyPost] ${path} returned non-JSON (${res.status}):`, text.slice(0, 300));
+    return NextResponse.json(
+      {
+        error: `VPS returned non-JSON (status ${res.status})`,
+        status: res.status,
+        body_preview: text.slice(0, 300),
+      },
+      { status: 502 },
+    );
+  }
 }
 
 export async function GET(req: NextRequest) {
