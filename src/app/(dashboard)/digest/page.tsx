@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -18,13 +18,85 @@ import {
   FileText,
   Wrench,
   Lightbulb,
-  Link,
+  Link as LinkIcon,
   ExternalLink,
   Eye,
+  Copy,
+  Check,
+  History as HistoryIcon,
+  ChevronDown,
+  Trash2,
+  Download,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
-import { cn } from "@/lib/utils";
+import { cn, timeAgo } from "@/lib/utils";
+import { MarkdownMessage } from "@/components/chat/markdown-message";
+
+type Mode = "digest" | "implement" | "multi" | "visual";
+
+type HistoryEntry = {
+  id: string;
+  mode: Mode;
+  url: string;
+  multiUrls?: string;
+  response: string;
+  createdAt: string;
+  videoTitle?: string;
+  videoThumb?: string;
+};
+
+type VideoMeta = {
+  title?: string;
+  thumb?: string;
+  author?: string;
+};
+
+const HISTORY_KEY = "digest-history-v1";
+const MAX_HISTORY = 10;
+
+const MODE_META: Record<Mode, { label: string; icon: React.ComponentType<{ className?: string }>; desc: string; cta: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  digest: { label: "Digest", icon: FileText, desc: "Summarize & break into sections", cta: "Digest Video", Icon: Play },
+  implement: { label: "Implement", icon: Wrench, desc: "Step-by-step implementation guide", cta: "Generate Implementation Guide", Icon: Wrench },
+  visual: { label: "Visual", icon: Eye, desc: "Read what's on screen (Gemini VLM)", cta: "Analyze Visually", Icon: Eye },
+  multi: { label: "Multi-Video", icon: Lightbulb, desc: "Synthesize ideas from multiple videos", cta: "Synthesize Ideas", Icon: Lightbulb },
+};
+
+const PROGRESS_STEPS = [
+  { at: 0, label: "Fetching video metadata…" },
+  { at: 4, label: "Downloading audio…" },
+  { at: 12, label: "Transcribing (Whisper)…" },
+  { at: 28, label: "Analyzing content…" },
+  { at: 40, label: "Writing digest…" },
+];
+
+function detectPlatform(urlStr: string): string {
+  if (urlStr.includes("youtube.com") || urlStr.includes("youtu.be")) return "YouTube";
+  if (urlStr.includes("tiktok.com")) return "TikTok";
+  if (urlStr.includes("twitter.com") || urlStr.includes("x.com")) return "Twitter/X";
+  return "Video";
+}
+
+function loadHistory(): HistoryEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.slice(0, MAX_HISTORY) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(entries: HistoryEntry[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY)));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
 
 export default function DigestPage() {
   const { isAdmin, isLoading: authLoading } = useAuth();
@@ -32,9 +104,84 @@ export default function DigestPage() {
   const [multiUrls, setMultiUrls] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"digest" | "implement" | "multi" | "visual">("digest");
+  const [mode, setMode] = useState<Mode>("digest");
+  const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
+  const [metaLoading, setMetaLoading] = useState(false);
+  const [progressStep, setProgressStep] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [howToOpen, setHowToOpen] = useState(true);
+  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const metaDebounce = useRef<NodeJS.Timeout | null>(null);
 
-  async function askDigest(message: string) {
+  // Load history on mount, collapse how-to if there is any
+  useEffect(() => {
+    const h = loadHistory();
+    setHistory(h);
+    if (h.length > 0) setHowToOpen(false);
+  }, []);
+
+  // Fetch video metadata (debounced) when a valid URL is typed
+  useEffect(() => {
+    if (metaDebounce.current) clearTimeout(metaDebounce.current);
+    if (mode === "multi" || !url.trim()) {
+      setVideoMeta(null);
+      return;
+    }
+    const trimmed = url.trim();
+    if (!/^https?:\/\//i.test(trimmed)) {
+      setVideoMeta(null);
+      return;
+    }
+    metaDebounce.current = setTimeout(async () => {
+      setMetaLoading(true);
+      try {
+        const res = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(trimmed)}`);
+        if (!res.ok) throw new Error("fetch failed");
+        const data = await res.json();
+        if (data.error) {
+          setVideoMeta(null);
+        } else {
+          setVideoMeta({
+            title: data.title,
+            thumb: data.thumbnail_url,
+            author: data.author_name,
+          });
+        }
+      } catch {
+        setVideoMeta(null);
+      } finally {
+        setMetaLoading(false);
+      }
+    }, 500);
+    return () => {
+      if (metaDebounce.current) clearTimeout(metaDebounce.current);
+    };
+  }, [url, mode]);
+
+  // Progress animation while loading
+  useEffect(() => {
+    if (!loading) {
+      if (progressInterval.current) clearInterval(progressInterval.current);
+      setProgressStep(0);
+      setElapsed(0);
+      return;
+    }
+    const start = Date.now();
+    progressInterval.current = setInterval(() => {
+      const secs = Math.floor((Date.now() - start) / 1000);
+      setElapsed(secs);
+      const step = PROGRESS_STEPS.filter((s) => s.at <= secs).length - 1;
+      setProgressStep(Math.max(0, step));
+    }, 500);
+    return () => {
+      if (progressInterval.current) clearInterval(progressInterval.current);
+    };
+  }, [loading]);
+
+  async function askDigest(message: string, ctx?: { url?: string; multiUrls?: string; mode: Mode }) {
     setLoading(true);
     setResponse("");
     try {
@@ -44,7 +191,26 @@ export default function DigestPage() {
         body: JSON.stringify({ message, agent: "Video Digest" }),
       });
       const data = await res.json();
-      setResponse(data.response || data.text || data.message || JSON.stringify(data));
+      const text = data.response || data.text || data.message || JSON.stringify(data);
+      setResponse(text);
+
+      // Save to history
+      if (ctx) {
+        const entry: HistoryEntry = {
+          id: crypto.randomUUID(),
+          mode: ctx.mode,
+          url: ctx.url || "",
+          multiUrls: ctx.multiUrls,
+          response: text,
+          createdAt: new Date().toISOString(),
+          videoTitle: videoMeta?.title,
+          videoThumb: videoMeta?.thumb,
+        };
+        const next = [entry, ...history].slice(0, MAX_HISTORY);
+        setHistory(next);
+        saveHistory(next);
+      }
+      setHowToOpen(false);
     } catch {
       toast.error("Failed to get response");
     } finally {
@@ -54,39 +220,66 @@ export default function DigestPage() {
 
   function handleSubmit() {
     if (mode === "multi") {
-      if (!multiUrls.trim()) {
-        toast.error("Paste at least 2 URLs");
-        return;
-      }
-      askDigest(`synthesize ideas from these videos: ${multiUrls}`);
+      if (!multiUrls.trim()) { toast.error("Paste at least 2 URLs"); return; }
+      askDigest(`synthesize ideas from these videos: ${multiUrls}`, { multiUrls, mode });
     } else if (mode === "implement") {
-      if (!url.trim()) {
-        toast.error("Paste a URL");
-        return;
-      }
-      askDigest(`implement this video: ${url}`);
+      if (!url.trim()) { toast.error("Paste a URL"); return; }
+      askDigest(`implement this video: ${url}`, { url, mode });
     } else if (mode === "visual") {
-      if (!url.trim()) {
-        toast.error("Paste a URL");
-        return;
-      }
-      // Gemini VLM path — reads what's on screen (code, UI, charts, demos)
-      askDigest(`[vlm] ${url}`);
+      if (!url.trim()) { toast.error("Paste a URL"); return; }
+      askDigest(`[vlm] ${url}`, { url, mode });
     } else {
-      if (!url.trim()) {
-        toast.error("Paste a URL");
-        return;
-      }
-      askDigest(url);
+      if (!url.trim()) { toast.error("Paste a URL"); return; }
+      askDigest(url, { url, mode });
     }
   }
 
-  function detectPlatform(urlStr: string): string {
-    if (urlStr.includes("youtube.com") || urlStr.includes("youtu.be")) return "YouTube";
-    if (urlStr.includes("tiktok.com")) return "TikTok";
-    if (urlStr.includes("twitter.com") || urlStr.includes("x.com")) return "Twitter/X";
-    return "Video";
+  async function copyResponse() {
+    try {
+      await navigator.clipboard.writeText(response);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Copy failed");
+    }
   }
+
+  function downloadResponse() {
+    const title = videoMeta?.title?.slice(0, 60).replace(/[^\w\s-]/g, "") || "digest";
+    const slug = title.replace(/\s+/g, "-").toLowerCase();
+    const blob = new Blob([response], { type: "text/markdown" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slug}-${new Date().toISOString().split("T")[0]}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function restoreEntry(entry: HistoryEntry) {
+    setMode(entry.mode);
+    setUrl(entry.url);
+    if (entry.multiUrls) setMultiUrls(entry.multiUrls);
+    setResponse(entry.response);
+    if (entry.videoTitle || entry.videoThumb) {
+      setVideoMeta({ title: entry.videoTitle, thumb: entry.videoThumb });
+    }
+    setHistoryOpen(false);
+  }
+
+  function deleteHistoryEntry(id: string) {
+    const next = history.filter((h) => h.id !== id);
+    setHistory(next);
+    saveHistory(next);
+  }
+
+  function clearHistory() {
+    setHistory([]);
+    saveHistory([]);
+    toast.success("History cleared");
+  }
+
+  const currentProgress = useMemo(() => PROGRESS_STEPS[progressStep], [progressStep]);
 
   // Admin gate
   if (authLoading) {
@@ -128,47 +321,129 @@ export default function DigestPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-500/20">
             <Video className="h-5 w-5 text-violet-400" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-semibold tracking-tight">Digest</h1>
             <p className="text-sm text-muted-foreground">
               YouTube, TikTok, Twitter &middot; Transcribe, digest, and implement
             </p>
           </div>
+          <button
+            onClick={() => setHistoryOpen(!historyOpen)}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+              historyOpen
+                ? "bg-violet-500/15 text-violet-400 border border-violet-500/30"
+                : "bg-white/[0.02] border border-white/[0.06] text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+            )}
+          >
+            <HistoryIcon className="h-3.5 w-3.5" />
+            History
+            {history.length > 0 && (
+              <span className="rounded-full bg-white/[0.08] px-1.5 text-[9px] font-bold">{history.length}</span>
+            )}
+          </button>
         </div>
       </header>
 
+      {/* History panel */}
+      {historyOpen && (
+        <Card className="mb-6 border-violet-500/20">
+          <CardHeader className="pb-3 flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <HistoryIcon className="h-4 w-4 text-violet-400" />
+              Recent Digests
+            </CardTitle>
+            {history.length > 0 && (
+              <button
+                onClick={clearHistory}
+                className="text-[10px] text-muted-foreground hover:text-red-400 transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {history.length === 0 ? (
+              <p className="text-xs text-muted-foreground/60 text-center py-4">
+                No digests yet. Run one to see it here.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {history.map((h) => (
+                  <div
+                    key={h.id}
+                    className="group flex items-start gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 hover:bg-white/[0.04] transition-colors"
+                  >
+                    {h.videoThumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={h.videoThumb}
+                        alt=""
+                        className="h-12 w-20 rounded object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="h-12 w-20 rounded bg-violet-500/10 flex items-center justify-center shrink-0">
+                        <Video className="h-5 w-5 text-violet-400/60" />
+                      </div>
+                    )}
+                    <button
+                      onClick={() => restoreEntry(h)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <p className="text-xs font-medium truncate">
+                        {h.videoTitle || (h.mode === "multi" ? "Multi-video digest" : h.url)}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-violet-500/30 text-violet-400 bg-violet-500/10">
+                          {MODE_META[h.mode].label}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">{timeAgo(h.createdAt)}</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => deleteHistoryEntry(h.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/[0.06] transition-all shrink-0"
+                    >
+                      <Trash2 className="h-3 w-3 text-muted-foreground/60 hover:text-red-400" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Mode Selector */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
-        {[
-          { id: "digest" as const, label: "Digest", icon: FileText, desc: "Summarize & break into sections" },
-          { id: "implement" as const, label: "Implement", icon: Wrench, desc: "Step-by-step implementation guide" },
-          { id: "visual" as const, label: "Visual", icon: Eye, desc: "Read what's on screen (Gemini VLM)" },
-          { id: "multi" as const, label: "Multi-Video", icon: Lightbulb, desc: "Synthesize ideas from multiple videos" },
-        ].map(({ id, label, icon: Icon, desc }) => (
-          <button
-            key={id}
-            onClick={() => setMode(id)}
-            className={cn(
-              "flex-1 rounded-xl p-3 text-left ring-1 transition-all",
-              mode === id
-                ? "bg-violet-500/10 ring-violet-500/30 text-violet-400"
-                : "ring-white/[0.06] text-muted-foreground hover:bg-white/[0.03] hover:ring-white/[0.1]"
-            )}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Icon className="h-4 w-4" />
-              <span className="text-sm font-medium">{label}</span>
-            </div>
-            <p className="text-[11px] opacity-60">{desc}</p>
-          </button>
-        ))}
+        {(Object.keys(MODE_META) as Mode[]).map((id) => {
+          const { label, icon: Icon, desc } = MODE_META[id];
+          return (
+            <button
+              key={id}
+              onClick={() => setMode(id)}
+              className={cn(
+                "flex-1 rounded-xl p-3 text-left ring-1 transition-all",
+                mode === id
+                  ? "bg-violet-500/10 ring-violet-500/30 text-violet-400"
+                  : "ring-white/[0.06] text-muted-foreground hover:bg-white/[0.03] hover:ring-white/[0.1]"
+              )}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{label}</span>
+              </div>
+              <p className="text-[11px] opacity-60">{desc}</p>
+            </button>
+          );
+        })}
       </div>
 
       {/* URL Input */}
       <Card className="mb-6">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Link className="h-4 w-4 text-violet-400" />
+            <LinkIcon className="h-4 w-4 text-violet-400" />
             {mode === "multi" ? "Paste Multiple URLs" : "Paste Video URL"}
           </CardTitle>
         </CardHeader>
@@ -189,14 +464,42 @@ export default function DigestPage() {
             />
           )}
 
-          {url && mode !== "multi" && (
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-violet-500/10 text-violet-400 border-violet-500/30 text-[10px]">
-                {detectPlatform(url)}
-              </Badge>
-              <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground flex items-center gap-1">
-                <ExternalLink className="h-3 w-3" /> Open original
-              </a>
+          {/* Video preview card */}
+          {mode !== "multi" && url.trim() && (videoMeta || metaLoading) && (
+            <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
+              {metaLoading ? (
+                <div className="h-14 w-24 rounded bg-white/[0.04] animate-pulse shrink-0" />
+              ) : videoMeta?.thumb ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={videoMeta.thumb} alt="" className="h-14 w-24 rounded object-cover shrink-0" />
+              ) : (
+                <div className="h-14 w-24 rounded bg-violet-500/10 flex items-center justify-center shrink-0">
+                  <Video className="h-5 w-5 text-violet-400/60" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                {metaLoading ? (
+                  <>
+                    <div className="h-3 w-3/4 bg-white/[0.06] rounded animate-pulse mb-1.5" />
+                    <div className="h-2 w-1/2 bg-white/[0.04] rounded animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-medium truncate">{videoMeta?.title || "Video"}</p>
+                    {videoMeta?.author && (
+                      <p className="text-[10px] text-muted-foreground truncate">{videoMeta.author}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="bg-violet-500/10 text-violet-400 border-violet-500/30 text-[9px] px-1.5 py-0 h-4">
+                        {detectPlatform(url)}
+                      </Badge>
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground flex items-center gap-1">
+                        <ExternalLink className="h-3 w-3" /> Open
+                      </a>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
 
@@ -207,63 +510,130 @@ export default function DigestPage() {
           >
             {loading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : mode === "digest" ? (
-              <Play className="h-4 w-4 mr-2" />
-            ) : mode === "implement" ? (
-              <Wrench className="h-4 w-4 mr-2" />
-            ) : mode === "visual" ? (
-              <Eye className="h-4 w-4 mr-2" />
             ) : (
-              <Lightbulb className="h-4 w-4 mr-2" />
+              (() => {
+                const I = MODE_META[mode].Icon;
+                return <I className="h-4 w-4 mr-2" />;
+              })()
             )}
-            {mode === "digest"
-              ? "Digest Video"
-              : mode === "implement"
-              ? "Generate Implementation Guide"
-              : mode === "visual"
-              ? "Analyze Visually"
-              : "Synthesize Ideas"}
+            {MODE_META[mode].cta}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Quick Examples */}
-      {!response && (
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-muted-foreground/60">How to use</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-sm text-muted-foreground/70">
-              <div>
-                <span className="font-medium text-violet-400">Digest:</span> Paste a YouTube/TikTok/Twitter URL — gets the transcript, breaks it into actionable sections with takeaways.
-              </div>
-              <div>
-                <span className="font-medium text-violet-400">Implement:</span> Same as digest but generates a complete step-by-step guide with code, commands, and configs. You can follow it without watching the video.
-              </div>
-              <div>
-                <span className="font-medium text-violet-400">Visual:</span> Sends the actual video frames to Gemini instead of just the transcript. Reads code on screen, UI demos, charts, and diagrams — catches anything a silent demo would show. Best for tutorials and product walkthroughs. Works best on TikTok/Twitter; YouTube bot-gates datacenter IPs.
-              </div>
-              <div>
-                <span className="font-medium text-violet-400">Multi-Video:</span> Paste 2-5 URLs from different videos. The agent summarizes each, finds common themes, and creates a combined action plan.
-              </div>
-              <div className="pt-2 text-[11px] text-muted-foreground/40">
-                After digesting, you can say &quot;implement section 2&quot; to get a detailed guide for a specific section.
-              </div>
+      {/* Progress while loading */}
+      {loading && (
+        <Card className="mb-6 border-violet-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Loader2 className="h-4 w-4 animate-spin text-violet-400 shrink-0" />
+              <p className="text-sm font-medium text-violet-400">{currentProgress.label}</p>
+              <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">{elapsed}s</span>
+            </div>
+            <div className="space-y-1.5">
+              {PROGRESS_STEPS.map((step, i) => {
+                const done = i < progressStep;
+                const active = i === progressStep;
+                return (
+                  <div
+                    key={step.label}
+                    className={cn(
+                      "flex items-center gap-2 text-[11px] transition-colors",
+                      done && "text-emerald-400/70",
+                      active && "text-violet-400",
+                      !done && !active && "text-muted-foreground/30"
+                    )}
+                  >
+                    {done ? (
+                      <Check className="h-3 w-3" />
+                    ) : active ? (
+                      <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                    ) : (
+                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/20" />
+                    )}
+                    {step.label}
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
       )}
 
+      {/* How-to (collapsible) */}
+      {!response && !loading && (
+        <Card className="mb-6">
+          <button
+            onClick={() => setHowToOpen(!howToOpen)}
+            className="flex w-full items-center justify-between gap-3 p-4 text-left"
+          >
+            <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground/80">
+              <HelpCircle className="h-4 w-4" />
+              How to use
+            </CardTitle>
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", howToOpen && "rotate-180")} />
+          </button>
+          {howToOpen && (
+            <CardContent className="pt-0">
+              <div className="space-y-3 text-sm text-muted-foreground/70">
+                <div>
+                  <span className="font-medium text-violet-400">Digest:</span> Paste a YouTube/TikTok/Twitter URL — gets the transcript, breaks it into actionable sections with takeaways.
+                </div>
+                <div>
+                  <span className="font-medium text-violet-400">Implement:</span> Same as digest but generates a complete step-by-step guide with code, commands, and configs. You can follow it without watching the video.
+                </div>
+                <div>
+                  <span className="font-medium text-violet-400">Visual:</span> Sends the actual video frames to Gemini instead of just the transcript. Reads code on screen, UI demos, charts, and diagrams — catches anything a silent demo would show. Best for tutorials and product walkthroughs. Works best on TikTok/Twitter; YouTube bot-gates datacenter IPs.
+                </div>
+                <div>
+                  <span className="font-medium text-violet-400">Multi-Video:</span> Paste 2-5 URLs from different videos. The agent summarizes each, finds common themes, and creates a combined action plan.
+                </div>
+                <div className="pt-2 text-[11px] text-muted-foreground/40">
+                  After digesting, you can say &quot;implement section 2&quot; to get a detailed guide for a specific section.
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       {/* Response */}
-      {response && (
+      {response && !loading && (
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-foreground/80 whitespace-pre-wrap">{response}</p>
+          <CardHeader className="flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FileText className="h-4 w-4 text-violet-400" />
+              {videoMeta?.title ? videoMeta.title : MODE_META[mode].label}
+            </CardTitle>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyResponse}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={downloadResponse}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                .md
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-sm text-foreground/85">
+              <MarkdownMessage content={response} />
+            </div>
 
             {/* Follow-up actions */}
             {mode === "digest" && (
-              <div className="flex gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
                 <Button
                   variant="outline"
                   size="sm"
