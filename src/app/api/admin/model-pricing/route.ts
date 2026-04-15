@@ -62,17 +62,24 @@ export async function POST(req: NextRequest) {
   if (!model) {
     return NextResponse.json({ error: "model is required" }, { status: 400 });
   }
+  // Matches docs/supabase-model-pricing.sql unit enum
   const unit = typeof body.unit === "string" ? body.unit : "tokens";
-  if (!["tokens", "images", "minutes", "characters"].includes(unit)) {
-    return NextResponse.json({ error: "unit must be one of tokens|images|minutes|characters" }, { status: 400 });
+  const validUnits = ["tokens", "image", "audio_minute", "tts_char"];
+  if (!validUnits.includes(unit)) {
+    return NextResponse.json(
+      { error: `unit must be one of ${validUnits.join("|")}` },
+      { status: 400 }
+    );
   }
+  const modality = typeof body.modality === "string" ? body.modality : "text";
 
   const row = {
     model,
     unit,
-    input_per_million: unit === "tokens" ? Number(body.input_per_million) || 0 : null,
-    output_per_million: unit === "tokens" ? Number(body.output_per_million) || 0 : null,
-    price_per_unit: unit !== "tokens" ? Number(body.price_per_unit) || 0 : null,
+    modality,
+    input_per_million: Number(body.input_per_million) || 0,
+    output_per_million: Number(body.output_per_million) || 0,
+    per_unit_cost: Number(body.per_unit_cost) || 0,
     provider: typeof body.provider === "string" ? body.provider : "openrouter",
     is_free: Boolean(body.is_free),
     notes: typeof body.notes === "string" ? body.notes : null,

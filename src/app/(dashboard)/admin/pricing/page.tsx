@@ -18,12 +18,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+type PricingUnit = "tokens" | "image" | "audio_minute" | "tts_char";
+
 interface PricingRow {
   model: string;
-  unit: "tokens" | "images" | "minutes" | "characters";
+  unit: PricingUnit;
+  modality: string | null;
   input_per_million: number | null;
   output_per_million: number | null;
-  price_per_unit: number | null;
+  per_unit_cost: number | null;
   provider: string | null;
   is_free: boolean | null;
   notes: string | null;
@@ -32,9 +35,10 @@ interface PricingRow {
 const EMPTY_ROW: PricingRow = {
   model: "",
   unit: "tokens",
+  modality: "text",
   input_per_million: 0,
   output_per_million: 0,
-  price_per_unit: null,
+  per_unit_cost: 0,
   provider: "openrouter",
   is_free: false,
   notes: null,
@@ -207,15 +211,15 @@ export default function PricingAdminPage() {
                   </Badge>
                   <span className="text-xs font-mono text-right text-yellow-400/80">
                     {r.unit === "tokens"
-                      ? `$${(r.input_per_million || 0).toFixed(4)}`
+                      ? `$${Number(r.input_per_million ?? 0).toFixed(4)}`
                       : "—"}
                   </span>
                   <span className="text-xs font-mono text-right text-yellow-400/80">
                     {r.unit === "tokens"
-                      ? `$${(r.output_per_million || 0).toFixed(4)}`
-                      : r.price_per_unit !== null
-                        ? `$${r.price_per_unit.toFixed(4)}/unit`
-                        : "—"}
+                      ? `$${Number(r.output_per_million ?? 0).toFixed(4)}`
+                      : `$${Number(r.per_unit_cost ?? 0).toFixed(4)}/${
+                          r.unit === "audio_minute" ? "min" : r.unit === "tts_char" ? "char" : "img"
+                        }`}
                   </span>
                   <span className="text-center">
                     {r.is_free ? (
@@ -285,13 +289,13 @@ export default function PricingAdminPage() {
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Unit</label>
                   <select
                     value={editing.unit}
-                    onChange={(e) => setEditing({ ...editing, unit: e.target.value as PricingRow["unit"] })}
+                    onChange={(e) => setEditing({ ...editing, unit: e.target.value as PricingUnit })}
                     className="w-full h-9 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs"
                   >
                     <option value="tokens">tokens</option>
-                    <option value="images">images</option>
-                    <option value="minutes">minutes</option>
-                    <option value="characters">characters</option>
+                    <option value="image">image</option>
+                    <option value="audio_minute">audio_minute</option>
+                    <option value="tts_char">tts_char</option>
                   </select>
                 </div>
                 <div>
@@ -330,12 +334,14 @@ export default function PricingAdminPage() {
                 </div>
               ) : (
                 <div>
-                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Price per unit</label>
+                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Price per {editing.unit === "audio_minute" ? "minute" : editing.unit === "tts_char" ? "character" : "image"}
+                  </label>
                   <Input
                     type="number"
                     step="0.0001"
-                    value={editing.price_per_unit ?? 0}
-                    onChange={(e) => setEditing({ ...editing, price_per_unit: Number(e.target.value) })}
+                    value={editing.per_unit_cost ?? 0}
+                    onChange={(e) => setEditing({ ...editing, per_unit_cost: Number(e.target.value) })}
                     className="text-xs font-mono"
                   />
                 </div>
