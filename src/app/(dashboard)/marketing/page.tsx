@@ -27,7 +27,6 @@ import {
   RefreshCw,
   TrendingUp,
   Search,
-  Shield,
   Flame,
   ListChecks,
   ExternalLink,
@@ -56,16 +55,6 @@ interface TwitterPost {
   char_count: number;
 }
 
-interface SubredditInfo {
-  ok: boolean;
-  name?: string;
-  title?: string;
-  subscribers?: number;
-  description?: string;
-  rules?: string[];
-  error?: string;
-}
-
 interface RedditDraft {
   title: string;
   body: string;
@@ -84,16 +73,6 @@ interface QueueItem {
   post_url: string | null;
   error: string | null;
   created_at: string;
-}
-
-interface RedditMention {
-  title: string;
-  url: string;
-  subreddit: string;
-  author: string;
-  score: number;
-  num_comments: number;
-  selftext: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,17 +94,12 @@ export default function MarketingPage() {
   const [loadingIdeas, setLoadingIdeas] = useState(false);
 
   // Reddit state
-  const [redditVerified, setRedditVerified] = useState<{ ok: boolean; mode?: string; note?: string; username?: string; error?: string } | null>(null);
   const [subredditName, setSubredditName] = useState("SaaS");
-  const [subredditInfo, setSubredditInfo] = useState<SubredditInfo | null>(null);
-  const [loadingSubreddit, setLoadingSubreddit] = useState(false);
   const [redditTopic, setRedditTopic] = useState("");
+  const [redditRules, setRedditRules] = useState("");
   const [redditDraft, setRedditDraft] = useState<RedditDraft | null>(null);
   const [redditDrafting, setRedditDrafting] = useState(false);
   const [redditPosting, setRedditPosting] = useState(false);
-  const [monitorQuery, setMonitorQuery] = useState("Harv AI");
-  const [monitorResults, setMonitorResults] = useState<RedditMention[]>([]);
-  const [monitoring, setMonitoring] = useState(false);
 
   // Queue state
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -150,15 +124,6 @@ export default function MarketingPage() {
     }
   }, []);
 
-  const fetchRedditVerify = useCallback(async () => {
-    // Public mode — no VPS call needed. Always available.
-    setRedditVerified({
-      ok: true,
-      mode: "public",
-      note: "Using Reddit public JSON API. Posts open Reddit's submit form in a new tab.",
-    });
-  }, []);
-
   const fetchQueue = useCallback(async () => {
     const res = await fetch("/api/marketing?action=queue");
     if (res.ok) {
@@ -169,13 +134,13 @@ export default function MarketingPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      await Promise.all([fetchTwitter(), fetchRedditVerify(), fetchQueue()]);
+      await Promise.all([fetchTwitter(), fetchQueue()]);
     } catch {
       toast.error("Failed to load marketing data");
     } finally {
       setLoading(false);
     }
-  }, [fetchTwitter, fetchRedditVerify, fetchQueue]);
+  }, [fetchTwitter, fetchQueue]);
 
   useEffect(() => {
     if (isAdmin) fetchAll();
@@ -255,59 +220,18 @@ export default function MarketingPage() {
   // ---------------------------------------------------------------------
   // Reddit handlers
   // ---------------------------------------------------------------------
-  async function handleLookupSubreddit() {
-    const name = subredditName.trim().replace(/^r?\//, "");
-    if (!name) return toast.error("Enter a subreddit");
-    setLoadingSubreddit(true);
-    try {
-      // Go through our /api/reddit proxy — Reddit.com has no CORS headers
-      // and our VPS IP gets rate-limited, but Vercel edge works.
-      const [aboutRes, rulesRes] = await Promise.all([
-        fetch(`/api/reddit?path=${encodeURIComponent(`/r/${name}/about.json`)}`),
-        fetch(`/api/reddit?path=${encodeURIComponent(`/r/${name}/about/rules.json`)}`),
-      ]);
-
-      if (!aboutRes.ok) {
-        setSubredditInfo({ ok: false, error: `Reddit returned ${aboutRes.status}` });
-        return;
-      }
-
-      const about = (await aboutRes.json()).data || {};
-      const rulesData = rulesRes.ok ? await rulesRes.json() : { rules: [] };
-      const rules = (rulesData.rules || [])
-        .map((r: { short_name?: string; description?: string }) => {
-          const short = r.short_name || "";
-          const desc = r.description || "";
-          return `${short}: ${desc}`.replace(/^:\s*/, "").trim();
-        })
-        .filter(Boolean);
-
-      setSubredditInfo({
-        ok: true,
-        name: about.display_name || name,
-        title: about.title || "",
-        subscribers: about.subscribers || 0,
-        description: (about.public_description || about.description || "").slice(0, 500),
-        rules,
-      });
-    } catch (e) {
-      setSubredditInfo({ ok: false, error: String(e) });
-    } finally {
-      setLoadingSubreddit(false);
-    }
-  }
-
   async function handleDraftReddit() {
     const name = subredditName.trim().replace(/^r?\//, "");
     if (!redditTopic.trim() || !name) return toast.error("Need topic and subreddit");
     setRedditDrafting(true);
     setRedditDraft(null);
     try {
-      // Pass any rules we've fetched client-side so the LLM can respect them
-      const rules =
-        subredditInfo && subredditInfo.ok && subredditInfo.name?.toLowerCase() === name.toLowerCase()
-          ? subredditInfo.rules || []
-          : [];
+      // User pastes rules manually into redditRules textarea — Reddit
+      // blocks datacenter IPs so we can't fetch them programmatically.
+      const rules = redditRules
+        .split("\n")
+        .map((r) => r.trim())
+        .filter(Boolean);
 
       const res = await fetch("/api/marketing", {
         method: "POST",
@@ -412,58 +336,6 @@ export default function MarketingPage() {
       }
     } catch {
       toast.error("Queue failed");
-    }
-  }
-
-  async function handleMonitorReddit() {
-    if (!monitorQuery.trim()) return;
-    setMonitoring(true);
-    setMonitorResults([]);
-    try {
-      // Via /api/reddit proxy (CORS + VPS rate limit workaround)
-      const params = new URLSearchParams({
-        path: "/search.json",
-        q: monitorQuery.trim(),
-        sort: "new",
-        t: "month",
-        limit: "15",
-      });
-      const res = await fetch(`/api/reddit?${params}`);
-      if (!res.ok) {
-        toast.error(`Reddit returned ${res.status}`);
-        return;
-      }
-      const data = await res.json();
-      type RedditChild = {
-        data?: {
-          title?: string;
-          permalink?: string;
-          url?: string;
-          subreddit?: string;
-          author?: string;
-          score?: number;
-          num_comments?: number;
-          selftext?: string;
-        };
-      };
-      const children: RedditChild[] = data?.data?.children || [];
-      const results: RedditMention[] = children.map((c) => {
-        const p = c.data || {};
-        return {
-          title: p.title || "",
-          url: p.permalink ? `https://www.reddit.com${p.permalink}` : p.url || "",
-          subreddit: p.subreddit || "",
-          author: p.author || "[deleted]",
-          score: p.score || 0,
-          num_comments: p.num_comments || 0,
-          selftext: (p.selftext || "").slice(0, 500),
-        };
-      });
-      setMonitorResults(results);
-    } catch (e) {
-      toast.error(`Monitor failed: ${e}`);
-    } finally {
-      setMonitoring(false);
     }
   }
 
@@ -736,95 +608,23 @@ export default function MarketingPage() {
         {/* REDDIT TAB */}
         {/* ================================================================ */}
         <TabsContent value="reddit" className="space-y-6">
-          {/* Credentials status */}
+          {/* Mode explainer */}
           <Card>
             <CardContent className="py-4">
-              {redditVerified?.ok ? (
-                <div className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5" />
-                  <div className="flex-1">
-                    {redditVerified.mode === "public" ? (
-                      <>
-                        <p className="font-medium text-emerald-400 mb-1">Public mode active</p>
-                        <p className="text-xs text-muted-foreground">
-                          Drafts, subreddit info, and mention monitoring work without API keys.
-                          Posts open Reddit&apos;s own submit form in a new tab — click once to publish.
-                        </p>
-                      </>
-                    ) : (
-                      <p>
-                        <span className="text-muted-foreground">Connected as </span>
-                        <span className="font-medium">u/{redditVerified.username}</span>
-                      </p>
-                    )}
-                  </div>
+              <div className="flex items-start gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 text-sky-400 mt-0.5 shrink-0" />
+                <div className="flex-1 space-y-1">
+                  <p className="font-medium text-sky-400">Draft-and-submit mode</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Reddit blocks unauthenticated reads from all datacenter IPs,
+                    so this dashboard drafts posts locally and hands them off to
+                    Reddit&apos;s own submit form. Fill in the topic + subreddit
+                    below, optionally paste the subreddit rules for a more
+                    tailored draft, then click <span className="text-foreground">Open Submit Form</span>
+                    {" "}to publish through Reddit directly.
+                  </p>
                 </div>
-              ) : (
-                <div className="flex items-start gap-2 text-sm">
-                  <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-medium text-amber-400 mb-1">Reddit check failed</p>
-                    <p className="text-xs text-muted-foreground">
-                      {redditVerified?.error || "Could not reach Reddit's public API."}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Subreddit picker */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="h-4 w-4 text-orange-400" />
-                Target Subreddit
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="subreddit (e.g. SaaS, programming, sideproject)"
-                  value={subredditName}
-                  onChange={(e) => setSubredditName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleLookupSubreddit()}
-                />
-                <Button onClick={handleLookupSubreddit} disabled={loadingSubreddit} variant="outline">
-                  {loadingSubreddit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                </Button>
               </div>
-
-              {subredditInfo && subredditInfo.ok && (
-                <div className="rounded-lg bg-white/[0.02] ring-1 ring-white/[0.06] p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">r/{subredditInfo.name}</h3>
-                    <Badge variant="outline" className="text-[10px]">
-                      {(subredditInfo.subscribers || 0).toLocaleString()} members
-                    </Badge>
-                  </div>
-                  {subredditInfo.title && (
-                    <p className="text-xs text-muted-foreground">{subredditInfo.title}</p>
-                  )}
-                  {subredditInfo.description && (
-                    <p className="text-[11px] text-muted-foreground/70 line-clamp-3">{subredditInfo.description}</p>
-                  )}
-                  {subredditInfo.rules && subredditInfo.rules.length > 0 && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1 mt-2">Rules</p>
-                      <ul className="space-y-0.5">
-                        {subredditInfo.rules.slice(0, 6).map((r, i) => (
-                          <li key={i} className="text-[11px] text-foreground/70 line-clamp-2">
-                            • {r}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-              {subredditInfo && !subredditInfo.ok && (
-                <p className="text-xs text-red-400">{subredditInfo.error}</p>
-              )}
             </CardContent>
           </Card>
 
@@ -837,15 +637,35 @@ export default function MarketingPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Textarea
-                placeholder="What's the post about? (e.g., 'I built an AI command center in a month', 'Lessons from shipping 10 agents')"
-                value={redditTopic}
-                onChange={(e) => setRedditTopic(e.target.value)}
-                className="min-h-[70px] resize-none"
-              />
+              <div className="grid gap-2 sm:grid-cols-[200px_1fr]">
+                <Input
+                  placeholder="Subreddit"
+                  value={subredditName}
+                  onChange={(e) => setSubredditName(e.target.value)}
+                />
+                <Textarea
+                  placeholder="What's the post about? (e.g., 'I built an AI command center in 3 weeks', 'Lessons from shipping 10 agents')"
+                  value={redditTopic}
+                  onChange={(e) => setRedditTopic(e.target.value)}
+                  className="min-h-[70px] resize-none"
+                />
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1.5">
+                  Subreddit rules <span className="normal-case text-muted-foreground/40">(optional, paste for a more tailored draft)</span>
+                </p>
+                <Textarea
+                  placeholder={"1. No blatant self-promotion\n2. Lead with value, not links\n3. Must be relevant to SaaS founders"}
+                  value={redditRules}
+                  onChange={(e) => setRedditRules(e.target.value)}
+                  className="min-h-[80px] text-xs font-mono"
+                />
+              </div>
+
               <Button
                 onClick={handleDraftReddit}
-                disabled={redditDrafting || !redditTopic.trim()}
+                disabled={redditDrafting || !redditTopic.trim() || !subredditName.trim()}
                 className="bg-orange-500/20 text-orange-400 border border-orange-500/30 hover:bg-orange-500/30"
               >
                 {redditDrafting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
@@ -884,58 +704,6 @@ export default function MarketingPage() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Monitor */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Search className="h-4 w-4 text-purple-400" />
-                Monitor Mentions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Search term (e.g., 'Harv AI', 'AI command center')"
-                  value={monitorQuery}
-                  onChange={(e) => setMonitorQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleMonitorReddit()}
-                />
-                <Button onClick={handleMonitorReddit} disabled={monitoring}>
-                  {monitoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                </Button>
-              </div>
-              {monitorResults.length > 0 && (
-                <div className="space-y-2">
-                  {monitorResults.map((r, i) => (
-                    <a
-                      key={i}
-                      href={r.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block rounded-lg bg-white/[0.02] ring-1 ring-white/[0.04] p-3 hover:ring-white/[0.08] transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium line-clamp-2">{r.title}</p>
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60 mt-1">
-                            <span>r/{r.subreddit}</span>
-                            <span>·</span>
-                            <span>u/{r.author}</span>
-                            <span>·</span>
-                            <span>{r.score} pts</span>
-                            <span>·</span>
-                            <span>{r.num_comments} comments</span>
-                          </div>
-                        </div>
-                        <ExternalLink className="h-3 w-3 text-muted-foreground/40 mt-1 shrink-0" />
-                      </div>
-                    </a>
-                  ))}
                 </div>
               )}
             </CardContent>
