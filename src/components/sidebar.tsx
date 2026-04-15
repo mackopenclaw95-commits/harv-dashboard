@@ -34,6 +34,7 @@ import {
   Video,
   GraduationCap,
   HardDrive,
+  LifeBuoy,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,7 @@ const PROFILE_MENU_ITEMS = [
   { href: "/google", label: "Google Workspace", icon: HardDrive },
   { href: "/team", label: "Meet the Team", icon: Users2 },
   { href: "/integrations", label: "Integrations", icon: Link2 },
+  { href: "/support", label: "Support", icon: LifeBuoy },
 ];
 
 const PERSONAL_AGENT_ITEMS = [
@@ -75,6 +77,7 @@ const ADMIN_ITEMS = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/marketing", label: "Marketing", icon: Megaphone },
   { href: "/digest", label: "Digest", icon: Video },
+  { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy, badgeKey: "tickets" as const },
 ];
 
 export const Sidebar = React.memo(function Sidebar() {
@@ -91,6 +94,7 @@ export const Sidebar = React.memo(function Sidebar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [navOrder, setNavOrder] = useState<string[]>(() => getSidebarOrder());
+  const [openTicketCount, setOpenTicketCount] = useState(0);
 
   // Hide sidebar on auth pages
   if (pathname?.startsWith("/auth")) return null;
@@ -112,6 +116,32 @@ export const Sidebar = React.memo(function Sidebar() {
     window.addEventListener("sidebar-order-change", handleOrderChange);
     return () => window.removeEventListener("sidebar-order-change", handleOrderChange);
   }, []);
+
+  // Fetch open support ticket count (admin only), refresh on event + every 60s
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    async function fetchCount() {
+      try {
+        const res = await fetch("/api/admin/tickets?count=1");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setOpenTicketCount(data.open_count || 0);
+      } catch {
+        // silent
+      }
+    }
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000);
+    function handleUpdate() { fetchCount(); }
+    window.addEventListener("support-ticket-updated", handleUpdate);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("support-ticket-updated", handleUpdate);
+    };
+  }, [isAdmin]);
 
   // Close profile menu on outside click
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -223,7 +253,14 @@ export const Sidebar = React.memo(function Sidebar() {
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                <Shield className="h-5 w-5 shrink-0" />
+                <div className="relative shrink-0">
+                  <Shield className="h-5 w-5" />
+                  {openTicketCount > 0 && !adminOpen && (
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-background">
+                      {openTicketCount > 99 ? "99+" : openTicketCount}
+                    </span>
+                  )}
+                </div>
                 <span className="hidden md:inline flex-1 text-left">Admin Hub</span>
                 <ChevronDown className={cn(
                   "h-3.5 w-3.5 shrink-0 transition-transform duration-200 hidden md:block",
@@ -232,8 +269,10 @@ export const Sidebar = React.memo(function Sidebar() {
               </button>
               {adminOpen && (
                 <div className="flex flex-col gap-0.5 ml-4 md:ml-6">
-                  {ADMIN_ITEMS.map(({ href, label, icon: Icon }) => {
-                    const active = pathname.startsWith(href);
+                  {ADMIN_ITEMS.map((item) => {
+                    const { href, label, icon: Icon } = item;
+                    const active = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+                    const showBadge = "badgeKey" in item && item.badgeKey === "tickets" && openTicketCount > 0;
                     return (
                       <Link
                         key={href}
@@ -246,7 +285,12 @@ export const Sidebar = React.memo(function Sidebar() {
                         )}
                       >
                         <Icon className="h-4 w-4 shrink-0" />
-                        <span className="hidden md:inline">{label}</span>
+                        <span className="hidden md:inline flex-1">{label}</span>
+                        {showBadge && (
+                          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                            {openTicketCount > 99 ? "99+" : openTicketCount}
+                          </span>
+                        )}
                       </Link>
                     );
                   })}
