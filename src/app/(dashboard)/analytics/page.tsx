@@ -169,6 +169,10 @@ export default function AnalyticsPage() {
   const [usageLoading, setUsageLoading] = useState(false);
   const [error, setError] = useState(false);
   const [chartView, setChartView] = useState<"monthly" | "daily">("monthly");
+  const [exportMonth, setExportMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [chartDate, setChartDate] = useState<string>(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -358,18 +362,36 @@ export default function AnalyticsPage() {
         ) : usageData ? (
           <div className="space-y-6">
             {/* Export bar */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-xs text-muted-foreground">
                 Last 30 days of activity
               </p>
-              <a
-                href="/api/analytics/usage/export?days=30"
-                download
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] px-3 py-1.5 text-xs text-foreground/80 hover:text-foreground transition-colors"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Export CSV
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/api/analytics/usage/export?days=30"
+                  download
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] px-3 py-1.5 text-xs text-foreground/80 hover:text-foreground transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Export My Usage
+                </a>
+                <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06] pl-2 pr-1 py-1">
+                  <input
+                    type="month"
+                    value={exportMonth}
+                    onChange={(e) => setExportMonth(e.target.value)}
+                    className="bg-transparent text-xs text-foreground/80 focus:outline-none [color-scheme:dark] w-[110px]"
+                  />
+                  <a
+                    href={`/api/admin/usage/export?month=${exportMonth}`}
+                    download
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary/15 hover:bg-primary/25 ring-1 ring-primary/30 px-2.5 py-1 text-xs text-primary transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Export All Users
+                  </a>
+                </div>
+              </div>
             </div>
 
             {/* Usage summary cards */}
