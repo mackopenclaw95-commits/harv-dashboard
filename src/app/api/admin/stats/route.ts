@@ -133,9 +133,14 @@ export async function GET() {
             };
           });
 
-          await supabase
+          const { error: upsertErr, count } = await supabase
             .from("api_cost_events")
-            .upsert(rows, { onConflict: "vps_event_id", ignoreDuplicates: true });
+            .upsert(rows, { onConflict: "vps_event_id", ignoreDuplicates: true, count: "exact" });
+          if (upsertErr) {
+            console.error("[admin/stats] upsert failed:", upsertErr.message, "— sample row:", JSON.stringify(rows[0]));
+          } else {
+            console.log(`[admin/stats] synced ${count ?? rows.length} cost events to Supabase`);
+          }
         }
       } else {
         console.error("[admin/stats] VPS events API returned", eventsRes.status);
