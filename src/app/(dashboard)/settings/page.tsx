@@ -42,6 +42,7 @@ import {
 } from "@/lib/sidebar-order";
 import {
   ChevronUp as ChevronUpIcon, ChevronDown as ChevronDownIcon,
+  Download,
 } from "lucide-react";
 
 // ─── Sidebar Reorder Component ─────────────────────────
@@ -928,12 +929,22 @@ function SettingsPage() {
 
                 {/* Usage Meters */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                      <Activity className="h-4 w-4 text-purple-400" />
-                      Usage This Period
-                    </CardTitle>
-                    <CardDescription>Track your consumption against plan limits</CardDescription>
+                  <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+                    <div className="space-y-1.5">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <Activity className="h-4 w-4 text-purple-400" />
+                        Usage This Period
+                      </CardTitle>
+                      <CardDescription>Track your consumption against plan limits</CardDescription>
+                    </div>
+                    <a
+                      href="/api/analytics/usage/export?days=30"
+                      download
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] px-3 py-1.5 text-xs text-foreground/80 hover:text-foreground transition-colors"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Export CSV
+                    </a>
                   </CardHeader>
                   <CardContent className="space-y-5">
                     {/* Messages today */}
