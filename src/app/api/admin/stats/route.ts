@@ -92,6 +92,7 @@ export async function GET() {
         if (costEvents.length > 0) {
           // Upsert new api_cost events into Supabase (dedup by vps_event_id)
           // VPS stuffs user_id / tokens_in / etc. into the metadata JSON blob.
+          const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           const rows = costEvents.map((evt: Record<string, unknown>) => {
             const summary = String(evt.summary || "");
             const model = summary.split("|")[0]?.trim() || "";
@@ -126,7 +127,10 @@ export async function GET() {
               cost,
               agent: String(evt.agent || ""),
               parent_agent: (meta.parent_agent as string) || null,
-              user_id: (meta.user_id as string) || null,
+              user_id: (() => {
+                const raw = (meta.user_id as string) || "";
+                return raw && UUID_RE.test(raw) ? raw : null;
+              })(),
               modality,
               summary,
               event_timestamp: evt.timestamp as string,
