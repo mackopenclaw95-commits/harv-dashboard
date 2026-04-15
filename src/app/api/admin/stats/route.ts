@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
-import { API_BASE as API_URL_CFG, API_KEY as API_KEY_CFG } from "@/lib/api-config";
-import { getModelPricing, estimateCost as computeCost, splitLegacyTokens } from "@/lib/model-pricing";
+import { syncCostEventsFromVPS } from "@/lib/cost-sync";
 
 export async function GET() {
   try {
@@ -75,83 +74,9 @@ export async function GET() {
       supabase.from("usage_logs").select("user_id, tokens_used, estimated_cost"),
     ]);
 
-    // --- Sync new api_cost events from VPS into Supabase ---
-    const pricing = await getModelPricing();
-    try {
-      const eventsRes = await fetch(`${API_URL_CFG}/api/events/recent?limit=500`, {
-        headers: { "X-API-Key": API_KEY_CFG },
-        signal: AbortSignal.timeout(15000),
-      });
-      if (eventsRes.ok) {
-        const json = await eventsRes.json();
-        const events = json.events || json || [];
-        const costEvents = events.filter((evt: Record<string, unknown>) =>
-          evt.action === "api_cost" && !String(evt.summary || "").startsWith("claude-")
-        );
-
-        if (costEvents.length > 0) {
-          // Upsert new api_cost events into Supabase (dedup by vps_event_id)
-          // VPS stuffs user_id / tokens_in / etc. into the metadata JSON blob.
-          const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          const rows = costEvents.map((evt: Record<string, unknown>) => {
-            const summary = String(evt.summary || "");
-            const model = summary.split("|")[0]?.trim() || "";
-            const tokens = (evt.tokens as number) || 0;
-            const meta = (evt.metadata && typeof evt.metadata === "object"
-              ? (evt.metadata as Record<string, unknown>)
-              : {}) as Record<string, unknown>;
-            const tokensIn = (meta.input_tokens as number) || (evt.tokens_in as number) || 0;
-            const tokensOut = (meta.output_tokens as number) || (evt.tokens_out as number) || 0;
-            const cachedTokens = (meta.cached_tokens as number) || 0;
-            const units = (meta.units as number) || 0;
-            const modality = (meta.modality as string) || "text";
-            let cost = (evt.cost as number) || 0;
-            if (cost === 0) {
-              if (tokensIn || tokensOut) {
-                cost = computeCost(pricing, model, { tokensIn, tokensOut, cachedTokens });
-              } else if (tokens > 0) {
-                const split = splitLegacyTokens(tokens);
-                cost = computeCost(pricing, model, split);
-              } else if (units > 0) {
-                cost = computeCost(pricing, model, { units });
-              }
-            }
-            return {
-              vps_event_id: evt.id as number,
-              model,
-              tokens,
-              tokens_in: tokensIn,
-              tokens_out: tokensOut,
-              cached_tokens: cachedTokens,
-              units,
-              cost,
-              agent: String(evt.agent || ""),
-              parent_agent: (meta.parent_agent as string) || null,
-              user_id: (() => {
-                const raw = (meta.user_id as string) || "";
-                return raw && UUID_RE.test(raw) ? raw : null;
-              })(),
-              modality,
-              summary,
-              event_timestamp: evt.timestamp as string,
-            };
-          });
-
-          const { error: upsertErr, count } = await supabase
-            .from("api_cost_events")
-            .upsert(rows, { onConflict: "vps_event_id", ignoreDuplicates: true, count: "exact" });
-          if (upsertErr) {
-            console.error("[admin/stats] upsert failed:", upsertErr.message, "— sample row:", JSON.stringify(rows[0]));
-          } else {
-            console.log(`[admin/stats] synced ${count ?? rows.length} cost events to Supabase`);
-          }
-        }
-      } else {
-        console.error("[admin/stats] VPS events API returned", eventsRes.status);
-      }
-    } catch (err) {
-      console.error("[admin/stats] Failed to sync VPS events:", err);
-    }
+    // Trigger an on-demand sync (for freshness on admin load).
+    // The cron job at /api/cron/sync-costs runs this every 5 min too.
+    await syncCostEventsFromVPS(500);
 
     // --- Read ALL costs from Supabase (persistent, survives VPS event rotation) ---
     let claudeCost = 0;
@@ -197,17 +122,16 @@ export async function GET() {
       }
     }
 
-    // Aggregate usage per user from dashboard usage_logs + api_cost_events
+    // Aggregate per-user: messages from usage_logs, authoritative cost from
+    // api_cost_events (no double-counting with usage_logs.estimated_cost).
     const userUsage: Record<string, { tokens: number; cost: number; messages: number }> = {};
     for (const row of usageByUser.data || []) {
       const uid = row.user_id;
       if (!uid) continue;
       if (!userUsage[uid]) userUsage[uid] = { tokens: 0, cost: 0, messages: 0 };
       userUsage[uid].tokens += row.tokens_used || 0;
-      userUsage[uid].cost += Number(row.estimated_cost) || 0;
       userUsage[uid].messages += 1;
     }
-    // Fold in background/agent costs from api_cost_events
     for (const [uid, cost] of Object.entries(userAgentCost)) {
       if (!userUsage[uid]) userUsage[uid] = { tokens: 0, cost: 0, messages: 0 };
       userUsage[uid].cost += cost;

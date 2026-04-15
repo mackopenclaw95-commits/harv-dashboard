@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createServiceClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
-import { TIER_LIMITS, type TierKey } from "@/lib/stripe";
-import { isAgentAvailable } from "@/lib/plan-config";
+import { TIER_LIMITS as STRIPE_TIERS, type TierKey } from "@/lib/stripe";
+import { isAgentAvailable, TIER_LIMITS as PLAN_TIERS } from "@/lib/plan-config";
 
 export async function GET(req: NextRequest) {
   const agent = req.nextUrl.searchParams.get("agent");
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest) {
       .single();
 
     const plan = (profile?.plan || "free") as TierKey;
-    const tierConfig = TIER_LIMITS[plan] || TIER_LIMITS.free;
+    const tierConfig = STRIPE_TIERS[plan] || STRIPE_TIERS.free;
+    const costCapUsd = (PLAN_TIERS[plan] || PLAN_TIERS.free).dailyCostCapUsd;
 
     // Owner/tester always gets primary tier, unlimited — but show real usage counts
     if (profile?.role === "owner" || profile?.role === "tester") {
@@ -141,12 +143,28 @@ export async function GET(req: NextRequest) {
     const imageLimit = tierConfig.imagesPerDay;
     const imageRemaining = imageLimit <= 0 ? 0 : Math.max(0, imageLimit - imagesUsed);
 
+    // Daily cost cap — sum api_cost_events for this user from midnight
+    let dailyCostUsd = 0;
+    let costExceeded = false;
+    if (costCapUsd > 0) {
+      const svc = createServiceClient();
+      const { data: costRows } = await svc
+        .from("api_cost_events")
+        .select("cost")
+        .eq("user_id", user.id)
+        .gte("event_timestamp", todayStart.toISOString());
+      for (const row of costRows || []) {
+        dailyCostUsd += Number(row.cost) || 0;
+      }
+      costExceeded = dailyCostUsd >= costCapUsd;
+    }
+
     // Determine model tier
     let modelTier: "primary" | "fallback" | "blocked";
     let degraded = false;
 
-    if (weeklyExceeded) {
-      // Weekly backstop hit — block completely
+    if (weeklyExceeded || costExceeded) {
+      // Weekly backstop OR daily cost cap hit — block completely
       modelTier = "blocked";
       degraded = true;
     } else if (used >= primaryLimit) {
@@ -168,6 +186,10 @@ export async function GET(req: NextRequest) {
       weekly_used: weeklyUsed,
       weekly_limit: weeklyLimit,
       agent_allowed: true,
+      daily_cost_usd: Number(dailyCostUsd.toFixed(6)),
+      daily_cost_cap_usd: costCapUsd,
+      cost_exceeded: costExceeded,
+      reason: costExceeded ? "daily_cost_cap" : weeklyExceeded ? "weekly_limit" : undefined,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

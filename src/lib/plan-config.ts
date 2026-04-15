@@ -8,6 +8,8 @@ export const TIER_LIMITS = {
     videosPerDay: 0,
     primaryModel: "gemini-flash-lite",
     fallbackModel: "qwen3-8b-free",
+    // Daily USD hard cap — blocks further calls when exceeded
+    dailyCostCapUsd: 0.10,
   },
   pro: {
     primaryMessagesPerDay: 150,
@@ -16,6 +18,7 @@ export const TIER_LIMITS = {
     videosPerDay: 0,
     primaryModel: "deepseek-v3.2",
     fallbackModel: "gemini-flash-lite",
+    dailyCostCapUsd: 1.50,
   },
   max: {
     primaryMessagesPerDay: 400,
@@ -24,6 +27,7 @@ export const TIER_LIMITS = {
     videosPerDay: 5,
     primaryModel: "gpt-4.1",
     fallbackModel: "deepseek-v3.2",
+    dailyCostCapUsd: 5.00,
   },
 } as const;
 

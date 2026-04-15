@@ -42,14 +42,14 @@ export async function GET(req: Request) {
 
     const svc = createServiceClient();
 
-    // Frontend chat logs (usage_logs)
+    // Message counts from usage_logs (no cost — just for activity)
     const { data: usageRows } = await svc
       .from("usage_logs")
-      .select("agent_name, tokens_used, estimated_cost")
+      .select("agent_name")
       .eq("user_id", user.id)
       .gte("created_at", periodStartIso);
 
-    // Backend agent logs (api_cost_events) — only rows explicitly attributed to this user
+    // Authoritative cost data from api_cost_events (VPS-attributed)
     const { data: costRows } = await svc
       .from("api_cost_events")
       .select("agent, model, tokens, cost")
@@ -61,18 +61,14 @@ export async function GET(req: Request) {
     let totalCost = 0;
     let totalTokens = 0;
 
+    // Message count per agent (from usage_logs)
     for (const row of usageRows || []) {
       const agent = row.agent_name || "Harv";
-      const cost = Number(row.estimated_cost) || 0;
-      const tokens = row.tokens_used || 0;
-      totalCost += cost;
-      totalTokens += tokens;
       if (!byAgent[agent]) byAgent[agent] = { agent, cost: 0, messages: 0, tokens: 0 };
-      byAgent[agent].cost += cost;
       byAgent[agent].messages += 1;
-      byAgent[agent].tokens += tokens;
     }
 
+    // Cost + tokens per agent + per model (from api_cost_events — single source of truth)
     for (const row of costRows || []) {
       const agent = row.agent || "Unknown";
       const model = row.model || "Unknown";
