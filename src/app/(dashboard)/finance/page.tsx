@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -16,19 +16,16 @@ import {
   PieChart,
   Receipt,
   Target,
-  Loader2,
   Plus,
   BarChart3,
-  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { AgentChat } from "@/components/agent-chat";
+import { AgentChat, type AgentChatHandle } from "@/components/agent-chat";
 
 export default function FinancePage() {
-  const [response, setResponse] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState("");
+  const chatRef = useRef<AgentChatHandle>(null);
+  const [sending, setSending] = useState(false);
 
   // Quick log form
   const [logAmount, setLogAmount] = useState("");
@@ -36,16 +33,12 @@ export default function FinancePage() {
   const [logType, setLogType] = useState<"expense" | "income">("expense");
 
   async function askFinance(message: string) {
-    setLoading(true);
-    setResponse("");
+    if (!chatRef.current) return;
+    setSending(true);
     try {
-      const { askAgent } = await import("@/lib/agent-ask");
-      const text = await askAgent("Finance", message);
-      setResponse(text);
-    } catch {
-      toast.error("Failed to get response");
+      await chatRef.current.send(message);
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   }
 
@@ -122,7 +115,7 @@ export default function FinancePage() {
               className="flex-1 min-w-[150px]"
               onKeyDown={e => e.key === "Enter" && handleQuickLog()}
             />
-            <Button onClick={handleQuickLog} disabled={loading}>
+            <Button onClick={handleQuickLog} disabled={sending}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -141,8 +134,8 @@ export default function FinancePage() {
             key={label}
             variant="outline"
             className="h-auto py-3 flex flex-col gap-1.5 hover:bg-white/[0.04]"
-            onClick={() => { setQuery(q); askFinance(q); }}
-            disabled={loading}
+            onClick={() => askFinance(q)}
+            disabled={sending}
           >
             <Icon className={cn("h-5 w-5", color)} />
             <span className="text-xs">{label}</span>
@@ -167,7 +160,7 @@ export default function FinancePage() {
                 size="sm"
                 className="text-xs"
                 onClick={() => askFinance(`set ${budget.split(" ")[0].toLowerCase()} budget to ${budget.split(" ")[1]}/month`)}
-                disabled={loading}
+                disabled={sending}
               >
                 {budget}/mo
               </Button>
@@ -177,7 +170,7 @@ export default function FinancePage() {
       </Card>
 
       {/* Chat with Finance Agent */}
-      <AgentChat agentName="Finance" placeholder="Ask about budgets, spending, savings tips, financial advice..." />
+      <AgentChat ref={chatRef} agentName="Finance" placeholder="Ask about budgets, spending, savings tips, financial advice..." />
     </div>
   );
 }

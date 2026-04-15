@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Loader2, Bot, User, Trash2 } from "lucide-react";
+import { Send, Loader2, Bot, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AGENT_ICONS } from "@/lib/agent-data";
@@ -22,7 +22,14 @@ interface AgentChatProps {
   className?: string;
 }
 
-export function AgentChat({ agentName, placeholder, className }: AgentChatProps) {
+export interface AgentChatHandle {
+  send: (text: string) => Promise<void>;
+}
+
+export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function AgentChat(
+  { agentName, placeholder, className },
+  ref,
+) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -55,28 +62,25 @@ export function AgentChat({ agentName, placeholder, className }: AgentChatProps)
     }
   }, [messages]);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || sending) return;
+  const sendText = useCallback(async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: text,
+      content: trimmed,
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMsg]);
-    setInput("");
     setSending(true);
 
     try {
-      // Save user message
       const { saveAgentMessage } = await import("@/lib/chat-history");
-      saveAgentMessage(agentName, "user", text).catch(console.error);
+      saveAgentMessage(agentName, "user", trimmed).catch(console.error);
 
-      // Get agent response
       const { askAgent } = await import("@/lib/agent-ask");
-      const response = await askAgent(agentName, text);
+      const response = await askAgent(agentName, trimmed);
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -86,14 +90,23 @@ export function AgentChat({ agentName, placeholder, className }: AgentChatProps)
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
-      // Save assistant message
       saveAgentMessage(agentName, "assistant", response).catch(console.error);
     } catch {
       toast.error("Failed to get response");
     } finally {
       setSending(false);
     }
-  }, [input, sending, agentName]);
+  }, [agentName]);
+
+  const sendMessage = useCallback(async () => {
+    if (sending) return;
+    const text = input.trim();
+    if (!text) return;
+    setInput("");
+    await sendText(text);
+  }, [input, sending, sendText]);
+
+  useImperativeHandle(ref, () => ({ send: sendText }), [sendText]);
 
   function formatTime(ts: string) {
     const d = new Date(ts);
@@ -185,4 +198,4 @@ export function AgentChat({ agentName, placeholder, className }: AgentChatProps)
       </CardContent>
     </Card>
   );
-}
+});
