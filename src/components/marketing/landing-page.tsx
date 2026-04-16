@@ -193,15 +193,14 @@ export function LandingPage() {
       {/* ═══ DEMO — small inline placeholder ═══ */}
       <section id="demo" className="relative py-10 md:py-14 px-6 border-t border-white/[0.04]">
         <div className="max-w-4xl mx-auto">
-          <div className="relative aspect-[2.2/1] rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden flex items-center justify-center group cursor-pointer hover:border-primary/15 transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent" />
-            <div className="relative flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center group-hover:bg-primary/25 group-hover:scale-105 transition-all">
-                <Play className="h-4 w-4 text-primary ml-0.5" />
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] py-5 px-6 flex items-center justify-center group cursor-pointer hover:border-primary/15 transition-all">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center group-hover:bg-primary/25 transition-all shrink-0">
+                <Play className="h-3.5 w-3.5 text-primary ml-0.5" />
               </div>
               <div>
                 <p className="text-sm font-medium">Watch the 2-min demo</p>
-                <p className="text-[11px] text-muted-foreground/35">Dashboard, agents, builder walkthrough</p>
+                <p className="text-[10px] text-muted-foreground/30">Dashboard, agents, builder walkthrough — coming soon</p>
               </div>
             </div>
           </div>
