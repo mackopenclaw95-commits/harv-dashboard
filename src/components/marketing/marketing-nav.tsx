@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
+  { href: "/", label: "Home" },
   { href: "/features", label: "Features" },
   { href: "/meet-the-agents", label: "Agents" },
   { href: "/connect", label: "Integrations" },
