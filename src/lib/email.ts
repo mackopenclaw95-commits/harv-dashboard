@@ -4,8 +4,7 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-// Free tier: onboarding@resend.dev. Switch to your domain after verifying in Resend.
-const FROM = "Harv <onboarding@resend.dev>";
+const FROM = "Harv <noreply@harvai.app>";
 
 type AlertType = "weekly_80" | "weekly_100" | "monthly_80" | "monthly_100";
 
