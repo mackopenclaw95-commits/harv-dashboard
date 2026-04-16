@@ -1,23 +1,8 @@
 import {
-  Zap,
-  Bot,
-  Brain,
-  Calendar,
-  Mail,
-  Search,
-  Shield,
   ArrowRight,
   Check,
-  Sparkles,
-  Music,
-  Eye,
-  MessageSquare,
-  Wrench,
-  Clock,
-  Lock,
-  DollarSign,
   Play,
-  Puzzle,
+  Zap,
 } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
 import { MarketingNav } from "./marketing-nav";
@@ -25,39 +10,10 @@ import { Footer } from "./footer";
 import { PLANS } from "@/lib/plan-config";
 
 const STATS = [
-  { value: "20+", label: "AI Agents" },
+  { value: "20+", label: "Agents" },
   { value: "24/7", label: "Always On" },
-  { value: "<2s", label: "Avg Response" },
+  { value: "<2s", label: "Response" },
   { value: "$0", label: "To Start" },
-];
-
-const USE_CASES = [
-  { time: "7:00 AM", title: "Morning Briefing", desc: "\u201CHarv, what\u2019s my day look like?\u201D \u2014 Calendar, unread emails, sports scores, and weather in one response." },
-  { time: "12:30 PM", title: "Quick Research", desc: "\u201CCompare the top 5 noise-canceling headphones under $300\u201D \u2014 Sourced breakdown in seconds." },
-  { time: "3:00 PM", title: "Inbox Zero", desc: "\u201CSummarize my unread emails and draft replies\u201D \u2014 Reads, prioritizes, and writes responses for your approval." },
-  { time: "6:00 PM", title: "Unwind", desc: "\u201CPlay something chill on Spotify\u201D \u2014 Queues up a playlist based on your listening history." },
-  { time: "9:00 PM", title: "Plan Tomorrow", desc: "\u201CSchedule a dentist appointment Thursday at 2pm and remind me to prep for Friday\u201D \u2014 Done." },
-];
-
-const VALUE_PROPS = [
-  { icon: Bot, title: "One AI. Every Task.", desc: "Stop copy-pasting between ChatGPT, Google, Spotify, and your calendar. Tell Harv what you need and the right agent handles it.", accent: "from-primary/20 to-primary/5" },
-  { icon: Zap, title: "Works While You Sleep", desc: "Background agents run 24/7. Guardian monitors for issues. Medic auto-fixes problems. Wake up to a status report, not a fire drill.", accent: "from-cyan-500/20 to-cyan-500/5" },
-  { icon: Brain, title: "Remembers Everything", desc: "Most AI forgets you after every chat. Harv doesn\u2019t. Your preferences, decisions, and context carry forward forever.", accent: "from-teal-400/20 to-teal-400/5" },
-  { icon: Eye, title: "Full Transparency", desc: "See exactly what every agent did, when it did it, and what it cost. Activity logs, cost breakdowns, and budget alerts.", accent: "from-sky-500/20 to-sky-500/5" },
-];
-
-const BUILDER_FEATURES = [
-  { icon: MessageSquare, title: "Describe It in Plain English", desc: "Tell Harv what you need: \u201CI want an agent that checks my competitors\u2019 prices every Monday.\u201D Harv asks follow-ups, then builds it." },
-  { icon: Wrench, title: "Pick a Personality & Model", desc: "Professional or friendly? Fast or powerful? Choose the personality, model tier, and scope \u2014 or let Harv pick defaults." },
-  { icon: Clock, title: "Schedule It Automatically", desc: "Set your custom agent to run on a schedule \u2014 daily briefings, weekly reports, hourly monitoring. Runs even when you\u2019re offline." },
-  { icon: Puzzle, title: "Templates to Get Started", desc: "Pre-built templates: Daily Briefing, Inbox Cleanup, Weekly Report, Social Post Scheduler, and more." },
-];
-
-const TRUST_POINTS = [
-  { icon: Eye, title: "You See Everything", desc: "Full activity logs show what each agent did, when, and why. No black boxes." },
-  { icon: Shield, title: "You Approve First", desc: "Harv drafts emails for review before sending. Suggests events before booking. You always have final say." },
-  { icon: DollarSign, title: "No Surprise Bills", desc: "Set daily, weekly, and monthly caps. Get alerts at 80%. Hit a limit? Harv downgrades the model instead of stopping." },
-  { icon: Lock, title: "Your Data Stays Yours", desc: "Per-user encryption. We don\u2019t train on your data. Export or delete everything at any time." },
 ];
 
 export function LandingPage() {
@@ -70,183 +26,163 @@ export function LandingPage() {
 
       <MarketingNav />
 
-      {/* ─── 1. HERO ─── */}
-      <section className="relative pt-28 md:pt-36 pb-16 md:pb-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex justify-center mb-8" style={{ animation: "landing-fade-up 0.6s ease-out both" }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/[0.08] border border-primary/20 text-xs font-medium text-primary backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-              </span>
-              20+ agents live and operational
-            </div>
+      {/* ═══ HERO ═══ */}
+      <section className="relative pt-28 md:pt-36 pb-10 md:pb-14 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/[0.08] border border-primary/20 text-xs font-medium text-primary backdrop-blur-sm mb-6" style={{ animation: "landing-fade-up 0.6s ease-out both" }}>
+            <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" /><span className="relative inline-flex rounded-full h-2 w-2 bg-primary" /></span>
+            20+ agents live
           </div>
-
-          <h1 className="text-center text-5xl sm:text-6xl md:text-8xl font-bold tracking-tight leading-[0.95] mb-8" style={{ animation: "landing-fade-up 0.7s ease-out 0.1s both" }}>
-            <span className="block">One AI That</span>
-            <span className="block text-primary mt-2 md:mt-3">Runs Your Life</span>
+          <h1 className="text-5xl sm:text-6xl md:text-[5.5rem] font-bold tracking-tight leading-[0.95] mb-6" style={{ animation: "landing-fade-up 0.7s ease-out 0.1s both" }}>
+            One AI That<br /><span className="text-primary">Runs Your Life</span>
           </h1>
-
-          <p className="text-center text-lg md:text-xl text-muted-foreground/70 max-w-2xl mx-auto mb-12 leading-relaxed" style={{ animation: "landing-fade-up 0.7s ease-out 0.2s both" }}>
-            Research anything. Manage your inbox. Control Spotify. Track your
-            budget. Plan trips. Build custom agents. All by just asking.
+          <p className="text-base md:text-lg text-muted-foreground/60 max-w-xl mx-auto mb-8 leading-relaxed" style={{ animation: "landing-fade-up 0.7s ease-out 0.2s both" }}>
+            Research anything. Manage your inbox. Control Spotify. Track spending. Plan trips. Build custom agents. All by just asking.
           </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14" style={{ animation: "landing-fade-up 0.7s ease-out 0.3s both" }}>
-            <ButtonLink href="/auth/signup" size="lg" className="h-13 px-10 text-base gap-2.5 shadow-[0_0_30px_-5px] shadow-primary/25 hover:shadow-primary/40 transition-shadow">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12" style={{ animation: "landing-fade-up 0.7s ease-out 0.3s both" }}>
+            <ButtonLink href="/auth/signup" size="lg" className="h-12 px-8 text-sm gap-2 shadow-[0_0_30px_-5px] shadow-primary/25 hover:shadow-primary/40 transition-shadow">
               Start Free &mdash; No Card Required <ArrowRight className="h-4 w-4" />
             </ButtonLink>
-            <ButtonLink href="#demo" variant="outline" size="lg" className="h-13 px-10 text-base bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] backdrop-blur-sm gap-2">
-              <Play className="h-4 w-4" /> Watch Demo
+            <ButtonLink href="#demo" variant="outline" size="lg" className="h-12 px-8 text-sm bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] backdrop-blur-sm gap-2">
+              <Play className="h-3.5 w-3.5" /> Watch Demo
             </ButtonLink>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0 max-w-3xl mx-auto" style={{ animation: "landing-fade-up 0.7s ease-out 0.45s both" }}>
-            {STATS.map((stat, i) => (
-              <div key={stat.label} className={`text-center py-4 ${i < STATS.length - 1 ? "md:border-r md:border-white/[0.06]" : ""}`}>
-                <div className="text-2xl md:text-3xl font-bold text-primary tracking-tight">{stat.value}</div>
-                <div className="text-xs text-muted-foreground/50 mt-1 uppercase tracking-wider font-medium">{stat.label}</div>
+          <div className="flex items-center justify-center gap-8 md:gap-12 text-center" style={{ animation: "landing-fade-up 0.7s ease-out 0.4s both" }}>
+            {STATS.map((s) => (
+              <div key={s.label}>
+                <span className="text-xl md:text-2xl font-bold text-primary">{s.value}</span>
+                <span className="block text-[10px] text-muted-foreground/40 uppercase tracking-wider mt-0.5">{s.label}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── 2. A DAY WITH HARV ─── */}
-      <section className="relative py-16 md:py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">See It In Action</p>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">A day with Harv</h2>
-            <p className="text-muted-foreground/60 max-w-lg mx-auto">Talk to Harv like a personal assistant. Here&apos;s what a real day looks like.</p>
-          </div>
-          <div className="relative">
-            <div className="absolute left-[39px] md:left-[47px] top-0 bottom-0 w-px bg-gradient-to-b from-primary/30 via-primary/10 to-transparent hidden sm:block" />
-            <div className="space-y-4">
-              {USE_CASES.map((uc, i) => (
-                <div key={uc.title} className="group flex gap-5 md:gap-6 items-start rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-5 md:p-6 hover:border-white/[0.12] transition-all duration-300" style={{ animation: `landing-fade-up 0.5s ease-out ${0.08 * i}s both` }}>
-                  <div className="shrink-0 w-16 text-center">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary/80">{uc.time}</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1 text-sm md:text-base">{uc.title}</h3>
-                    <p className="text-sm text-muted-foreground/60 leading-relaxed italic">{uc.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 3. NOT JUST A CHATBOT ─── */}
-      <section className="relative py-16 md:py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Why Harv</p>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Not just another<span className="text-primary"> chatbot</span></h2>
-            <p className="text-muted-foreground/60 max-w-lg mx-auto">ChatGPT answers questions. Harv actually <em>does</em> things.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {VALUE_PROPS.map((prop, i) => (
-              <div key={prop.title} className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-7 md:p-8 hover:border-white/[0.12] transition-all duration-300 overflow-hidden" style={{ animation: `landing-fade-up 0.6s ease-out ${0.1 * i}s both` }}>
-                <div className={`absolute top-0 left-0 w-48 h-48 bg-gradient-to-br ${prop.accent} rounded-full -translate-x-1/2 -translate-y-1/2 opacity-60 group-hover:opacity-100 transition-opacity duration-500`} />
-                <div className="relative">
-                  <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/15 group-hover:border-primary/20 transition-all duration-300">
-                    <prop.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2.5 tracking-tight">{prop.title}</h3>
-                  <p className="text-sm text-muted-foreground/60 leading-relaxed">{prop.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 4. AGENT BUILDER ─── */}
-      <section className="relative py-16 md:py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Build Your Own</p>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Create custom agents<br className="hidden md:block" /><span className="text-primary"> in 60 seconds</span></h2>
-            <p className="text-muted-foreground/60 max-w-xl mx-auto">No code. No config files. Describe what you want in plain English and Harv builds it. Set it on a schedule and forget about it.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
-            {BUILDER_FEATURES.map((feat, i) => (
-              <div key={feat.title} className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-6 hover:border-primary/20 transition-all duration-300" style={{ animation: `landing-fade-up 0.5s ease-out ${0.08 * i}s both` }}>
-                <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                    <feat.icon className="h-4.5 w-4.5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm mb-1.5">{feat.title}</h3>
-                    <p className="text-xs text-muted-foreground/55 leading-relaxed">{feat.desc}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Mock conversation */}
-          <div className="max-w-2xl mx-auto rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm overflow-hidden" style={{ animation: "landing-fade-up 0.6s ease-out 0.3s both" }}>
-            <div className="px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-red-400/60" /><div className="h-2.5 w-2.5 rounded-full bg-amber-400/60" /><div className="h-2.5 w-2.5 rounded-full bg-emerald-400/60" />
-              <span className="ml-2 text-[10px] text-muted-foreground/40 font-medium">Agent Builder</span>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="flex gap-3">
-                <div className="h-7 w-7 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 text-[10px]">You</div>
-                <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-4 py-2.5 text-sm text-muted-foreground/70">I want an agent that checks my email every morning and sends me a Telegram summary of anything urgent.</div>
-              </div>
-              <div className="flex gap-3">
-                <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0"><Zap className="h-3 w-3 text-primary" /></div>
-                <div className="rounded-xl bg-primary/[0.06] border border-primary/15 px-4 py-2.5 text-sm text-muted-foreground/70 space-y-2">
-                  <p>Got it. I&apos;ll create an <span className="text-primary font-medium">&quot;Inbox Scout&quot;</span> agent. A few questions:</p>
-                  <p className="text-xs text-muted-foreground/50">1. What counts as &quot;urgent&quot;? (keywords, specific senders, starred?)<br />2. What time should it run? (e.g., 7am daily)<br />3. Include a count of non-urgent emails too?</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="h-7 w-7 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 text-[10px]">You</div>
-                <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-4 py-2.5 text-sm text-muted-foreground/70">Anything from my boss or with &quot;urgent&quot; in the subject. Run at 7am. Yeah include the count.</div>
-              </div>
-              <div className="flex gap-3">
-                <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0"><Zap className="h-3 w-3 text-primary" /></div>
-                <div className="rounded-xl bg-primary/[0.06] border border-primary/15 px-4 py-2.5 text-sm space-y-1">
-                  <p className="text-emerald-400 font-medium flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Inbox Scout created</p>
-                  <p className="text-xs text-muted-foreground/50">Runs daily at 7:00 AM &bull; Checks Gmail &bull; Sends Telegram summary</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-10">
-            <ButtonLink href="/meet-the-agents" variant="outline" size="sm" className="gap-2 bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]">
-              See all 20+ agents <ArrowRight className="h-3 w-3" />
-            </ButtonLink>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 5. TRUST ─── */}
-      <section className="relative py-16 md:py-20 px-6">
+      {/* ═══ A DAY WITH HARV — compact horizontal timeline ═══ */}
+      <section className="relative py-10 md:py-14 px-6 border-t border-white/[0.04]">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Built on Trust</p>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">We know the fears.<br className="hidden md:block" /><span className="text-primary"> We built for them.</span></h2>
-            <p className="text-muted-foreground/60 max-w-lg mx-auto">AI agents that take real actions are scary. What if it sends the wrong email? What if it overspends? Here&apos;s how Harv handles it.</p>
+          <div className="flex items-baseline gap-3 mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">A day with Harv</h2>
+            <span className="text-xs text-muted-foreground/40">— just talk naturally</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {TRUST_POINTS.map((tp, i) => (
-              <div key={tp.title} className="flex gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-6 hover:border-white/[0.12] transition-all duration-300" style={{ animation: `landing-fade-up 0.5s ease-out ${0.1 * i}s both` }}>
-                <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/10 flex items-center justify-center shrink-0">
-                  <tp.icon className="h-5 w-5 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            {[
+              { t: "7am", q: "What\u2019s my day look like?", a: "Calendar, emails, scores, weather" },
+              { t: "12pm", q: "Compare headphones under $300", a: "Sourced breakdown from Research" },
+              { t: "3pm", q: "Summarize my inbox, draft replies", a: "Email reads, prioritizes, drafts" },
+              { t: "6pm", q: "Play something chill", a: "Spotify queues your vibe" },
+              { t: "9pm", q: "Schedule dentist Thu 2pm", a: "Calendar booked, reminder set" },
+            ].map((item) => (
+              <div key={item.t} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 hover:border-white/[0.1] transition-colors">
+                <span className="text-primary text-[10px] font-bold uppercase tracking-wider">{item.t}</span>
+                <p className="text-xs font-medium mt-1.5 mb-1 leading-snug">&ldquo;{item.q}&rdquo;</p>
+                <p className="text-[11px] text-muted-foreground/40 leading-snug">{item.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ WHY HARV — no icons, just bold claims ═══ */}
+      <section className="relative py-10 md:py-14 px-6 border-t border-white/[0.04]">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-baseline gap-3 mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Not just a chatbot</h2>
+            <span className="text-xs text-muted-foreground/40">— ChatGPT answers questions, Harv does things</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            {[
+              { title: "One AI, every task", text: "Stop copy-pasting between apps. Tell Harv what you need and the right specialist handles it. Research, schedule, email — one conversation." },
+              { title: "Works while you sleep", text: "Background agents run 24/7. Guardian monitors issues. Medic auto-fixes. Heartbeat syncs data. You wake up to a status report." },
+              { title: "Remembers everything", text: "Most AI forgets you. Harv builds memory from every conversation. Preferences, decisions, context — it all carries forward." },
+              { title: "Full cost transparency", text: "See what every agent costs, set daily/weekly/monthly caps, get alerts at 80%. No surprise bills, ever." },
+            ].map((item) => (
+              <div key={item.title}>
+                <h3 className="text-sm font-semibold mb-1.5">{item.title}</h3>
+                <p className="text-xs text-muted-foreground/50 leading-relaxed">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ AGENT BUILDER — the mock conversation IS the section ═══ */}
+      <section className="relative py-10 md:py-14 px-6 border-t border-white/[0.04]">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            {/* Left — copy */}
+            <div className="md:sticky md:top-24">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">
+                Build custom agents<br /><span className="text-primary">in 60 seconds</span>
+              </h2>
+              <p className="text-sm text-muted-foreground/50 mb-5 leading-relaxed">
+                No code. No config. Describe what you want in plain English — Harv asks a few questions, then builds and schedules it automatically.
+              </p>
+              <ul className="space-y-2.5 text-xs text-muted-foreground/50 mb-6">
+                <li className="flex items-start gap-2"><span className="text-primary font-bold text-sm leading-none mt-px">1</span> Describe what you need in one sentence</li>
+                <li className="flex items-start gap-2"><span className="text-primary font-bold text-sm leading-none mt-px">2</span> Harv asks smart follow-up questions</li>
+                <li className="flex items-start gap-2"><span className="text-primary font-bold text-sm leading-none mt-px">3</span> Set a schedule — daily, weekly, or on-demand</li>
+                <li className="flex items-start gap-2"><span className="text-primary font-bold text-sm leading-none mt-px">4</span> Or start from a template (briefing, cleanup, report&hellip;)</li>
+              </ul>
+              <ButtonLink href="/meet-the-agents" variant="outline" size="sm" className="gap-2 bg-white/[0.03] border-white/[0.08] text-xs">
+                See all 20+ agents <ArrowRight className="h-3 w-3" />
+              </ButtonLink>
+            </div>
+
+            {/* Right — mock chat */}
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-white/[0.06] flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-red-400/50" /><div className="h-2 w-2 rounded-full bg-amber-400/50" /><div className="h-2 w-2 rounded-full bg-emerald-400/50" />
+                <span className="ml-2 text-[10px] text-muted-foreground/30 font-medium">Agent Builder</span>
+              </div>
+              <div className="p-4 space-y-3 text-sm">
+                <div className="flex gap-2.5">
+                  <span className="text-[10px] text-muted-foreground/30 shrink-0 mt-1 w-6">You</span>
+                  <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-xs text-muted-foreground/60">I want an agent that checks my email every morning and sends me a Telegram summary of anything urgent.</div>
                 </div>
+                <div className="flex gap-2.5">
+                  <span className="text-[10px] text-primary/60 shrink-0 mt-1 w-6">Harv</span>
+                  <div className="rounded-lg bg-primary/[0.05] border border-primary/10 px-3 py-2 text-xs text-muted-foreground/60 space-y-1.5">
+                    <p>I&apos;ll create <span className="text-primary font-medium">&ldquo;Inbox Scout&rdquo;</span>. Quick questions:</p>
+                    <p className="text-muted-foreground/40 text-[11px]">1. What counts as urgent? (keywords, senders?)<br />2. Run time? (e.g., 7am)<br />3. Include non-urgent count?</p>
+                  </div>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="text-[10px] text-muted-foreground/30 shrink-0 mt-1 w-6">You</span>
+                  <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-xs text-muted-foreground/60">From my boss or &ldquo;urgent&rdquo; in subject. 7am. Yeah include count.</div>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="text-[10px] text-primary/60 shrink-0 mt-1 w-6">Harv</span>
+                  <div className="rounded-lg bg-primary/[0.05] border border-primary/10 px-3 py-2 text-xs">
+                    <p className="text-emerald-400 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Inbox Scout created</p>
+                    <p className="text-muted-foreground/40 text-[10px] mt-0.5">Daily 7:00 AM &bull; Gmail &bull; Telegram summary</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ TRUST — inline, no icon boxes ═══ */}
+      <section className="relative py-10 md:py-14 px-6 border-t border-white/[0.04]">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-baseline gap-3 mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Built for trust</h2>
+            <span className="text-xs text-muted-foreground/40">— we know AI agents are scary</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5">
+            {[
+              { label: "You see everything", text: "Full activity logs — what each agent did, when, and why. Every action is auditable." },
+              { label: "You approve first", text: "Harv drafts emails for your review. Suggests events before booking. You always get final say." },
+              { label: "No surprise bills", text: "Set daily, weekly, monthly caps. Alerts at 80%. Hit a limit? Model downgrades, never overcharges." },
+              { label: "Your data stays yours", text: "Per-user encryption. We don\u2019t train on your data. Export or delete anytime. No third-party sharing." },
+            ].map((item) => (
+              <div key={item.label} className="flex gap-3 items-start">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-sm mb-1.5">{tp.title}</h3>
-                  <p className="text-xs text-muted-foreground/55 leading-relaxed">{tp.desc}</p>
+                  <span className="text-sm font-semibold">{item.label}</span>
+                  <span className="text-xs text-muted-foreground/50 ml-1.5">&mdash; {item.text}</span>
                 </div>
               </div>
             ))}
@@ -254,51 +190,47 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ─── 6. DEMO VIDEO ─── */}
-      <section id="demo" className="relative py-16 md:py-20 px-6">
+      {/* ═══ DEMO — small inline placeholder ═══ */}
+      <section id="demo" className="relative py-10 md:py-14 px-6 border-t border-white/[0.04]">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">See It Live</p>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Watch Harv in action</h2>
-          </div>
-          <div className="relative aspect-video rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm overflow-hidden flex items-center justify-center group cursor-pointer hover:border-primary/20 transition-all duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] to-transparent" />
-            <div className="relative text-center">
-              <div className="h-16 w-16 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/30 group-hover:scale-110 transition-all duration-300">
-                <Play className="h-7 w-7 text-primary ml-1" />
+          <div className="relative aspect-[2.2/1] rounded-xl border border-white/[0.06] bg-white/[0.015] overflow-hidden flex items-center justify-center group cursor-pointer hover:border-primary/15 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent" />
+            <div className="relative flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center group-hover:bg-primary/25 group-hover:scale-105 transition-all">
+                <Play className="h-4 w-4 text-primary ml-0.5" />
               </div>
-              <p className="text-sm text-muted-foreground/50">Demo video coming soon</p>
-              <p className="text-xs text-muted-foreground/30 mt-1">2-minute walkthrough of the dashboard, agents, and builder</p>
+              <div>
+                <p className="text-sm font-medium">Watch the 2-min demo</p>
+                <p className="text-[11px] text-muted-foreground/35">Dashboard, agents, builder walkthrough</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── 7. PRICING ─── */}
-      <section className="relative py-16 md:py-20 px-6">
+      {/* ═══ PRICING ═══ */}
+      <section className="relative py-10 md:py-14 px-6 border-t border-white/[0.04]">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Pricing</p>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Start free. Upgrade<span className="text-primary"> when you&apos;re ready</span></h2>
-            <p className="text-muted-foreground/60 max-w-lg mx-auto">No hidden fees. No credit card to start. Cancel anytime.</p>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">Simple pricing</h2>
+            <p className="text-xs text-muted-foreground/40">No hidden fees. No credit card to start.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {(Object.entries(PLANS) as [string, (typeof PLANS)[keyof typeof PLANS]][]).map(([key, plan], i) => {
-              const isPopular = key === "pro";
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(Object.entries(PLANS) as [string, (typeof PLANS)[keyof typeof PLANS]][]).map(([key, plan]) => {
+              const pop = key === "pro";
               return (
-                <div key={key} className={`relative rounded-2xl border p-7 transition-all duration-300 ${isPopular ? "border-primary/30 bg-primary/[0.04] ring-1 ring-primary/15 scale-[1.02] md:scale-105 z-10" : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1]"}`} style={{ animation: `landing-fade-up 0.6s ease-out ${0.1 * i}s both` }}>
-                  {isPopular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider">Most Popular</div>}
-                  <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-4xl font-bold tracking-tight">${plan.price === 0 ? "0" : (plan.price / 100).toFixed(0)}</span>
-                    {plan.price > 0 && <span className="text-sm text-muted-foreground/60">/mo</span>}
+                <div key={key} className={`relative rounded-xl border p-5 transition-all ${pop ? "border-primary/25 bg-primary/[0.03] ring-1 ring-primary/10" : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1]"}`}>
+                  {pop && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-wider">Popular</div>}
+                  <div className="flex items-baseline justify-between mb-4">
+                    <h3 className="text-base font-bold">{plan.name}</h3>
+                    <div><span className="text-2xl font-bold">${plan.price === 0 ? "0" : (plan.price / 100).toFixed(0)}</span>{plan.price > 0 && <span className="text-xs text-muted-foreground/40">/mo</span>}</div>
                   </div>
-                  <ul className="space-y-3 mb-8">
+                  <ul className="space-y-2 mb-5">
                     {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm text-muted-foreground/70"><Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />{f}</li>
+                      <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground/60"><Check className="h-3 w-3 text-primary shrink-0 mt-0.5" />{f}</li>
                     ))}
                   </ul>
-                  <ButtonLink href="/auth/signup" className={`w-full ${isPopular ? "shadow-[0_0_20px_-5px] shadow-primary/20" : ""}`} variant={isPopular ? "default" : "outline"}>
+                  <ButtonLink href="/auth/signup" className={`w-full text-xs ${pop ? "shadow-[0_0_15px_-5px] shadow-primary/15" : ""}`} variant={pop ? "default" : "outline"} size="sm">
                     {plan.price === 0 ? "Start Free Trial" : "Get Started"}
                   </ButtonLink>
                 </div>
@@ -308,15 +240,14 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ─── 8. FINAL CTA ─── */}
-      <section className="relative py-16 md:py-20 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 border border-primary/15 mb-8">
-            <Zap className="h-6 w-6 text-primary" />
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-5">Stop switching tabs.<br /><span className="text-primary">Start delegating.</span></h2>
-          <p className="text-muted-foreground/60 mb-10 text-lg max-w-xl mx-auto">7-day free trial. No credit card. Cancel anytime. What would you do with 20+ AI agents working for you?</p>
-          <ButtonLink href="/auth/signup" size="lg" className="h-13 px-12 text-base gap-2.5 shadow-[0_0_30px_-5px] shadow-primary/25 hover:shadow-primary/40 transition-shadow">
+      {/* ═══ FINAL CTA — tight ═══ */}
+      <section className="relative py-14 md:py-20 px-6 border-t border-white/[0.04]">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+            Stop switching tabs.<br /><span className="text-primary">Start delegating.</span>
+          </h2>
+          <p className="text-sm text-muted-foreground/50 mb-6">7-day free trial. No credit card. Cancel anytime.</p>
+          <ButtonLink href="/auth/signup" size="lg" className="h-12 px-10 text-sm gap-2 shadow-[0_0_30px_-5px] shadow-primary/25 hover:shadow-primary/40 transition-shadow">
             Get Started Free <ArrowRight className="h-4 w-4" />
           </ButtonLink>
         </div>
