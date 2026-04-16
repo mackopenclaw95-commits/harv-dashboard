@@ -362,29 +362,23 @@ export function ChatPanel({
             onClick: () => window.location.href = "/settings?tab=billing",
           };
           if (usage.reason === "monthly_cost_cap") {
-            const spent = Number(usage.monthly_cost_usd || 0).toFixed(2);
-            const cap = Number(usage.monthly_cost_cap_usd || 0).toFixed(2);
             toast.error(
-              `Monthly cost limit reached ($${spent} / $${cap}). Resets on the 1st.`,
+              "Monthly usage limit reached. Resets on the 1st.",
               { duration: 8000, action: upgradeAction }
             );
           } else if (usage.reason === "weekly_cost_cap") {
-            const spent = Number(usage.weekly_cost_usd || 0).toFixed(2);
-            const cap = Number(usage.weekly_cost_cap_usd || 0).toFixed(2);
             toast.error(
-              `Weekly cost limit reached ($${spent} / $${cap}). Resets next week.`,
+              "Weekly usage limit reached. Resets next week.",
               { duration: 8000, action: upgradeAction }
             );
           } else if (usage.reason === "daily_cost_cap") {
-            const spent = Number(usage.daily_cost_usd || 0).toFixed(4);
-            const cap = Number(usage.daily_cost_cap_usd || 0).toFixed(2);
             toast.error(
-              `Daily spend cap reached ($${spent} / $${cap}). Resets at midnight.`,
+              "Daily usage limit reached. Resets at midnight.",
               { duration: 8000, action: upgradeAction }
             );
           } else {
             toast.error(
-              `Weekly limit reached (${usage.weekly_used}/${usage.weekly_limit}). Resets next week.`,
+              `Weekly message limit reached (${usage.weekly_used}/${usage.weekly_limit}). Resets next week.`,
               { duration: 8000, action: upgradeAction }
             );
           }
@@ -411,19 +405,19 @@ export function ChatPanel({
         const mSpent = Number(usage.monthly_cost_usd || 0);
         if (mCap > 0 && mSpent / mCap >= 0.8 && !usage.monthly_cost_exceeded && !monthlyCapWarnedRef.current) {
           monthlyCapWarnedRef.current = true;
-          toast(`Heads up — you've used ${Math.round((mSpent / mCap) * 100)}% of this month's budget ($${mSpent.toFixed(2)} / $${mCap.toFixed(2)}).`, { duration: 6000, action: upgradeWarn });
+          toast(`Heads up — you've used ${Math.round((mSpent / mCap) * 100)}% of this month's usage.`, { duration: 6000, action: upgradeWarn });
         }
         const wCap = Number(usage.weekly_cost_cap_usd || 0);
         const wSpent = Number(usage.weekly_cost_usd || 0);
         if (wCap > 0 && wSpent / wCap >= 0.8 && !usage.weekly_cost_exceeded && !weeklyCapWarnedRef.current) {
           weeklyCapWarnedRef.current = true;
-          toast(`Heads up — you've used ${Math.round((wSpent / wCap) * 100)}% of this week's budget ($${wSpent.toFixed(2)} / $${wCap.toFixed(2)}).`, { duration: 6000, action: upgradeWarn });
+          toast(`Heads up — you've used ${Math.round((wSpent / wCap) * 100)}% of this week's usage.`, { duration: 6000, action: upgradeWarn });
         }
         const capUsd = Number(usage.daily_cost_cap_usd || 0);
         const spentUsd = Number(usage.daily_cost_usd || 0);
         if (capUsd > 0 && spentUsd / capUsd >= 0.8 && !usage.cost_exceeded && !nearCapWarnedRef.current) {
           nearCapWarnedRef.current = true;
-          toast(`Heads up — you've used ${Math.round((spentUsd / capUsd) * 100)}% of today's spend cap ($${spentUsd.toFixed(4)} / $${capUsd.toFixed(2)}).`, { duration: 6000, action: upgradeWarn });
+          toast(`Heads up — you've used ${Math.round((spentUsd / capUsd) * 100)}% of today's usage.`, { duration: 6000, action: upgradeWarn });
         }
       }
     } catch {} // If usage check fails, allow the message through

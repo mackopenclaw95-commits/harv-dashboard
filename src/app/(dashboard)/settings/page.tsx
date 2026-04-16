@@ -1055,204 +1055,67 @@ function SettingsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Daily Spend Cap — today's budget meter */}
+                {/* Usage Budget — daily / weekly / monthly as % meters */}
                 {(() => {
-                  const cap = usageData?.daily_cost_cap_usd ?? 0;
-                  const spent = usageData?.daily_cost_usd ?? 0;
                   const isUnlimited = usageData?.limit === -1; // owner/tester
-                  if (isUnlimited) {
-                    return (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                            <DollarSign className="h-4 w-4 text-emerald-400" />
-                            Daily Spend Cap
-                          </CardTitle>
-                          <CardDescription>
-                            Unlimited — owner/tester accounts bypass the daily cost cap.
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-2xl font-bold text-emerald-400 font-mono">
-                            ${spent.toFixed(4)} <span className="text-xs text-muted-foreground font-normal">spent today</span>
-                          </p>
-                        </CardContent>
-                      </Card>
-                    );
-                  }
-                  if (cap <= 0) return null;
-                  const pct = Math.min((spent / cap) * 100, 100);
-                  const exceeded = usageData?.cost_exceeded || spent >= cap;
-                  const warning = !exceeded && pct >= 80;
-                  const barColor = exceeded
-                    ? "bg-red-500"
-                    : warning
-                      ? "bg-amber-400"
-                      : "bg-emerald-500/70";
-                  const valueColor = exceeded
-                    ? "text-red-400"
-                    : warning
-                      ? "text-amber-400"
-                      : "text-yellow-400";
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                          <DollarSign className="h-4 w-4 text-yellow-400" />
-                          Daily Spend Cap
-                        </CardTitle>
-                        <CardDescription>
-                          Your plan has a ${cap.toFixed(2)}/day API cost cap. When you hit it, chats are blocked until midnight.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-baseline justify-between">
-                          <p className={`text-2xl font-bold font-mono ${valueColor}`}>
-                            ${spent.toFixed(4)}
-                          </p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            of ${cap.toFixed(2)} · {pct.toFixed(0)}%
-                          </p>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-white/[0.06]">
-                          <div
-                            className={`h-2.5 rounded-full transition-all ${barColor}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        {exceeded ? (
-                          <p className="text-xs text-red-400">
-                            Daily cap reached. Chats are blocked until midnight, or upgrade your plan for a higher cap.
-                          </p>
-                        ) : warning ? (
-                          <p className="text-xs text-amber-400">
-                            You&apos;ve used over 80% of today&apos;s cost cap.
-                          </p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">
-                            Resets daily at midnight.
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
+                  if (isUnlimited) return null; // owners see raw costs in admin, not here
 
-                {/* Weekly Spend meter */}
-                {(() => {
-                  const cap = usageData?.weekly_cost_cap_usd ?? 0;
-                  const spent = usageData?.weekly_cost_usd ?? 0;
-                  const isUnlimited = usageData?.limit === -1;
-                  if (isUnlimited) {
-                    return (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                            <DollarSign className="h-4 w-4 text-blue-400" />
-                            Weekly Spend
-                          </CardTitle>
-                          <CardDescription>Unlimited — owner/tester accounts bypass cost caps.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-2xl font-bold text-blue-400 font-mono">
-                            ${spent.toFixed(4)} <span className="text-xs text-muted-foreground font-normal">spent this week</span>
-                          </p>
-                        </CardContent>
-                      </Card>
-                    );
-                  }
-                  if (cap <= 0) return null;
-                  const pct = Math.min((spent / cap) * 100, 100);
-                  const exceeded = usageData?.weekly_cost_exceeded || spent >= cap;
-                  const warning = !exceeded && pct >= 80;
-                  const barColor = exceeded ? "bg-red-500" : warning ? "bg-amber-400" : "bg-blue-500/70";
-                  const valueColor = exceeded ? "text-red-400" : warning ? "text-amber-400" : "text-blue-400";
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                          <DollarSign className="h-4 w-4 text-blue-400" />
-                          Weekly Spend
-                        </CardTitle>
-                        <CardDescription>
-                          Your plan has a ${cap.toFixed(2)}/week cost cap. Paces your usage so it lasts all month.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-baseline justify-between">
-                          <p className={`text-2xl font-bold font-mono ${valueColor}`}>${spent.toFixed(4)}</p>
-                          <p className="text-xs text-muted-foreground font-mono">of ${cap.toFixed(2)} · {pct.toFixed(0)}%</p>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-white/[0.06]">
-                          <div className={`h-2.5 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-                        </div>
-                        {exceeded ? (
-                          <p className="text-xs text-red-400">Weekly cap reached. Chats paused until next week, or upgrade for a higher cap.</p>
-                        ) : warning ? (
-                          <p className="text-xs text-amber-400">You&apos;ve used over 80% of this week&apos;s budget.</p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Resets every 7 days.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
+                  const meters: { label: string; spent: number; cap: number; exceeded: boolean; color: string; resetLabel: string }[] = [];
+                  const dCap = usageData?.daily_cost_cap_usd ?? 0;
+                  const dSpent = usageData?.daily_cost_usd ?? 0;
+                  if (dCap > 0) meters.push({ label: "Today", spent: dSpent, cap: dCap, exceeded: !!usageData?.cost_exceeded, color: "emerald", resetLabel: "Resets at midnight" });
+                  const wCap = usageData?.weekly_cost_cap_usd ?? 0;
+                  const wSpent = usageData?.weekly_cost_usd ?? 0;
+                  if (wCap > 0) meters.push({ label: "This week", spent: wSpent, cap: wCap, exceeded: !!usageData?.weekly_cost_exceeded, color: "blue", resetLabel: "Resets every 7 days" });
+                  const mCap = usageData?.monthly_cost_cap_usd ?? 0;
+                  const mSpent = usageData?.monthly_cost_usd ?? 0;
+                  if (mCap > 0) meters.push({ label: "This month", spent: mSpent, cap: mCap, exceeded: !!usageData?.monthly_cost_exceeded, color: "purple", resetLabel: "Resets on the 1st" });
 
-                {/* Monthly Spend meter */}
-                {(() => {
-                  const cap = usageData?.monthly_cost_cap_usd ?? 0;
-                  const spent = usageData?.monthly_cost_usd ?? 0;
-                  const isUnlimited = usageData?.limit === -1;
-                  if (isUnlimited) {
-                    return (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                            <DollarSign className="h-4 w-4 text-purple-400" />
-                            Monthly Spend
-                          </CardTitle>
-                          <CardDescription>Unlimited — owner/tester accounts bypass cost caps.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-2xl font-bold text-purple-400 font-mono">
-                            ${spent.toFixed(4)} <span className="text-xs text-muted-foreground font-normal">spent this month</span>
-                          </p>
-                        </CardContent>
-                      </Card>
-                    );
-                  }
-                  if (cap <= 0) return null;
-                  const pct = Math.min((spent / cap) * 100, 100);
-                  const exceeded = usageData?.monthly_cost_exceeded || spent >= cap;
-                  const warning = !exceeded && pct >= 80;
-                  const barColor = exceeded ? "bg-red-500" : warning ? "bg-amber-400" : "bg-purple-500/70";
-                  const valueColor = exceeded ? "text-red-400" : warning ? "text-amber-400" : "text-purple-400";
+                  if (meters.length === 0) return null;
+
                   return (
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                          <DollarSign className="h-4 w-4 text-purple-400" />
-                          Monthly Spend
+                          <Activity className="h-4 w-4 text-primary" />
+                          Usage Budget
                         </CardTitle>
                         <CardDescription>
-                          Your plan has a ${cap.toFixed(2)}/month cost ceiling. Guarantees your subscription covers API costs.
+                          Your usage is paced weekly so it lasts all month. Upgrade for higher limits.
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-baseline justify-between">
-                          <p className={`text-2xl font-bold font-mono ${valueColor}`}>${spent.toFixed(4)}</p>
-                          <p className="text-xs text-muted-foreground font-mono">of ${cap.toFixed(2)} · {pct.toFixed(0)}%</p>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-white/[0.06]">
-                          <div className={`h-2.5 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-                        </div>
-                        {exceeded ? (
-                          <p className="text-xs text-red-400">Monthly cap reached. Chats paused until the 1st, or upgrade for a higher cap.</p>
-                        ) : warning ? (
-                          <p className="text-xs text-amber-400">You&apos;ve used over 80% of this month&apos;s budget.</p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Resets on the 1st of each month.</p>
-                        )}
+                      <CardContent className="space-y-5">
+                        {meters.map((m) => {
+                          const pct = Math.min((m.spent / m.cap) * 100, 100);
+                          const pctRound = Math.round(pct);
+                          const warning = !m.exceeded && pct >= 80;
+                          const colorMap: Record<string, { bar: string; text: string }> = {
+                            emerald: { bar: "bg-emerald-500/70", text: "text-emerald-400" },
+                            blue: { bar: "bg-blue-500/70", text: "text-blue-400" },
+                            purple: { bar: "bg-purple-500/70", text: "text-purple-400" },
+                          };
+                          const colors = colorMap[m.color] || colorMap.emerald;
+                          const barColor = m.exceeded ? "bg-red-500" : warning ? "bg-amber-400" : colors.bar;
+                          const textColor = m.exceeded ? "text-red-400" : warning ? "text-amber-400" : colors.text;
+                          return (
+                            <div key={m.label}>
+                              <div className="flex justify-between text-xs mb-1.5">
+                                <span className="text-muted-foreground">{m.label}</span>
+                                <span className={`font-semibold ${textColor}`}>{pctRound}%</span>
+                              </div>
+                              <div className="h-2.5 rounded-full bg-white/[0.06]">
+                                <div className={`h-2.5 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                              </div>
+                              <p className="text-[10px] text-muted-foreground/50 mt-1">
+                                {m.exceeded
+                                  ? `Limit reached — chats paused. ${m.resetLabel}.`
+                                  : warning
+                                    ? `Over 80% used. ${m.resetLabel}.`
+                                    : m.resetLabel}
+                              </p>
+                            </div>
+                          );
+                        })}
                       </CardContent>
                     </Card>
                   );
