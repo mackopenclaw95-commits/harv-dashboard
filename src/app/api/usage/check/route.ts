@@ -39,8 +39,8 @@ export async function GET(req: NextRequest) {
     const weeklyCostCapUsd = planTier.weeklyCostCapUsd;
     const monthlyCostCapUsd = planTier.monthlyCostCapUsd;
 
-    // Owner/tester always gets primary tier, unlimited — but show real usage counts
-    if (profile?.role === "owner" || profile?.role === "tester") {
+    // Owner always gets unlimited — skip cost checks entirely
+    if (profile?.role === "owner") {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const { count: ownerToday } = await supabase
@@ -66,6 +66,8 @@ export async function GET(req: NextRequest) {
         agent_allowed: true,
       });
     }
+
+    // Tester goes through normal flow but is never blocked (sees same UI as real users)
 
     // Agent gating — check if agent is available on user's plan
     if (agent && !isAgentAvailable(agent, plan)) {
@@ -186,20 +188,21 @@ export async function GET(req: NextRequest) {
     let modelTier: "primary" | "fallback" | "blocked";
     let degraded = false;
 
+    const isTester = profile?.role === "tester";
     if (monthlyCostExceeded || weeklyCostExceeded || weeklyExceeded || costExceeded) {
       // Monthly/weekly cost cap OR message backstop OR daily cost cap — block
-      modelTier = "blocked";
-      degraded = true;
+      modelTier = isTester ? "primary" : "blocked";
+      degraded = !isTester;
     } else if (used >= primaryLimit) {
       // Past daily primary limit — degrade to fallback model
-      modelTier = "fallback";
-      degraded = true;
+      modelTier = isTester ? "primary" : "fallback";
+      degraded = !isTester;
     } else {
       modelTier = "primary";
     }
 
     return NextResponse.json({
-      allowed: modelTier !== "blocked",
+      allowed: isTester ? true : modelTier !== "blocked",
       used,
       limit: primaryLimit,
       remaining: Math.max(0, primaryLimit - used),
