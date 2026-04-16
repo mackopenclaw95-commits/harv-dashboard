@@ -62,6 +62,36 @@ DEFAULT_PROMPT = (
 )
 
 
+# Default UA that mimics a real desktop browser — yt-dlp's default UA is
+# frequently bot-flagged by YouTube on datacenter IPs.
+DEFAULT_UA = (
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+    'AppleWebKit/605.1.15 (KHTML, like Gecko) '
+    'Version/17.4 Safari/605.1.15'
+)
+
+# YouTube-specific: rotate through player clients when bot-gated.
+YT_PLAYER_CLIENTS = ['android', 'ios', 'web_safari', 'tv_embedded']
+
+
+def _is_youtube(url: str) -> bool:
+    return 'youtube.com' in url or 'youtu.be' in url
+
+
+def _ytdlp_auth_args() -> list:
+    """Env-driven yt-dlp args for bot-gate mitigations. See whisper_client.py."""
+    args: list = []
+    cookies = os.environ.get('YT_DLP_COOKIES_FILE')
+    if cookies and os.path.exists(cookies):
+        args += ['--cookies', cookies]
+    proxy = os.environ.get('YT_DLP_PROXY')
+    if proxy:
+        args += ['--proxy', proxy]
+    ua = os.environ.get('YT_DLP_USER_AGENT') or DEFAULT_UA
+    args += ['--user-agent', ua]
+    return args
+
+
 def _get_key() -> Optional[str]:
     # Reuse the existing image-gen Gemini key if present; fall back to a dedicated one.
     return (
@@ -76,30 +106,63 @@ def is_configured() -> bool:
     return bool(_get_key())
 
 
-def _download_video(url: str, out_path: str, max_duration_sec: int = 600) -> bool:
-    """Download the video (not just audio) via yt-dlp. Capped at 720p for size/cost."""
+def _run_ytdlp_video(url: str, out_path: str, max_duration_sec: int,
+                    player_client: Optional[str]) -> tuple:
+    """One attempt at downloading video. Returns (success: bool, stderr: str)."""
+    cmd = [
+        'yt-dlp',
+        '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]/best',
+        '--merge-output-format', 'mp4',
+        '--no-playlist',
+        '--no-warnings',
+        # Allow videos whose duration is unknown (metadata blocked) through.
+        '--match-filter', f'!duration | duration < {max_duration_sec}',
+        '--retries', '3',
+        '--fragment-retries', '3',
+        '-o', out_path,
+    ]
+    cmd += _ytdlp_auth_args()
+    if player_client:
+        cmd += ['--extractor-args', f'youtube:player_client={player_client}']
+    cmd.append(url)
     try:
-        cmd = [
-            'yt-dlp',
-            '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]/best',
-            '--merge-output-format', 'mp4',
-            '--no-playlist',
-            '--no-warnings',
-            '--match-filter', f'duration<{max_duration_sec}',
-            '-o', out_path,
-            url,
-        ]
-        result = subprocess.run(cmd, capture_output=True, timeout=240, text=True)
+        result = subprocess.run(cmd, capture_output=True, timeout=300, text=True)
         if result.returncode != 0:
-            log.error(f'yt-dlp video download failed: {result.stderr[:300]}')
-            return False
-        return os.path.exists(out_path)
+            return False, (result.stderr or '')[:500]
+        return os.path.exists(out_path), ''
     except subprocess.TimeoutExpired:
-        log.error('yt-dlp video download timeout')
-        return False
+        return False, 'timeout'
     except Exception as e:
-        log.error(f'yt-dlp video download exception: {e}')
-        return False
+        return False, str(e)[:300]
+
+
+def _download_video(url: str, out_path: str, max_duration_sec: int = 600) -> bool:
+    """Download the video (not just audio) via yt-dlp. Capped at 720p for size/cost.
+
+    For YouTube URLs, cycles through player clients to work around datacenter
+    IP bot-gating. Respects YT_DLP_COOKIES_FILE / YT_DLP_PROXY env vars.
+    """
+    attempts: list = YT_PLAYER_CLIENTS if _is_youtube(url) else [None]
+
+    last_err = ''
+    for client in attempts:
+        if os.path.exists(out_path):
+            try:
+                os.remove(out_path)
+            except OSError:
+                pass
+        ok, err = _run_ytdlp_video(url, out_path, max_duration_sec, client)
+        if ok:
+            if client:
+                log.info(f'yt-dlp video ok via player_client={client}')
+            return True
+        last_err = err
+        log.warning(
+            f'yt-dlp video attempt failed (player_client={client or "default"}): {err[:200]}'
+        )
+
+    log.error(f'yt-dlp video download failed after {len(attempts)} attempt(s): {last_err[:300]}')
+    return False
 
 
 def _upload_file(path: str, api_key: str) -> Optional[dict]:

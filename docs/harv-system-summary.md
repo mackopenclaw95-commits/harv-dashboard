@@ -396,8 +396,18 @@ The Digest page's Implement mode now has a **🚀 Send to Claude Code** button t
 4. Progress card stalled silently after ~40s. Now shows "Still working — long videos can take 60–90s" when elapsed > lastStep + 20.
 5. Ctrl/Cmd+Enter didn't submit the multi-URL textarea — added keydown handler.
 
-### VPS YouTube issue (open, side task spawned)
-yt-dlp is bot-gated on the VPS datacenter IP. YouTube videos return "Unknown Video by Unknown" because metadata extraction fails at the yt-dlp level, before captions or Whisper are even attempted. TikTok and X/Twitter work. Two side tasks spawned to (1) fix the bot-gate with cookies/proxy and (2) unify the Whisper fallback chain across platforms so failures are reported with what-step-failed detail.
+### VPS YouTube issue (mitigated — needs cookies or proxy set on VPS)
+yt-dlp was bot-gated on the VPS datacenter IP. YouTube videos returned "Unknown Video by Unknown" because metadata extraction failed at the yt-dlp level, before captions or Whisper were even attempted. TikTok and X/Twitter worked.
+
+**Fix (client-side, shipped):** `harv_deploy/whisper_client.py` and `harv_deploy/gemini_vlm_client.py` now:
+1. Cycle through YouTube player clients (`android` → `ios` → `web_safari` → `tv_embedded`) — the mobile/embed clients are less aggressively gated than the default `web` client.
+2. Send a desktop-Safari User-Agent by default (yt-dlp's default UA is fingerprinted).
+3. Accept videos whose duration is unknown (previously `--match-filter duration<N` silently rejected them when metadata extraction failed).
+4. Respect `YT_DLP_COOKIES_FILE`, `YT_DLP_PROXY`, `YT_DLP_USER_AGENT` env vars for cases where the player-client rotation isn't enough.
+
+**VPS setup (if player-client rotation isn't enough):**
+- Drop a Netscape-format `cookies.txt` exported from a logged-in YouTube session on the VPS, then set `YT_DLP_COOKIES_FILE=/root/harv/cookies.txt` in `/root/harv/.env`.
+- Or point `YT_DLP_PROXY` at a residential proxy.
 
 ### Commits (master)
 - `8025284 feat(digest): Send to Claude Code button — fires routine via API`
