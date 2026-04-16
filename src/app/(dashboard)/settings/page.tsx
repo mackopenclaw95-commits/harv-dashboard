@@ -1058,7 +1058,8 @@ function SettingsPage() {
                 {/* Usage Budget — daily / weekly / monthly as % meters */}
                 {(() => {
                   const isUnlimited = usageData?.limit === -1; // owner/tester
-                  if (isUnlimited) return null; // owners see raw costs in admin, not here
+                  if (isUnlimited) return null; // owners see raw costs in admin
+                  if (!usageData) return null; // not loaded yet
 
                   const meters: { label: string; spent: number; cap: number; exceeded: boolean; color: string; resetLabel: string }[] = [];
                   const dCap = usageData?.daily_cost_cap_usd ?? 0;
@@ -1121,15 +1122,15 @@ function SettingsPage() {
                   );
                 })()}
 
-                {/* Cost Breakdown — last 30 days */}
+                {/* Agent Activity — last 30 days */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                      <DollarSign className="h-4 w-4 text-yellow-400" />
-                      Cost Breakdown (last 30 days)
+                      <Activity className="h-4 w-4 text-primary" />
+                      Agent Activity (last 30 days)
                     </CardTitle>
                     <CardDescription>
-                      Where your API spend is going. Includes chat, agents, and background work attributed to you.
+                      Which agents you use the most.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-5">
@@ -1139,55 +1140,53 @@ function SettingsPage() {
                       <p className="text-xs text-muted-foreground/60">No usage recorded yet.</p>
                     ) : (
                       <>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="rounded-lg bg-white/[0.03] ring-1 ring-white/[0.06] p-3">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total spend</p>
-                            <p className="text-2xl font-bold text-yellow-400 font-mono">
-                              ${costBreakdown.total_cost.toFixed(4)}
-                            </p>
-                          </div>
-                          <div className="rounded-lg bg-white/[0.03] ring-1 ring-white/[0.06] p-3">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total tokens</p>
-                            <p className="text-2xl font-bold font-mono">
-                              {costBreakdown.total_tokens.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
+                        {(() => {
+                          const totalMessages = costBreakdown.by_agent.reduce((s: number, a: { messages: number }) => s + (a.messages || 0), 0);
+                          const maxMessages = Math.max(...costBreakdown.by_agent.map((a: { messages: number }) => a.messages || 0), 1);
+                          return (
+                            <>
+                              <div className="rounded-lg bg-white/[0.03] ring-1 ring-white/[0.06] p-3">
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total messages</p>
+                                <p className="text-2xl font-bold font-mono">
+                                  {totalMessages.toLocaleString()}
+                                </p>
+                              </div>
 
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">By agent</p>
-                          <div className="space-y-1.5">
-                            {costBreakdown.by_agent.slice(0, 10).map((a) => {
-                              const pct = costBreakdown.total_cost > 0
-                                ? (a.cost / costBreakdown.total_cost) * 100
-                                : 0;
-                              return (
-                                <div key={a.agent} className="flex items-center gap-3 text-xs">
-                                  <span className="w-28 truncate font-medium">{a.agent}</span>
-                                  <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                                    <div
-                                      className="h-1.5 rounded-full bg-primary/60"
-                                      style={{ width: `${Math.min(pct, 100)}%` }}
-                                    />
-                                  </div>
-                                  <span className="w-20 text-right font-mono text-muted-foreground">
-                                    ${a.cost.toFixed(4)}
-                                  </span>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">By agent</p>
+                                <div className="space-y-1.5">
+                                  {costBreakdown.by_agent.slice(0, 10).map((a: { agent: string; messages: number }) => {
+                                    const pct = maxMessages > 0 ? ((a.messages || 0) / maxMessages) * 100 : 0;
+                                    return (
+                                      <div key={a.agent} className="flex items-center gap-3 text-xs">
+                                        <span className="w-28 truncate font-medium">{a.agent}</span>
+                                        <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                          <div
+                                            className="h-1.5 rounded-full bg-primary/60"
+                                            style={{ width: `${Math.min(pct, 100)}%` }}
+                                          />
+                                        </div>
+                                        <span className="w-16 text-right font-mono text-muted-foreground">
+                                          {a.messages || 0}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </div>
+                              </div>
+                            </>
+                          );
+                        })()}
 
                         {costBreakdown.by_model.length > 0 && (
                           <div>
                             <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">By model</p>
                             <div className="space-y-1">
-                              {costBreakdown.by_model.slice(0, 8).map((m) => (
+                              {costBreakdown.by_model.slice(0, 8).map((m: { model: string; calls: number }) => (
                                 <div key={m.model} className="flex items-center justify-between text-[11px]">
                                   <span className="font-mono text-muted-foreground truncate mr-2">{m.model}</span>
                                   <span className="font-mono shrink-0">
-                                    {m.calls} call{m.calls === 1 ? "" : "s"} · ${m.cost.toFixed(4)}
+                                    {m.calls} call{m.calls === 1 ? "" : "s"}
                                   </span>
                                 </div>
                               ))}
