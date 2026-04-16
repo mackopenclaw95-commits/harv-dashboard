@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# python build artifacts (harv_deploy/ and scripts/ are python)
+__pycache__/
+*.pyc
+*.pyo
