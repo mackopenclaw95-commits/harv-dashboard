@@ -92,6 +92,45 @@ export function NotificationStore({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Poll cost alerts
+  useEffect(() => {
+    const ALERT_LABELS: Record<string, string> = {
+      weekly_80: "80% of weekly budget used",
+      weekly_100: "Weekly cost limit reached — chats paused",
+      monthly_80: "80% of monthly budget used",
+      monthly_100: "Monthly cost limit reached — chats paused",
+    };
+
+    async function pollCostAlerts() {
+      try {
+        const res = await fetch("/api/usage/alerts");
+        if (!res.ok) return;
+        const data = await res.json();
+        const alerts: { id: number; alert_type: string; cost_usd: number; cap_usd: number; created_at: string }[] = data.alerts || [];
+        if (alerts.length === 0) return;
+
+        setNotifications((prev) => {
+          const withoutCost = prev.filter((n) => !String(n.id).startsWith("cost-"));
+          const synthetic: Notification[] = alerts.map((a) => ({
+            id: `cost-${a.id}`,
+            agent: "Cost Monitor",
+            action: "api_cost",
+            status: a.alert_type.endsWith("_100") ? "error" : "warning",
+            summary: `${ALERT_LABELS[a.alert_type] || a.alert_type} ($${Number(a.cost_usd).toFixed(2)} / $${Number(a.cap_usd).toFixed(2)})`,
+            timestamp: a.created_at,
+            read: false,
+            href: "/settings?tab=usage",
+          }));
+          return [...synthetic, ...withoutCost].slice(0, MAX_NOTIFICATIONS);
+        });
+      } catch { /* silent */ }
+    }
+
+    pollCostAlerts();
+    const interval = setInterval(pollCostAlerts, POLL_INTERVAL * 5); // every 5 min
+    return () => clearInterval(interval);
+  }, []);
+
   // Poll support responses separately
   useEffect(() => {
     async function pollSupport() {

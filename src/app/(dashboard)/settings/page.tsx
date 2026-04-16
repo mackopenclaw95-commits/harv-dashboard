@@ -178,6 +178,12 @@ function SettingsPage() {
     daily_cost_usd?: number;
     daily_cost_cap_usd?: number;
     cost_exceeded?: boolean;
+    weekly_cost_usd?: number;
+    weekly_cost_cap_usd?: number;
+    weekly_cost_exceeded?: boolean;
+    monthly_cost_usd?: number;
+    monthly_cost_cap_usd?: number;
+    monthly_cost_exceeded?: boolean;
   } | null>(null);
 
   // Cost breakdown from /api/usage/breakdown
@@ -1126,6 +1132,126 @@ function SettingsPage() {
                           <p className="text-xs text-muted-foreground">
                             Resets daily at midnight.
                           </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+                {/* Weekly Spend meter */}
+                {(() => {
+                  const cap = usageData?.weekly_cost_cap_usd ?? 0;
+                  const spent = usageData?.weekly_cost_usd ?? 0;
+                  const isUnlimited = usageData?.limit === -1;
+                  if (isUnlimited) {
+                    return (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                            <DollarSign className="h-4 w-4 text-blue-400" />
+                            Weekly Spend
+                          </CardTitle>
+                          <CardDescription>Unlimited — owner/tester accounts bypass cost caps.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-2xl font-bold text-blue-400 font-mono">
+                            ${spent.toFixed(4)} <span className="text-xs text-muted-foreground font-normal">spent this week</span>
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  if (cap <= 0) return null;
+                  const pct = Math.min((spent / cap) * 100, 100);
+                  const exceeded = usageData?.weekly_cost_exceeded || spent >= cap;
+                  const warning = !exceeded && pct >= 80;
+                  const barColor = exceeded ? "bg-red-500" : warning ? "bg-amber-400" : "bg-blue-500/70";
+                  const valueColor = exceeded ? "text-red-400" : warning ? "text-amber-400" : "text-blue-400";
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                          <DollarSign className="h-4 w-4 text-blue-400" />
+                          Weekly Spend
+                        </CardTitle>
+                        <CardDescription>
+                          Your plan has a ${cap.toFixed(2)}/week cost cap. Paces your usage so it lasts all month.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-baseline justify-between">
+                          <p className={`text-2xl font-bold font-mono ${valueColor}`}>${spent.toFixed(4)}</p>
+                          <p className="text-xs text-muted-foreground font-mono">of ${cap.toFixed(2)} · {pct.toFixed(0)}%</p>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-white/[0.06]">
+                          <div className={`h-2.5 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        {exceeded ? (
+                          <p className="text-xs text-red-400">Weekly cap reached. Chats paused until next week, or upgrade for a higher cap.</p>
+                        ) : warning ? (
+                          <p className="text-xs text-amber-400">You&apos;ve used over 80% of this week&apos;s budget.</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Resets every 7 days.</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+                {/* Monthly Spend meter */}
+                {(() => {
+                  const cap = usageData?.monthly_cost_cap_usd ?? 0;
+                  const spent = usageData?.monthly_cost_usd ?? 0;
+                  const isUnlimited = usageData?.limit === -1;
+                  if (isUnlimited) {
+                    return (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                            <DollarSign className="h-4 w-4 text-purple-400" />
+                            Monthly Spend
+                          </CardTitle>
+                          <CardDescription>Unlimited — owner/tester accounts bypass cost caps.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-2xl font-bold text-purple-400 font-mono">
+                            ${spent.toFixed(4)} <span className="text-xs text-muted-foreground font-normal">spent this month</span>
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  if (cap <= 0) return null;
+                  const pct = Math.min((spent / cap) * 100, 100);
+                  const exceeded = usageData?.monthly_cost_exceeded || spent >= cap;
+                  const warning = !exceeded && pct >= 80;
+                  const barColor = exceeded ? "bg-red-500" : warning ? "bg-amber-400" : "bg-purple-500/70";
+                  const valueColor = exceeded ? "text-red-400" : warning ? "text-amber-400" : "text-purple-400";
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                          <DollarSign className="h-4 w-4 text-purple-400" />
+                          Monthly Spend
+                        </CardTitle>
+                        <CardDescription>
+                          Your plan has a ${cap.toFixed(2)}/month cost ceiling. Guarantees your subscription covers API costs.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-baseline justify-between">
+                          <p className={`text-2xl font-bold font-mono ${valueColor}`}>${spent.toFixed(4)}</p>
+                          <p className="text-xs text-muted-foreground font-mono">of ${cap.toFixed(2)} · {pct.toFixed(0)}%</p>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-white/[0.06]">
+                          <div className={`h-2.5 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        {exceeded ? (
+                          <p className="text-xs text-red-400">Monthly cap reached. Chats paused until the 1st, or upgrade for a higher cap.</p>
+                        ) : warning ? (
+                          <p className="text-xs text-amber-400">You&apos;ve used over 80% of this month&apos;s budget.</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Resets on the 1st of each month.</p>
                         )}
                       </CardContent>
                     </Card>

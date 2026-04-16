@@ -34,7 +34,10 @@ export async function GET(req: NextRequest) {
 
     const plan = (profile?.plan || "free") as TierKey;
     const tierConfig = STRIPE_TIERS[plan] || STRIPE_TIERS.free;
-    const costCapUsd = (PLAN_TIERS[plan] || PLAN_TIERS.free).dailyCostCapUsd;
+    const planTier = PLAN_TIERS[plan] || PLAN_TIERS.free;
+    const costCapUsd = planTier.dailyCostCapUsd;
+    const weeklyCostCapUsd = planTier.weeklyCostCapUsd;
+    const monthlyCostCapUsd = planTier.monthlyCostCapUsd;
 
     // Owner/tester always gets primary tier, unlimited — but show real usage counts
     if (profile?.role === "owner" || profile?.role === "tester") {
@@ -143,28 +146,48 @@ export async function GET(req: NextRequest) {
     const imageLimit = tierConfig.imagesPerDay;
     const imageRemaining = imageLimit <= 0 ? 0 : Math.max(0, imageLimit - imagesUsed);
 
-    // Daily cost cap — sum api_cost_events for this user from midnight
+    // Cost caps — daily, weekly, monthly
     let dailyCostUsd = 0;
+    let weeklyCostUsd = 0;
+    let monthlyCostUsd = 0;
     let costExceeded = false;
-    if (costCapUsd > 0) {
-      const svc = createServiceClient();
-      const { data: costRows } = await svc
-        .from("api_cost_events")
-        .select("cost")
-        .eq("user_id", user.id)
-        .gte("event_timestamp", todayStart.toISOString());
-      for (const row of costRows || []) {
-        dailyCostUsd += Number(row.cost) || 0;
-      }
-      costExceeded = dailyCostUsd >= costCapUsd;
+    let weeklyCostExceeded = false;
+    let monthlyCostExceeded = false;
+
+    const svc = createServiceClient();
+
+    // Monthly: 1st of current calendar month
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const { data: monthlyCostRows } = await svc
+      .from("api_cost_events")
+      .select("cost, event_timestamp")
+      .eq("user_id", user.id)
+      .gte("event_timestamp", monthStart.toISOString());
+
+    // Sum into daily/weekly/monthly buckets in one pass
+    const todayMs = todayStart.getTime();
+    const weekMs = weekStart.getTime();
+    for (const row of monthlyCostRows || []) {
+      const c = Number(row.cost) || 0;
+      const ts = new Date(row.event_timestamp).getTime();
+      monthlyCostUsd += c;
+      if (ts >= weekMs) weeklyCostUsd += c;
+      if (ts >= todayMs) dailyCostUsd += c;
     }
+
+    if (costCapUsd > 0) costExceeded = dailyCostUsd >= costCapUsd;
+    if (weeklyCostCapUsd > 0) weeklyCostExceeded = weeklyCostUsd >= weeklyCostCapUsd;
+    if (monthlyCostCapUsd > 0) monthlyCostExceeded = monthlyCostUsd >= monthlyCostCapUsd;
 
     // Determine model tier
     let modelTier: "primary" | "fallback" | "blocked";
     let degraded = false;
 
-    if (weeklyExceeded || costExceeded) {
-      // Weekly backstop OR daily cost cap hit — block completely
+    if (monthlyCostExceeded || weeklyCostExceeded || weeklyExceeded || costExceeded) {
+      // Monthly/weekly cost cap OR message backstop OR daily cost cap — block
       modelTier = "blocked";
       degraded = true;
     } else if (used >= primaryLimit) {
@@ -189,7 +212,13 @@ export async function GET(req: NextRequest) {
       daily_cost_usd: Number(dailyCostUsd.toFixed(6)),
       daily_cost_cap_usd: costCapUsd,
       cost_exceeded: costExceeded,
-      reason: costExceeded ? "daily_cost_cap" : weeklyExceeded ? "weekly_limit" : undefined,
+      weekly_cost_usd: Number(weeklyCostUsd.toFixed(6)),
+      weekly_cost_cap_usd: weeklyCostCapUsd,
+      weekly_cost_exceeded: weeklyCostExceeded,
+      monthly_cost_usd: Number(monthlyCostUsd.toFixed(6)),
+      monthly_cost_cap_usd: monthlyCostCapUsd,
+      monthly_cost_exceeded: monthlyCostExceeded,
+      reason: monthlyCostExceeded ? "monthly_cost_cap" : weeklyCostExceeded ? "weekly_cost_cap" : costExceeded ? "daily_cost_cap" : weeklyExceeded ? "weekly_limit" : undefined,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

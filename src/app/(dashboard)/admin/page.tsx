@@ -39,6 +39,7 @@ import {
 import { cn, timeAgo } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Profile } from "@/components/auth-provider";
+import { PLAN_PRICES_USD } from "@/lib/plan-config";
 
 function Sparkline({ points, className }: { points: number[]; className?: string }) {
   if (!points || points.length < 2) {
@@ -549,7 +550,7 @@ export default function AdminPage() {
                         {u.email} · joined {timeAgo(u.created_at)}
                       </p>
                     </div>
-                    {/* Usage stats inline */}
+                    {/* Usage stats + profitability inline */}
                     <div className="text-right shrink-0 hidden sm:block">
                       <p className="text-xs font-mono font-medium">
                         {(uu.usage_tokens || 0).toLocaleString()} <span className="text-[9px] text-muted-foreground/50">tok</span>
@@ -557,6 +558,17 @@ export default function AdminPage() {
                       <p className="text-[10px] font-mono text-muted-foreground/60">
                         ${(uu.usage_cost || 0).toFixed(4)}
                       </p>
+                      {(() => {
+                        const rev = PLAN_PRICES_USD[u.plan || "free"] || 0;
+                        const cost = uu.usage_cost || 0;
+                        const profit = rev - cost;
+                        if (rev === 0 && cost === 0) return null;
+                        return (
+                          <p className={cn("text-[9px] font-mono", profit >= 0 ? "text-emerald-400" : "text-red-400")}>
+                            {profit >= 0 ? "+" : ""}${profit.toFixed(2)}
+                          </p>
+                        );
+                      })()}
                     </div>
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
                   </button>

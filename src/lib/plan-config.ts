@@ -10,6 +10,10 @@ export const TIER_LIMITS = {
     fallbackModel: "llama-3.3-70b-free",
     // Daily USD hard cap — blocks further calls when exceeded
     dailyCostCapUsd: 0.10,
+    // Weekly cost pacing (like Claude) — blocks until next week
+    weeklyCostCapUsd: 0.50,
+    // Monthly cost ceiling — guarantees profitability per user
+    monthlyCostCapUsd: 2.00,
   },
   pro: {
     primaryMessagesPerDay: 150,
@@ -19,6 +23,8 @@ export const TIER_LIMITS = {
     primaryModel: "deepseek-v3.2",
     fallbackModel: "gemini-flash-lite",
     dailyCostCapUsd: 1.50,
+    weeklyCostCapUsd: 2.50,
+    monthlyCostCapUsd: 10.00,
   },
   max: {
     primaryMessagesPerDay: 400,
@@ -28,6 +34,8 @@ export const TIER_LIMITS = {
     primaryModel: "gpt-4.1",
     fallbackModel: "deepseek-v3.2",
     dailyCostCapUsd: 5.00,
+    weeklyCostCapUsd: 6.25,
+    monthlyCostCapUsd: 25.00,
   },
 } as const;
 
