@@ -172,7 +172,7 @@ export default function OnboardingPage() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {plan.price === 0 ? "14-day free trial" : `$${plan.price / 100}/month`}
+                          {plan.price === 0 ? "7-day free trial" : `$${plan.price / 100}/month`}
                         </p>
                       </div>
                       <div className={cn(
@@ -232,7 +232,7 @@ export default function OnboardingPage() {
                 <div className="flex items-center gap-3">
                   <Check className="h-5 w-5 text-green-400" />
                   <span className="text-sm">
-                    {selectedPlan === "free" ? "14-day trial activated" : `${PLANS[selectedPlan].name} plan active`}
+                    {selectedPlan === "free" ? "7-day trial activated" : `${PLANS[selectedPlan].name} plan active`}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">

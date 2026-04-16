@@ -45,7 +45,7 @@ export default function SignUpPage() {
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight">Create your account</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Start your 14-day free trial of Harv AI
+            Start your 7-day free trial of Harv AI
           </p>
         </div>
 

@@ -11,7 +11,7 @@ const STEPS = [
   {
     icon: UserPlus,
     title: "Sign Up",
-    desc: "Create your account in seconds. No credit card required. Start with a 14-day free trial.",
+    desc: "Create your account in seconds. No credit card required. Start with a 7-day free trial.",
   },
   {
     icon: Settings,
