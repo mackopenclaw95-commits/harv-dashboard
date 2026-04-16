@@ -107,8 +107,8 @@ const DEFAULT_SERVICES: ServiceInfo[] = [
 const PLANS = [
   {
     id: "free", name: "Free", price: "$0", period: "forever", highlight: false,
-    features: ["7-day free trial", "25 messages/day (Lite model)", "7 core agents", "5 projects"],
-    limits: { agents: 7, messages: 25, models: "Lite" },
+    features: ["7-day free trial", "10 messages/day (Lite model)", "7 core agents", "5 projects"],
+    limits: { agents: 7, messages: 10, models: "Lite" },
   },
   {
     id: "pro", name: "Pro", price: "$20", period: "/month", highlight: true,
@@ -117,7 +117,7 @@ const PLANS = [
   },
   {
     id: "max", name: "Max", price: "$50", period: "/month", highlight: false,
-    features: ["400 messages/day (Premium model)", "Unlimited standard messages after limit", "All agents + Image gen (30/day)", "Employee Harvs", "Custom integrations", "Admin dashboard"],
+    features: ["400 messages/day (Premium model)", "Unlimited standard messages after limit", "All agents + Image gen (30/day)", "Custom integrations", "Priority support"],
     limits: { agents: -1, messages: 400, models: "Premium" },
   },
 ];

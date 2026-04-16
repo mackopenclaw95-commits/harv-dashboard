@@ -2,18 +2,16 @@
 
 export const TIER_LIMITS = {
   free: {
-    primaryMessagesPerDay: 25,
-    weeklyBackstop: 100,
+    primaryMessagesPerDay: 10,
+    weeklyBackstop: 50,
     imagesPerDay: 0,
     videosPerDay: 0,
     primaryModel: "gemini-flash-lite",
-    fallbackModel: "llama-3.3-70b-free",
-    freeModel: "llama-3.3-70b-free",
-    // Daily cost: 80% → fallback, 100% → free model
-    dailyCostCapUsd: 0.10,
-    // Weekly/monthly — hard block (profitability guardrail)
-    weeklyCostCapUsd: 0.50,
-    monthlyCostCapUsd: 2.00,
+    fallbackModel: "",        // Free plan: blocked when limit hit (no fallback)
+    freeModel: "",
+    dailyCostCapUsd: 0.05,
+    weeklyCostCapUsd: 0.25,
+    monthlyCostCapUsd: 1.00,
   },
   pro: {
     primaryMessagesPerDay: 150,
@@ -88,7 +86,7 @@ export const PLANS = {
     price: 0,
     features: [
       "7-day free trial",
-      "25 messages/day (Lite model)",
+      "10 messages/day (Lite model)",
       "7 core agents (Harv, Research, Email, Scheduler, Learning)",
       "5 projects",
     ],
@@ -112,9 +110,8 @@ export const PLANS = {
       "400 messages/day (Premium model)",
       "Unlimited standard messages after limit",
       "All agents + Image gen (30/day) + Video gen (5/day)",
-      "Employee Harvs",
       "Custom integrations",
-      "Admin dashboard",
+      "Priority support",
     ],
   },
 } as const;

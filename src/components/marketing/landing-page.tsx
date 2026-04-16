@@ -71,7 +71,7 @@ export function LandingPage() {
       <MarketingNav />
 
       {/* ─── 1. HERO ─── */}
-      <section className="relative pt-36 md:pt-44 pb-24 md:pb-32 px-6">
+      <section className="relative pt-28 md:pt-36 pb-16 md:pb-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex justify-center mb-8" style={{ animation: "landing-fade-up 0.6s ease-out both" }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/[0.08] border border-primary/20 text-xs font-medium text-primary backdrop-blur-sm">
@@ -93,7 +93,7 @@ export function LandingPage() {
             budget. Plan trips. Build custom agents. All by just asking.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20" style={{ animation: "landing-fade-up 0.7s ease-out 0.3s both" }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14" style={{ animation: "landing-fade-up 0.7s ease-out 0.3s both" }}>
             <ButtonLink href="/auth/signup" size="lg" className="h-13 px-10 text-base gap-2.5 shadow-[0_0_30px_-5px] shadow-primary/25 hover:shadow-primary/40 transition-shadow">
               Start Free &mdash; No Card Required <ArrowRight className="h-4 w-4" />
             </ButtonLink>
@@ -114,9 +114,9 @@ export function LandingPage() {
       </section>
 
       {/* ─── 2. A DAY WITH HARV ─── */}
-      <section className="relative py-24 md:py-32 px-6">
+      <section className="relative py-16 md:py-20 px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">See It In Action</p>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">A day with Harv</h2>
             <p className="text-muted-foreground/60 max-w-lg mx-auto">Talk to Harv like a personal assistant. Here&apos;s what a real day looks like.</p>
@@ -141,9 +141,9 @@ export function LandingPage() {
       </section>
 
       {/* ─── 3. NOT JUST A CHATBOT ─── */}
-      <section className="relative py-24 md:py-32 px-6">
+      <section className="relative py-16 md:py-20 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Why Harv</p>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Not just another<span className="text-primary"> chatbot</span></h2>
             <p className="text-muted-foreground/60 max-w-lg mx-auto">ChatGPT answers questions. Harv actually <em>does</em> things.</p>
@@ -166,9 +166,9 @@ export function LandingPage() {
       </section>
 
       {/* ─── 4. AGENT BUILDER ─── */}
-      <section className="relative py-24 md:py-32 px-6">
+      <section className="relative py-16 md:py-20 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Build Your Own</p>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Create custom agents<br className="hidden md:block" /><span className="text-primary"> in 60 seconds</span></h2>
             <p className="text-muted-foreground/60 max-w-xl mx-auto">No code. No config files. Describe what you want in plain English and Harv builds it. Set it on a schedule and forget about it.</p>
@@ -231,9 +231,9 @@ export function LandingPage() {
       </section>
 
       {/* ─── 5. TRUST ─── */}
-      <section className="relative py-24 md:py-32 px-6">
+      <section className="relative py-16 md:py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Built on Trust</p>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">We know the fears.<br className="hidden md:block" /><span className="text-primary"> We built for them.</span></h2>
             <p className="text-muted-foreground/60 max-w-lg mx-auto">AI agents that take real actions are scary. What if it sends the wrong email? What if it overspends? Here&apos;s how Harv handles it.</p>
@@ -255,7 +255,7 @@ export function LandingPage() {
       </section>
 
       {/* ─── 6. DEMO VIDEO ─── */}
-      <section id="demo" className="relative py-24 md:py-32 px-6">
+      <section id="demo" className="relative py-16 md:py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">See It Live</p>
@@ -275,9 +275,9 @@ export function LandingPage() {
       </section>
 
       {/* ─── 7. PRICING ─── */}
-      <section className="relative py-24 md:py-32 px-6">
+      <section className="relative py-16 md:py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Pricing</p>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Start free. Upgrade<span className="text-primary"> when you&apos;re ready</span></h2>
             <p className="text-muted-foreground/60 max-w-lg mx-auto">No hidden fees. No credit card to start. Cancel anytime.</p>
@@ -309,7 +309,7 @@ export function LandingPage() {
       </section>
 
       {/* ─── 8. FINAL CTA ─── */}
-      <section className="relative py-24 md:py-32 px-6">
+      <section className="relative py-16 md:py-20 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 border border-primary/15 mb-8">
             <Zap className="h-6 w-6 text-primary" />

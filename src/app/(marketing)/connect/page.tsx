@@ -92,7 +92,7 @@ export default function IntegrationsPage() {
     <div className="pt-24 pb-20 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-12">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">Integrations</p>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-5">
             Plugs into your <span className="text-primary">real life</span>
@@ -104,7 +104,7 @@ export default function IntegrationsPage() {
         </div>
 
         {/* Live Integrations */}
-        <div className="mb-20">
+        <div className="mb-12">
           <div className="flex items-center gap-3 mb-8">
             <h2 className="text-2xl font-bold">Connected</h2>
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -147,7 +147,7 @@ export default function IntegrationsPage() {
         </div>
 
         {/* Coming Soon */}
-        <div className="mb-20">
+        <div className="mb-12">
           <div className="flex items-center gap-3 mb-8">
             <h2 className="text-2xl font-bold">Coming Soon</h2>
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06]">

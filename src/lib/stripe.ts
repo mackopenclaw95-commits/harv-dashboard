@@ -63,12 +63,11 @@ export const PLANS = {
     price: 5000, // $50.00 in cents
     priceId: process.env.STRIPE_MAX_PRICE_ID || process.env.STRIPE_BUSINESS_PRICE_ID || "price_max_placeholder",
     features: [
-      "400 messages/day (GPT-4.1)",
-      "Unlimited DeepSeek V3.2 after limit",
+      "400 messages/day (Premium model)",
+      "Unlimited standard messages after limit",
       "All agents + Image gen (30/day)",
-      "Employee Harvs",
       "Custom integrations",
-      "Admin dashboard",
+      "Priority support",
     ],
     limits: { messagesPerDay: -1, projects: -1 },
   },

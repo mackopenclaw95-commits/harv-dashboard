@@ -335,3 +335,47 @@ nextjs-portal { display: none !important; }
     transform: translateY(0);
   }
 }
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Marketing page polish ─── */
+
+/* Subtle section dividers */
+.marketing-section {
+  border-top: 1px solid oklch(1 0 0 / 4%);
+}
+
+/* Scroll-triggered fade-in for marketing elements */
+.fade-section {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: landing-fade-up 0.6s ease-out forwards;
+}
+
+/* Card hover lift — consistent across marketing */
+.marketing-card {
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.marketing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px oklch(0 0 0 / 20%);
+}
+
+/* Nav link underline animation */
+nav a[href^="/"]::after {
+  content: "";
+  display: block;
+  height: 1.5px;
+  background: oklch(0.78 0.145 192);
+  transform: scaleX(0);
+  transition: transform 0.25s ease;
+  transform-origin: left;
+  border-radius: 1px;
+  margin-top: 2px;
+}
+nav a[href^="/"]:hover::after {
+  transform: scaleX(1);
+}

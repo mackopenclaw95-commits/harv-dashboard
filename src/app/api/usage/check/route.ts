@@ -192,17 +192,19 @@ export async function GET(req: NextRequest) {
     const isTester = profile?.role === "tester";
     const dailyCostPct = costCapUsd > 0 ? dailyCostUsd / costCapUsd : 0;
 
+    const hasFallback = !!tierConfig.fallbackModel;
+
     if (monthlyCostExceeded || weeklyCostExceeded || weeklyExceeded) {
       // Hard caps (profitability guardrails) — block completely
       modelTier = isTester ? "primary" : "blocked";
       degraded = !isTester;
     } else if (costExceeded) {
-      // Daily cost cap hit — degrade to free model (cheapest tier)
-      modelTier = isTester ? "primary" : "free";
+      // Daily cost cap hit — degrade to free model if available, else block
+      modelTier = isTester ? "primary" : (hasFallback ? "free" : "blocked");
       degraded = !isTester;
     } else if (dailyCostPct >= 0.8 || used >= primaryLimit) {
-      // 80% of daily cost cap OR message limit hit — degrade to fallback
-      modelTier = isTester ? "primary" : "fallback";
+      // 80% of daily cost cap OR message limit hit — degrade if fallback exists, else block
+      modelTier = isTester ? "primary" : (hasFallback ? "fallback" : "blocked");
       degraded = !isTester;
     } else {
       modelTier = "primary";

@@ -43,7 +43,7 @@ export default function AgentsPage() {
     <div className="pt-24 pb-20 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-12">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 mb-3">The Team</p>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-5">
             Meet your <span className="text-primary">AI agents</span>
@@ -55,7 +55,7 @@ export default function AgentsPage() {
         </div>
 
         {/* Live Agents */}
-        <div className="mb-20">
+        <div className="mb-12">
           <h2 className="text-2xl font-bold mb-8">Live Agents</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {AGENTS.map((agent) => (
@@ -85,7 +85,7 @@ export default function AgentsPage() {
         </div>
 
         {/* Background Agents */}
-        <div className="mb-20">
+        <div className="mb-12">
           <h2 className="text-2xl font-bold mb-3">Background Workers</h2>
           <p className="text-sm text-muted-foreground/50 mb-8">These agents run automatically behind the scenes — no interaction needed.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -107,7 +107,7 @@ export default function AgentsPage() {
         </div>
 
         {/* Agent Builder */}
-        <div className="mb-20">
+        <div className="mb-12">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Build your own agents</h2>
             <p className="text-muted-foreground/60 max-w-lg mx-auto">No code. No config files. Just describe what you want and Harv builds it in under a minute.</p>

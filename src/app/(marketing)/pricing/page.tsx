@@ -10,15 +10,13 @@ export const metadata: Metadata = {
 
 const COMPARISON = [
   { feature: "Trial period", free: "7 days", pro: "—", max: "—" },
-  { feature: "Premium messages / day", free: "25", pro: "150", max: "400" },
+  { feature: "Premium messages / day", free: "10", pro: "150", max: "400" },
   { feature: "Primary AI model", free: "Lite", pro: "Standard", max: "Premium" },
-  { feature: "Fallback model", free: "Lite", pro: "Lite", max: "Standard" },
+  { feature: "Fallback model", free: "Blocked", pro: "Lite", max: "Standard" },
   { feature: "Image generation", free: false, pro: "10 / day", max: "30 / day" },
   { feature: "All agents", free: false, pro: true, max: true },
   { feature: "Projects", free: "5", pro: "Unlimited", max: "Unlimited" },
-  { feature: "Employee Harvs", free: false, pro: false, max: true },
   { feature: "Custom integrations", free: false, pro: false, max: true },
-  { feature: "Admin dashboard", free: false, pro: false, max: true },
   { feature: "Priority support", free: false, pro: true, max: true },
 ];
 
