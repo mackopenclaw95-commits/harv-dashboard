@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/features", label: "Features" },
+  { href: "/meet-the-agents", label: "Agents" },
+  { href: "/connect", label: "Integrations" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/about", label: "About" },
 ];
 
 export function MarketingNav() {
