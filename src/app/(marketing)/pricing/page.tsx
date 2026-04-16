@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 const COMPARISON = [
   { feature: "Trial period", free: "7 days", pro: "—", max: "—" },
   { feature: "Premium messages / day", free: "25", pro: "150", max: "400" },
-  { feature: "Primary AI model", free: "Gemini Flash Lite", pro: "DeepSeek V3.2", max: "GPT-4.1" },
-  { feature: "Fallback model", free: "Qwen3 8B", pro: "Gemini Flash Lite", max: "DeepSeek V3.2" },
+  { feature: "Primary AI model", free: "Lite", pro: "Standard", max: "Premium" },
+  { feature: "Fallback model", free: "Lite", pro: "Lite", max: "Standard" },
   { feature: "Image generation", free: false, pro: "10 / day", max: "30 / day" },
   { feature: "All agents", free: false, pro: true, max: true },
   { feature: "Projects", free: "5", pro: "Unlimited", max: "Unlimited" },

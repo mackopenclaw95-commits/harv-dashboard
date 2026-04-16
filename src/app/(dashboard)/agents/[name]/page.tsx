@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { saveCustomAutomation, saveCustomAgent } from "@/lib/preferences";
+import { displayModelName } from "@/lib/plan-config";
 import type { CustomAutomation, CustomAgent } from "@/lib/preferences";
 import {
   Card,
@@ -138,7 +139,7 @@ export default function AgentDetailPage({
   }, [agentName]);
 
   const modelShort = agent
-    ? (agent.model || "none").split("/").pop()
+    ? displayModelName(agent.model || "none")
     : "...";
   const costStr = agent
     ? agent.cost_per_call > 0

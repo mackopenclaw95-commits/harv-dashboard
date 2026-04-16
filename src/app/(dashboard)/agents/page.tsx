@@ -41,7 +41,7 @@ import { saveAgentMessage } from "@/lib/chat-history";
 import { getRoutingMessage } from "@/lib/constants";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
-import { TIER_LIMITS, type TierKey } from "@/lib/plan-config";
+import { TIER_LIMITS, displayModelName, type TierKey } from "@/lib/plan-config";
 import {
   AGENT_ICONS,
   SUB_AGENT_MAP,
@@ -62,25 +62,7 @@ import {
 
 function simplifyModel(model: string): string {
   if (!model || model === "none" || model === "tbd") return model;
-  const m = model.toLowerCase();
-  if (m.includes("claude") && m.includes("haiku")) return "Haiku 4.5";
-  if (m.includes("claude") && m.includes("sonnet")) return "Sonnet 4";
-  if (m.includes("claude") && m.includes("opus")) return "Opus 4";
-  if (m.includes("grok-4.1")) return "Grok 4.1";
-  if (m.includes("grok-3")) return "Grok 3";
-  if (m.includes("deepseek-chat")) return "DeepSeek Chat";
-  if (m.includes("deepseek-v3.2")) return "DeepSeek V3.2";
-  if (m.includes("deepseek-r1")) return "DeepSeek R1";
-  if (m.includes("minimax-m2")) return "MiniMax M2.1";
-  if (m.includes("qwen3-8b")) return "Qwen3 8B";
-  if (m.includes("qwen2.5:0.5b")) return "Qwen 2.5 0.5B";
-  if (m.includes("qwen2.5")) return "Qwen 2.5";
-  if (m.includes("llama-3.3-70b")) return "Llama 3.3 70B";
-  if (m.includes("gemma-3-4b")) return "Gemma 3 4B";
-  if (m.includes("imagen-4")) return "Imagen 4.0";
-  if (m.includes("gemini")) return "Gemini";
-  // Fallback: strip date suffixes and take last segment
-  return model.split("/").pop()?.replace(/-\d{8,}$/, "") || model;
+  return displayModelName(model);
 }
 
 
@@ -640,19 +622,19 @@ function AgentDetailsModal({ agent, onClose, harvPlanModel }: { agent: Agent | n
             <div className="flex items-center gap-2 text-[11px]">
               <div className="flex items-center gap-1.5 rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20 px-2.5 py-1.5">
                 <Search className="h-3 w-3 text-blue-400" />
-                <span className="text-blue-400 font-medium">Grok</span>
-                <span className="text-blue-400/60">Search</span>
+                <span className="text-blue-400 font-medium">Search</span>
+                <span className="text-blue-400/60">Engine</span>
               </div>
               <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
               <div className="flex items-center gap-1.5 rounded-lg bg-purple-500/10 ring-1 ring-purple-500/20 px-2.5 py-1.5">
                 <Cpu className="h-3 w-3 text-purple-400" />
-                <span className="text-purple-400 font-medium">Kimi K2</span>
-                <span className="text-purple-400/60">Analysis</span>
+                <span className="text-purple-400 font-medium">Analysis</span>
+                <span className="text-purple-400/60">Engine</span>
               </div>
               <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
               <div className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/20 px-2.5 py-1.5">
                 <Shield className="h-3 w-3 text-emerald-400" />
-                <span className="text-emerald-400 font-medium">DeepSeek</span>
+                <span className="text-emerald-400 font-medium">Standard</span>
                 <span className="text-emerald-400/60">Fallback</span>
               </div>
             </div>
@@ -1310,8 +1292,8 @@ const FALLBACK_AGENTS: Agent[] = [
   { name: "TikTok Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "TikTok video digest, transcription, and implementation guide", cost_per_call: 0.001 },
   { name: "Twitter Digest", status: "LIVE", model: "deepseek/deepseek-chat-v3-0324", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Twitter/X thread summarization and implementation guide", cost_per_call: 0.001 },
   { name: "Media Manager", status: "LIVE", model: "orchestrator", type: "agent", tier: "AGENTS", provider: "keyword-router", description: "Media orchestrator — routes to Image Gen, Video Gen, and Video Editor", cost_per_call: 0 },
-  { name: "Image Gen", status: "LIVE", model: "imagen-4.0-fast-generate-001", type: "agent", tier: "AGENTS", provider: "gemini", description: "Generates images via Imagen 4.0, sends to Telegram", cost_per_call: 0.003 },
-  { name: "Video Gen", status: "LIVE", model: "bytedance/seedance-1-5-pro", type: "agent", tier: "AGENTS", provider: "openrouter", description: "AI video generation from text prompts (Seedance 1.5 Pro)", cost_per_call: 0.005 },
+  { name: "Image Gen", status: "LIVE", model: "imagen-4.0-fast-generate-001", type: "agent", tier: "AGENTS", provider: "gemini", description: "AI image generation, sends to Telegram", cost_per_call: 0.003 },
+  { name: "Video Gen", status: "LIVE", model: "bytedance/seedance-1-5-pro", type: "agent", tier: "AGENTS", provider: "openrouter", description: "AI video generation from text prompts", cost_per_call: 0.005 },
   { name: "Video Editor", status: "LIVE", model: "ffmpeg+deepseek", type: "agent", tier: "AGENTS", provider: "local+openrouter", description: "Video editing — trim, resize, crop, speed, rotate, subtitles, convert", cost_per_call: 0 },
   { name: "Image Editor", status: "LIVE", model: "pillow+deepseek", type: "agent", tier: "AGENTS", provider: "local+openrouter", description: "Image editing — resize, crop, rotate, filters, text overlay, convert", cost_per_call: 0 },
   { name: "Scheduler", status: "LIVE", model: "minimax/minimax-m2.1", type: "agent", tier: "AGENTS", provider: "openrouter", description: "Calendar and reminder management", cost_per_call: 0.00046 },

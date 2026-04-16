@@ -8,11 +8,11 @@ export const TIER_LIMITS = {
     videosPerDay: 0,
     primaryModel: "gemini-flash-lite",
     fallbackModel: "llama-3.3-70b-free",
-    // Daily USD hard cap — blocks further calls when exceeded
+    freeModel: "llama-3.3-70b-free",
+    // Daily cost: 80% → fallback, 100% → free model
     dailyCostCapUsd: 0.10,
-    // Weekly cost pacing (like Claude) — blocks until next week
+    // Weekly/monthly — hard block (profitability guardrail)
     weeklyCostCapUsd: 0.50,
-    // Monthly cost ceiling — guarantees profitability per user
     monthlyCostCapUsd: 2.00,
   },
   pro: {
@@ -22,6 +22,7 @@ export const TIER_LIMITS = {
     videosPerDay: 0,
     primaryModel: "deepseek-v3.2",
     fallbackModel: "gemini-flash-lite",
+    freeModel: "llama-3.3-70b-free",
     dailyCostCapUsd: 1.50,
     weeklyCostCapUsd: 2.50,
     monthlyCostCapUsd: 10.00,
@@ -33,6 +34,7 @@ export const TIER_LIMITS = {
     videosPerDay: 5,
     primaryModel: "gpt-4.1",
     fallbackModel: "deepseek-v3.2",
+    freeModel: "gemini-flash-lite",
     dailyCostCapUsd: 5.00,
     weeklyCostCapUsd: 6.25,
     monthlyCostCapUsd: 25.00,
@@ -86,7 +88,7 @@ export const PLANS = {
     price: 0,
     features: [
       "7-day free trial",
-      "25 messages/day (Gemini Flash Lite)",
+      "25 messages/day (Lite model)",
       "7 core agents (Harv, Research, Email, Scheduler, Learning)",
       "5 projects",
     ],
@@ -95,8 +97,8 @@ export const PLANS = {
     name: "Pro",
     price: 2000,
     features: [
-      "150 messages/day (DeepSeek V3.2)",
-      "Unlimited standard messages after limit",
+      "150 messages/day (Standard model)",
+      "Unlimited lite messages after limit",
       "All agents unlocked",
       "Image generation (10/day)",
       "Unlimited projects",
@@ -107,8 +109,8 @@ export const PLANS = {
     name: "Max",
     price: 5000,
     features: [
-      "400 messages/day (GPT-4.1)",
-      "Unlimited DeepSeek V3.2 after limit",
+      "400 messages/day (Premium model)",
+      "Unlimited standard messages after limit",
       "All agents + Image gen (30/day) + Video gen (5/day)",
       "Employee Harvs",
       "Custom integrations",
@@ -119,6 +121,42 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS;
 export type TierKey = keyof typeof TIER_LIMITS;
+
+// ─── User-facing model names (hide provider brands) ───
+const MODEL_DISPLAY_NAMES: Record<string, string> = {
+  // Premium tier
+  "gpt-4.1": "Premium",
+  "deepseek-r1": "Premium Reasoning",
+  "grok-4.1": "Premium Search",
+  "grok-3": "Premium Search",
+  // Standard tier
+  "deepseek-v3.2": "Standard",
+  "deepseek-chat": "Standard",
+  "minimax-m2.1": "Standard Fast",
+  // Lite tier
+  "gemini-flash-lite": "Lite",
+  "llama-3.3-70b-free": "Lite",
+  "qwen3-8b": "Lite",
+  "gemma-3-4b": "Lite",
+  "qwen2.5": "Lite",
+  // Media
+  "imagen-4": "Image Engine",
+  "imagen-4.0": "Image Engine",
+  "dall-e-3": "Image Engine",
+  "whisper": "Audio Engine",
+  "seedance": "Video Engine",
+};
+
+/** Convert internal model ID to user-friendly display name */
+export function displayModelName(model: string): string {
+  if (!model || model === "none" || model === "tbd") return model;
+  const m = model.toLowerCase();
+  for (const [key, label] of Object.entries(MODEL_DISPLAY_NAMES)) {
+    if (m.includes(key)) return label;
+  }
+  // Fallback: generic label so we never leak provider names
+  return "Standard";
+}
 
 // ─── Proration ─────────────────────────────────────────
 export const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, max: 2 };

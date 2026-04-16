@@ -329,7 +329,7 @@ export function ChatPanel({
     setInput("");
 
     // Check usage limits before sending
-    let currentModelTier: "primary" | "fallback" | "blocked" = "primary";
+    let currentModelTier: "primary" | "fallback" | "free" | "blocked" = "primary";
     try {
       const agentParam = agentName ? `?agent=${encodeURIComponent(agentName)}` : "";
       const usageRes = await fetch(`/api/usage/check${agentParam}`);
@@ -387,7 +387,15 @@ export function ChatPanel({
           return;
         }
         currentModelTier = usage.model_tier || "primary";
-        if (usage.degraded) {
+        if (usage.degraded && currentModelTier === "free") {
+          toast("Switching to lite model — daily budget nearly spent. Upgrade for more.", {
+            duration: 4000,
+            action: {
+              label: "Upgrade",
+              onClick: () => window.location.href = "/settings?tab=billing",
+            },
+          });
+        } else if (usage.degraded) {
           toast("Using standard model — daily premium limit reached. Upgrade for more.", {
             duration: 4000,
             action: {
@@ -459,13 +467,15 @@ export function ChatPanel({
     }
 
     try {
+      // VPS only knows "primary"/"fallback" — map "free" to "fallback"
+      const vpsTier = currentModelTier === "free" ? "fallback" : currentModelTier;
       const fetchBody =
         apiEndpoint === "/api/chat/agent"
           ? {
               message: trimmed,
               agent: agentName,
               plan: profile?.plan || "free",
-              model_tier: currentModelTier,
+              model_tier: vpsTier,
               ...(projectContext ? { context: projectContext } : {}),
             }
           : {
@@ -474,7 +484,7 @@ export function ChatPanel({
                 content: m.content,
               })),
               plan: profile?.plan || "free",
-              model_tier: currentModelTier,
+              model_tier: vpsTier,
               ...(projectContext ? { context: projectContext } : {}),
             };
 

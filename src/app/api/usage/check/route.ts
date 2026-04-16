@@ -184,17 +184,24 @@ export async function GET(req: NextRequest) {
     if (weeklyCostCapUsd > 0) weeklyCostExceeded = weeklyCostUsd >= weeklyCostCapUsd;
     if (monthlyCostCapUsd > 0) monthlyCostExceeded = monthlyCostUsd >= monthlyCostCapUsd;
 
-    // Determine model tier
-    let modelTier: "primary" | "fallback" | "blocked";
+    // Determine model tier with graceful degradation
+    // Chain: primary → fallback → free → blocked
+    let modelTier: "primary" | "fallback" | "free" | "blocked";
     let degraded = false;
 
     const isTester = profile?.role === "tester";
-    if (monthlyCostExceeded || weeklyCostExceeded || weeklyExceeded || costExceeded) {
-      // Monthly/weekly cost cap OR message backstop OR daily cost cap — block
+    const dailyCostPct = costCapUsd > 0 ? dailyCostUsd / costCapUsd : 0;
+
+    if (monthlyCostExceeded || weeklyCostExceeded || weeklyExceeded) {
+      // Hard caps (profitability guardrails) — block completely
       modelTier = isTester ? "primary" : "blocked";
       degraded = !isTester;
-    } else if (used >= primaryLimit) {
-      // Past daily primary limit — degrade to fallback model
+    } else if (costExceeded) {
+      // Daily cost cap hit — degrade to free model (cheapest tier)
+      modelTier = isTester ? "primary" : "free";
+      degraded = !isTester;
+    } else if (dailyCostPct >= 0.8 || used >= primaryLimit) {
+      // 80% of daily cost cap OR message limit hit — degrade to fallback
       modelTier = isTester ? "primary" : "fallback";
       degraded = !isTester;
     } else {
@@ -202,7 +209,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      allowed: isTester ? true : modelTier !== "blocked",
+      allowed: isTester ? true : (modelTier !== "blocked"),
       used,
       limit: primaryLimit,
       remaining: Math.max(0, primaryLimit - used),

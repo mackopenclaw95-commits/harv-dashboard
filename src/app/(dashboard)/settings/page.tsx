@@ -36,7 +36,7 @@ import {
   getTimezone, setTimezone as saveTimezone,
   resolveTimezone, TIMEZONE_OPTIONS,
 } from "@/lib/preferences";
-import { TIER_LIMITS, FREE_PLAN_AGENTS, type TierKey } from "@/lib/plan-config";
+import { TIER_LIMITS, FREE_PLAN_AGENTS, displayModelName, type TierKey } from "@/lib/plan-config";
 import {
   getSidebarOrder, setSidebarOrder, DEFAULT_SIDEBAR_ORDER,
 } from "@/lib/sidebar-order";
@@ -95,9 +95,9 @@ interface HealthStatus { status: string; uptime?: string }
 interface ServiceInfo { name: string; status: "active" | "needs auth" | "checking" | "unknown" }
 
 const DEFAULT_SERVICES: ServiceInfo[] = [
-  { name: "OpenRouter", status: "active" },
-  { name: "OpenAI", status: "active" },
-  { name: "DeepSeek", status: "active" },
+  { name: "AI Engine", status: "active" },
+  { name: "Image Engine", status: "active" },
+  { name: "Audio Engine", status: "active" },
   { name: "Google OAuth", status: "active" },
   { name: "Telegram Bot", status: "active" },
   { name: "GitHub CLI", status: "needs auth" },
@@ -107,18 +107,18 @@ const DEFAULT_SERVICES: ServiceInfo[] = [
 const PLANS = [
   {
     id: "free", name: "Free", price: "$0", period: "forever", highlight: false,
-    features: ["7-day free trial", "25 messages/day (Gemini Flash Lite)", "7 core agents", "5 projects"],
-    limits: { agents: 7, messages: 25, models: "Basic" },
+    features: ["7-day free trial", "25 messages/day (Lite model)", "7 core agents", "5 projects"],
+    limits: { agents: 7, messages: 25, models: "Lite" },
   },
   {
     id: "pro", name: "Pro", price: "$20", period: "/month", highlight: true,
-    features: ["All agents unlocked", "150 messages/day (DeepSeek V3.2)", "Unlimited standard messages", "Image generation (10/day)", "Unlimited projects", "Priority support"],
-    limits: { agents: -1, messages: 150, models: "Premium" },
+    features: ["All agents unlocked", "150 messages/day (Standard model)", "Unlimited lite messages", "Image generation (10/day)", "Unlimited projects", "Priority support"],
+    limits: { agents: -1, messages: 150, models: "Standard" },
   },
   {
     id: "max", name: "Max", price: "$50", period: "/month", highlight: false,
-    features: ["400 messages/day (GPT-4.1)", "Unlimited DeepSeek V3.2 after limit", "All agents + Image gen (30/day)", "Employee Harvs", "Custom integrations", "Admin dashboard"],
-    limits: { agents: -1, messages: 400, models: "All" },
+    features: ["400 messages/day (Premium model)", "Unlimited standard messages after limit", "All agents + Image gen (30/day)", "Employee Harvs", "Custom integrations", "Admin dashboard"],
+    limits: { agents: -1, messages: 400, models: "Premium" },
   },
 ];
 
@@ -934,7 +934,11 @@ function SettingsPage() {
             const availableAgents = currentPlan === "free" ? FREE_PLAN_AGENTS.size : -1;
             const agentLimit = currentPlan === "free" ? FREE_PLAN_AGENTS.size : -1;
             const modelTier = usageData?.model_tier || "primary";
-            const modelName = modelTier === "fallback" ? tier.fallbackModel : tier.primaryModel;
+            const modelName = displayModelName(
+              modelTier === "free" ? tier.freeModel :
+              modelTier === "fallback" ? tier.fallbackModel :
+              tier.primaryModel
+            );
 
             return (
               <>
@@ -1049,7 +1053,7 @@ function SettingsPage() {
                       </div>
                       <div>
                         <p className="text-muted-foreground">Fallback model</p>
-                        <p className="font-medium capitalize">{tier.fallbackModel}</p>
+                        <p className="font-medium">{displayModelName(tier.fallbackModel)}</p>
                       </div>
                     </div>
                   </CardContent>

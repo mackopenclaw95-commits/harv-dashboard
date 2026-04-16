@@ -28,27 +28,27 @@ export const metadata: Metadata = {
 };
 
 const LIVE_AGENTS = [
-  { name: "Harv", icon: Bot, desc: "Main brain — coordinates all agents with personality and context awareness", model: "DeepSeek V3.2" },
-  { name: "Research", icon: Search, desc: "Deep web research, product comparisons, market analysis", model: "Grok 4.1" },
-  { name: "Finance", icon: TrendingUp, desc: "Budget tracking, transaction logging, Plaid bank sync", model: "DeepSeek V3.2" },
-  { name: "Trading", icon: BarChart3, desc: "Polymarket + Kalshi paper trading, crypto tracking", model: "DeepSeek V3.2" },
-  { name: "Scheduler", icon: Calendar, desc: "Calendar and reminder management with Google Calendar integration", model: "MiniMax M2.1" },
-  { name: "Email", icon: Mail, desc: "Reads, sends, and archives Gmail with AI summarization", model: "MiniMax M2.1" },
-  { name: "Journal", icon: FileText, desc: "Daily memory — session compression, context building over time", model: "MiniMax M2.1" },
-  { name: "Music", icon: Music, desc: "Spotify API — playback, playlists, recommendations", model: "DeepSeek V3.2" },
-  { name: "Sports", icon: Activity, desc: "Live scores, standings, schedules, injury reports", model: "DeepSeek V3.2" },
-  { name: "Learning", icon: BookOpen, desc: "Research assistant, tutor, flashcards, quizzes", model: "DeepSeek V3.2" },
-  { name: "Travel", icon: Plane, desc: "Trip planning, itineraries, destination research", model: "MiniMax M2.1" },
-  { name: "Auto Marketing", icon: Sparkles, desc: "Content strategy, social media, Twitter auto-posting", model: "DeepSeek V3.2" },
-  { name: "Image Gen", icon: Image, desc: "AI image generation via Imagen 4.0", model: "Imagen 4.0" },
-  { name: "Video Digest", icon: Video, desc: "Video transcripts, digests, and actionable breakdowns", model: "DeepSeek V3.2" },
-  { name: "YouTube Digest", icon: Video, desc: "YouTube video summaries and implementation notes", model: "DeepSeek V3.2" },
+  { name: "Harv", icon: Bot, desc: "Main brain — coordinates all agents with personality and context awareness", model: "Standard" },
+  { name: "Research", icon: Search, desc: "Deep web research, product comparisons, market analysis", model: "Premium Search" },
+  { name: "Finance", icon: TrendingUp, desc: "Budget tracking, transaction logging, Plaid bank sync", model: "Standard" },
+  { name: "Trading", icon: BarChart3, desc: "Polymarket + Kalshi paper trading, crypto tracking", model: "Standard" },
+  { name: "Scheduler", icon: Calendar, desc: "Calendar and reminder management with Google Calendar integration", model: "Standard Fast" },
+  { name: "Email", icon: Mail, desc: "Reads, sends, and archives Gmail with AI summarization", model: "Standard Fast" },
+  { name: "Journal", icon: FileText, desc: "Daily memory — session compression, context building over time", model: "Standard Fast" },
+  { name: "Music", icon: Music, desc: "Spotify API — playback, playlists, recommendations", model: "Standard" },
+  { name: "Sports", icon: Activity, desc: "Live scores, standings, schedules, injury reports", model: "Standard" },
+  { name: "Learning", icon: BookOpen, desc: "Research assistant, tutor, flashcards, quizzes", model: "Standard" },
+  { name: "Travel", icon: Plane, desc: "Trip planning, itineraries, destination research", model: "Standard Fast" },
+  { name: "Auto Marketing", icon: Sparkles, desc: "Content strategy, social media, Twitter auto-posting", model: "Standard" },
+  { name: "Image Gen", icon: Image, desc: "AI image generation", model: "Image Engine" },
+  { name: "Video Digest", icon: Video, desc: "Video transcripts, digests, and actionable breakdowns", model: "Standard" },
+  { name: "YouTube Digest", icon: Video, desc: "YouTube video summaries and implementation notes", model: "Standard" },
 ];
 
 const BACKGROUND_AGENTS = [
-  { name: "Guardian", icon: Shield, desc: "System monitor — 24/7 health checks and alerting", model: "Qwen3 8B" },
-  { name: "Medic", icon: Heart, desc: "Error scanner — auto-detects and fixes bugs every 6 hours", model: "Qwen3 8B" },
-  { name: "Heartbeat", icon: Activity, desc: "System pulse — processes tasks and syncs data", model: "Qwen3 8B" },
+  { name: "Guardian", icon: Shield, desc: "System monitor — 24/7 health checks and alerting", model: "Lite" },
+  { name: "Medic", icon: Heart, desc: "Error scanner — auto-detects and fixes bugs every 6 hours", model: "Lite" },
+  { name: "Heartbeat", icon: Activity, desc: "System pulse — processes tasks and syncs data", model: "Lite" },
 ];
 
 const PLANNED_AGENTS = [
