@@ -279,11 +279,11 @@ export async function getAgentsWithConversations(): Promise<string[]> {
 /** Full-text search across all messages */
 export async function searchMessages(
   query: string,
-  limit = 30
+  limit = 30,
+  options?: { agentName?: string; dateRange?: "today" | "week" | "month" | "all" }
 ): Promise<
   (ChatMessage & { conversation: Conversation })[]
 > {
-  // Use ilike for simple search (works without FTS setup too)
   const uid = await getUserId();
   let q = supabase
     .from("messages")
@@ -292,13 +292,58 @@ export async function searchMessages(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (uid) q = q.eq("user_id", uid);
+
+  if (options?.agentName) {
+    q = q.eq("conversation.agent_name", options.agentName);
+  }
+
+  if (options?.dateRange && options.dateRange !== "all") {
+    const now = new Date();
+    let cutoff: Date = now;
+    if (options.dateRange === "today") {
+      cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (options.dateRange === "week") {
+      cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (options.dateRange === "month") {
+      cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    q = q.gte("created_at", cutoff.toISOString());
+  }
+
   const { data, error } = await q;
 
   if (error) throw error;
-  return (data || []).map((m) => ({
+  const results = (data || []).map((m) => ({
     ...m,
     conversation: m.conversation as unknown as Conversation,
   }));
+
+  if (options?.agentName) {
+    return results.filter((m) => m.conversation?.agent_name === options.agentName);
+  }
+  return results;
+}
+
+/** Get list of unique agent names from conversations */
+export async function getConversationAgentNames(): Promise<string[]> {
+  const uid = await getUserId();
+  let query = supabase
+    .from("conversations")
+    .select("agent_name")
+    .neq("status", "deleted")
+    .order("updated_at", { ascending: false });
+  if (uid) query = query.eq("user_id", uid);
+  const { data } = await query;
+  if (!data) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const row of data) {
+    if (row.agent_name && !seen.has(row.agent_name)) {
+      seen.add(row.agent_name);
+      result.push(row.agent_name);
+    }
+  }
+  return result;
 }
 
 /** Soft-delete a conversation (marks as deleted, removes messages) */
