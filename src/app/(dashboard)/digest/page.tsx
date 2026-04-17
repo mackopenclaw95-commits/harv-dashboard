@@ -268,16 +268,59 @@ export default function DigestPage() {
     if (!url.trim()) { toast.error("Paste a URL"); return; }
     setSendingToClaude(true);
     setClaudeSessionUrl(null);
+
+    // Step 1: fetch transcript via VPS (Claude Code's sandbox can't reach YouTube).
+    // On a cached video this is ~2s; fresh videos up to ~55s before we give up and
+    // fire the routine without a transcript — Claude Code will then ask the user.
+    let transcriptBlock = "";
+    let videoTitle = "";
+    try {
+      toast.loading("Fetching transcript…", { id: "fetch-transcript" });
+      const tRes = await fetch("/api/digest/transcript", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+      const tData = await tRes.json().catch(() => ({}));
+      toast.dismiss("fetch-transcript");
+      if (tRes.ok && tData.transcript && typeof tData.transcript === "string") {
+        const clipped = tData.transcript.length > 50000
+          ? tData.transcript.slice(0, 50000) + "\n\n[...transcript truncated at 50k chars...]"
+          : tData.transcript;
+        videoTitle = tData.title && tData.title !== "Unknown" ? ` (${tData.title})` : "";
+        transcriptBlock = [
+          ``,
+          `## Transcript (pre-fetched by Harv — don't re-fetch)`,
+          ``,
+          `Channel: ${tData.channel || "Unknown"}  |  Title: ${tData.title || "Unknown"}  |  ${tData.length} chars`,
+          ``,
+          `<transcript>`,
+          clipped,
+          `</transcript>`,
+          ``,
+        ].join("\n");
+      } else {
+        toast.warning("Transcript unavailable — Claude Code will ask you for it", {
+          description: tData.error?.slice(0, 120),
+        });
+      }
+    } catch (e) {
+      toast.dismiss("fetch-transcript");
+      toast.warning("Transcript fetch errored — continuing without it");
+    }
+
     try {
       const prompt = [
-        `# Implement this video into Harv — scope first, then ask`,
+        `# Implement this video${videoTitle} into Harv — scope first, then ask`,
         ``,
         `Source: ${url.trim()}`,
-        ``,
+        transcriptBlock,
         `**Don't write code yet.** Scope the work and ask me before touching anything.`,
         ``,
         `## Phase 1 — research (do this silently, then report)`,
-        `1. Fetch the transcript yourself (WebFetch or youtube-transcript — don't call the VPS digest agent).`,
+        transcriptBlock
+          ? `1. Use the transcript above — don't try to fetch YouTube from your sandbox (it's blocked).`
+          : `1. Fetch the transcript yourself (WebFetch or youtube-transcript — don't call the VPS digest agent). If your sandbox blocks YouTube, say so and ask me to paste it.`,
         `2. Enumerate the concrete techniques / features the video demonstrates.`,
         `3. For each one, grep the Harv repo for overlap. Flag anything Harv already has (memory system, Telegram bot, router, cron, Supabase persistence, etc.) so we don't rebuild what exists.`,
         ``,
