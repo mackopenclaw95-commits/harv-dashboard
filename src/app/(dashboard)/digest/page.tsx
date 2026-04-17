@@ -318,11 +318,12 @@ export default function DigestPage() {
         `**Don't write code yet.** Scope the work and ask me before touching anything.`,
         ``,
         `## Phase 1 — research (do this silently, then report)`,
+        `1. **Read \`docs/HARV_SYSTEM.md\` first** — that's Harv's ground truth (what's built, what's out-of-scope, hard constraints). Use the decision tree in Section 9 when evaluating each feature from the video.`,
         transcriptBlock
-          ? `1. Use the transcript above — don't try to fetch YouTube from your sandbox (it's blocked).`
-          : `1. Fetch the transcript yourself (WebFetch or youtube-transcript — don't call the VPS digest agent). If your sandbox blocks YouTube, say so and ask me to paste it.`,
-        `2. Enumerate the concrete techniques / features the video demonstrates.`,
-        `3. For each one, grep the Harv repo for overlap. Flag anything Harv already has (memory system, Telegram bot, router, cron, Supabase persistence, etc.) so we don't rebuild what exists.`,
+          ? `2. Use the transcript above — don't try to fetch YouTube from your sandbox (it's blocked).`
+          : `2. Fetch the transcript yourself (WebFetch or youtube-transcript — don't call the VPS digest agent). If your sandbox blocks YouTube, say so and ask me to paste it.`,
+        `3. Enumerate the concrete techniques / features the video demonstrates.`,
+        `4. For each one, apply the decision tree from HARV_SYSTEM.md §9 — flag "already have it" (ref Section 4), "out of scope" (ref Section 6), "constraint violation" (ref Section 7), or "fits launch prep" (ref Section 5). Grep \`src/lib/agent-data.ts\` for the authoritative agent list before claiming something is new.`,
         ``,
         `## Phase 2 — stop and ask me`,
         `Reply with a short plan that includes:`,
