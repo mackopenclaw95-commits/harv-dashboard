@@ -270,17 +270,32 @@ export default function DigestPage() {
     setClaudeSessionUrl(null);
     try {
       const prompt = [
-        `# Implement this video into Harv`,
+        `# Implement this video into Harv — scope first, then ask`,
         ``,
         `Source: ${url.trim()}`,
         ``,
-        `Fetch the transcript yourself (WebFetch or youtube-transcript — don't call the VPS digest agent). Then:`,
+        `**Don't write code yet.** Scope the work and ask me before touching anything.`,
         ``,
-        `1. Identify the concrete features / techniques the video demonstrates.`,
-        `2. Scope which of them actually fit Harv's current architecture (Next.js 16 dashboard on Vercel + Python agents on Hostinger VPS). Skip anything that doesn't — don't force fits.`,
-        `3. Pick the single best-fit change and implement it end-to-end. Open a PR against master with a clear description of what the video showed and what you built.`,
+        `## Phase 1 — research (do this silently, then report)`,
+        `1. Fetch the transcript yourself (WebFetch or youtube-transcript — don't call the VPS digest agent).`,
+        `2. Enumerate the concrete techniques / features the video demonstrates.`,
+        `3. For each one, grep the Harv repo for overlap. Flag anything Harv already has (memory system, Telegram bot, router, cron, Supabase persistence, etc.) so we don't rebuild what exists.`,
         ``,
-        `If the video isn't actually implementable (pure concept video, no code), say so in the PR description and close it rather than inventing busywork.`,
+        `## Phase 2 — stop and ask me`,
+        `Reply with a short plan that includes:`,
+        `- Bullet list of techniques from the video, each tagged "new to Harv", "already have it", or "partial — could extend".`,
+        `- **2-4 concrete options** for what to build, with trade-offs (effort, blast radius, whether anything gets replaced).`,
+        `- For each option that *replaces* existing code, explicitly ask: "Keep the old X as a fallback branch / git tag / parallel module, or delete it?"`,
+        `- Any ambiguities about scope, model choice, data model, or user experience you want my call on.`,
+        ``,
+        `Then **wait for my reply** before writing code.`,
+        ``,
+        `## Phase 3 — after I answer`,
+        `- Before replacing or deleting any existing module, tag the current state (e.g. \`git tag pre-<feature>-<date>\`) so we can roll back without spelunking through history.`,
+        `- Implement only what I approved.`,
+        `- Open a PR against master with: what the video showed, what you picked, what you skipped, what was snapshotted, and how to revert.`,
+        ``,
+        `If the video isn't actually implementable (pure concept / marketing / vibe piece with no concrete buildable features), say so in Phase 2 and stop — don't invent busywork.`,
       ].join("\n");
       await fireClaudeCodeSession(prompt);
     } catch (e) {
