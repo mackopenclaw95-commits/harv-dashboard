@@ -236,18 +236,19 @@ export default function DashboardPage() {
     return `${Math.floor(sec / 60)}m ago`;
   }
 
-  // All available stat cards
+  // Stat cards — all accents mapped to chart-1..5 (teal/green/purple/amber/pink)
+  // per AWESOME_DESIGN.md §3. Tokens repeat when cards > 5.
   const allStatCards = [
-    { id: "agents", label: "Agents", href: "/agents", icon: Bot, color: "bg-violet-500/50", textColor: "text-violet-400", value: () => stats.agents, subtitle: "registered" },
-    { id: "automations", label: "Automations", href: "/crons", icon: Zap, color: "bg-amber-500/50", textColor: "text-amber-400", value: () => stats.crons + getCustomAutomations().filter(a => a.enabled).length, subtitle: "active" },
-    { id: "apiCalls", label: "API Calls", href: "/analytics", icon: BarChart3, color: "bg-sky-500/50", textColor: "text-sky-400", value: () => stats.totalCalls.toLocaleString(), subtitle: "total" },
-    { id: "dailyBurn", label: "Daily Burn", href: "/analytics", icon: TrendingUp, color: "bg-emerald-500/50", textColor: "text-emerald-400", value: () => `$${stats.dailyBurn.toFixed(4)}`, subtitle: `~$${(stats.dailyBurn * 30).toFixed(2)}/mo projected` },
-    { id: "totalSpend", label: "Total Spend", href: "/analytics", icon: DollarSign, color: "bg-emerald-500/50", textColor: "text-emerald-400", value: () => `$${stats.totalSpend.toFixed(4)}`, subtitle: "all time" },
-    { id: "systemHealth", label: "System", href: "/settings?tab=system", icon: Shield, color: "bg-green-500/50", textColor: "text-green-400", value: () => stats.health === "healthy" ? "Online" : stats.health === "checking" ? "..." : "Down", subtitle: stats.health === "healthy" ? "all systems go" : "check status" },
-    { id: "projected", label: "Projected", href: "/analytics", icon: TrendingUp, color: "bg-cyan-500/50", textColor: "text-cyan-400", value: () => `$${(stats.dailyBurn * 30).toFixed(2)}`, subtitle: "monthly estimate" },
-    { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar, color: "bg-rose-500/50", textColor: "text-rose-400", value: () => "—", subtitle: "upcoming events" },
-    { id: "files", label: "Files", href: "/documents", icon: FolderOpen, color: "bg-orange-500/50", textColor: "text-orange-400", value: () => "—", subtitle: "documents" },
-    { id: "projects", label: "Projects", href: "/projects", icon: FolderKanban, color: "bg-indigo-500/50", textColor: "text-indigo-400", value: () => "—", subtitle: "active" },
+    { id: "agents", label: "Agents", href: "/agents", icon: Bot, color: "bg-chart-3", textColor: "text-chart-3", value: () => stats.agents, subtitle: "registered" },
+    { id: "automations", label: "Automations", href: "/crons", icon: Zap, color: "bg-chart-4", textColor: "text-chart-4", value: () => stats.crons + getCustomAutomations().filter(a => a.enabled).length, subtitle: "active" },
+    { id: "apiCalls", label: "API Calls", href: "/analytics", icon: BarChart3, color: "bg-chart-1", textColor: "text-chart-1", value: () => stats.totalCalls.toLocaleString(), subtitle: "total" },
+    { id: "dailyBurn", label: "Daily Burn", href: "/analytics", icon: TrendingUp, color: "bg-chart-2", textColor: "text-chart-2", value: () => `$${stats.dailyBurn.toFixed(4)}`, subtitle: `~$${(stats.dailyBurn * 30).toFixed(2)}/mo projected` },
+    { id: "totalSpend", label: "Total Spend", href: "/analytics", icon: DollarSign, color: "bg-chart-2", textColor: "text-chart-2", value: () => `$${stats.totalSpend.toFixed(4)}`, subtitle: "all time" },
+    { id: "systemHealth", label: "System", href: "/settings?tab=system", icon: Shield, color: "bg-chart-2", textColor: "text-chart-2", value: () => stats.health === "healthy" ? "Online" : stats.health === "checking" ? "..." : "Down", subtitle: stats.health === "healthy" ? "all systems go" : "check status" },
+    { id: "projected", label: "Projected", href: "/analytics", icon: TrendingUp, color: "bg-chart-1", textColor: "text-chart-1", value: () => `$${(stats.dailyBurn * 30).toFixed(2)}`, subtitle: "monthly estimate" },
+    { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar, color: "bg-chart-5", textColor: "text-chart-5", value: () => "—", subtitle: "upcoming events" },
+    { id: "files", label: "Files", href: "/documents", icon: FolderOpen, color: "bg-chart-4", textColor: "text-chart-4", value: () => "—", subtitle: "documents" },
+    { id: "projects", label: "Projects", href: "/projects", icon: FolderKanban, color: "bg-chart-3", textColor: "text-chart-3", value: () => "—", subtitle: "active" },
   ];
 
   // Configurable: which 4 cards to show (stored in localStorage)
@@ -295,16 +296,17 @@ export default function DashboardPage() {
     });
   }
 
+  // Quick links — accents mapped to chart-1..5 palette. Tokens repeat when > 5.
   const allQuickLinks = [
-    { id: "chat", href: "/chat", label: "Chat with Harv", description: "Start a conversation with your AI assistant", icon: MessageSquare, color: "text-sky-400", bg: "bg-sky-500/10 ring-1 ring-sky-500/20" },
-    { id: "agents", href: "/agents", label: "Agents", description: "View and manage all registered agents", icon: Bot, color: "text-violet-400", bg: "bg-violet-500/10 ring-1 ring-violet-500/20" },
-    { id: "automations", href: "/crons", label: "Automations", description: "Manage your scheduled automations", icon: Zap, color: "text-amber-400", bg: "bg-amber-500/10 ring-1 ring-amber-500/20" },
-    { id: "analytics", href: "/analytics", label: "Analytics", description: "API costs, usage metrics, and projections", icon: BarChart3, color: "text-emerald-400", bg: "bg-emerald-500/10 ring-1 ring-emerald-500/20" },
-    { id: "files", href: "/documents", label: "Files", description: "Files and media from your agents", icon: FolderOpen, color: "text-amber-400", bg: "bg-amber-500/10 ring-1 ring-amber-500/20" },
-    { id: "memory", href: "/memory", label: "Memory", description: "Chat history and knowledge base", icon: Brain, color: "text-pink-400", bg: "bg-pink-500/10 ring-1 ring-pink-500/20" },
-    { id: "calendar", href: "/calendar", label: "Calendar", description: "Sync and view your Google Calendar", icon: Calendar, color: "text-rose-400", bg: "bg-rose-500/10 ring-1 ring-rose-500/20" },
-    { id: "integrations", href: "/integrations", label: "Integrations", description: "Connect external services to Harv", icon: Link2, color: "text-cyan-400", bg: "bg-cyan-500/10 ring-1 ring-cyan-500/20" },
-    { id: "projects", href: "/projects", label: "Projects", description: "Organize work into projects", icon: FolderKanban, color: "text-indigo-400", bg: "bg-indigo-500/10 ring-1 ring-indigo-500/20" },
+    { id: "chat", href: "/chat", label: "Chat with Harv", description: "Start a conversation with your AI assistant", icon: MessageSquare, color: "text-chart-1", bg: "bg-chart-1/10 ring-1 ring-chart-1/20" },
+    { id: "agents", href: "/agents", label: "Agents", description: "View and manage all registered agents", icon: Bot, color: "text-chart-3", bg: "bg-chart-3/10 ring-1 ring-chart-3/20" },
+    { id: "automations", href: "/crons", label: "Automations", description: "Manage your scheduled automations", icon: Zap, color: "text-chart-4", bg: "bg-chart-4/10 ring-1 ring-chart-4/20" },
+    { id: "analytics", href: "/analytics", label: "Analytics", description: "API costs, usage metrics, and projections", icon: BarChart3, color: "text-chart-2", bg: "bg-chart-2/10 ring-1 ring-chart-2/20" },
+    { id: "files", href: "/documents", label: "Files", description: "Files and media from your agents", icon: FolderOpen, color: "text-chart-4", bg: "bg-chart-4/10 ring-1 ring-chart-4/20" },
+    { id: "memory", href: "/memory", label: "Memory", description: "Chat history and knowledge base", icon: Brain, color: "text-chart-5", bg: "bg-chart-5/10 ring-1 ring-chart-5/20" },
+    { id: "calendar", href: "/calendar", label: "Calendar", description: "Sync and view your Google Calendar", icon: Calendar, color: "text-chart-5", bg: "bg-chart-5/10 ring-1 ring-chart-5/20" },
+    { id: "integrations", href: "/integrations", label: "Integrations", description: "Connect external services to Harv", icon: Link2, color: "text-chart-1", bg: "bg-chart-1/10 ring-1 ring-chart-1/20" },
+    { id: "projects", href: "/projects", label: "Projects", description: "Organize work into projects", icon: FolderKanban, color: "text-chart-3", bg: "bg-chart-3/10 ring-1 ring-chart-3/20" },
   ];
   const defaultQuickLinks = ["chat", "agents", "automations", "analytics", "files", "memory"];
   const [selectedQuickIds, setSelectedQuickIds] = useState<string[]>(() => {

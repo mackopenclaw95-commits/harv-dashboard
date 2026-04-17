@@ -51,22 +51,34 @@ const FILE_TYPE_ICONS: Record<string, React.ElementType> = {
   other: File,
 };
 
-const FILE_TYPE_COLORS: Record<string, string> = {
-  image: "bg-pink-500/10 text-pink-400 border-pink-500/20",
-  pdf: "bg-red-500/10 text-red-400 border-red-500/20",
-  document: "bg-sky-500/10 text-sky-400 border-sky-500/20",
-  spreadsheet: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  presentation: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  other: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+// File-type palette mapped to chart-1..5 (§3 AWESOME_DESIGN) + destructive for pdf.
+// Badge class (bg + text + border) and a standalone background class are kept
+// separate so list/grid views don't have to slice composite strings.
+const FILE_TYPE_BADGE: Record<string, string> = {
+  image: "bg-chart-5/10 text-chart-5 border-chart-5/20",
+  pdf: "bg-destructive/10 text-destructive border-destructive/20",
+  document: "bg-chart-1/10 text-chart-1 border-chart-1/20",
+  spreadsheet: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+  presentation: "bg-chart-4/10 text-chart-4 border-chart-4/20",
+  other: "bg-chart-3/10 text-chart-3 border-chart-3/20",
+};
+
+const FILE_TYPE_ICON_BG: Record<string, string> = {
+  image: "bg-chart-5/10",
+  pdf: "bg-destructive/10",
+  document: "bg-chart-1/10",
+  spreadsheet: "bg-chart-2/10",
+  presentation: "bg-chart-4/10",
+  other: "bg-chart-3/10",
 };
 
 const FILE_TYPE_ICON_COLORS: Record<string, string> = {
-  image: "text-pink-400",
-  pdf: "text-red-400",
-  document: "text-sky-400",
-  spreadsheet: "text-emerald-400",
-  presentation: "text-amber-400",
-  other: "text-violet-400",
+  image: "text-chart-5",
+  pdf: "text-destructive",
+  document: "text-chart-1",
+  spreadsheet: "text-chart-2",
+  presentation: "text-chart-4",
+  other: "text-chart-3",
 };
 
 const TYPE_FILTERS = [
@@ -467,7 +479,7 @@ function DocumentGridCard({
             variant="outline"
             className={cn(
               "text-[10px] px-1.5 py-0",
-              FILE_TYPE_COLORS[doc.file_type] || FILE_TYPE_COLORS.other
+              FILE_TYPE_BADGE[doc.file_type] || FILE_TYPE_BADGE.other
             )}
           >
             {doc.file_type}
@@ -505,7 +517,8 @@ function DocumentListRow({
   deleting: boolean;
 }) {
   const Icon = FILE_TYPE_ICONS[doc.file_type] || File;
-  const iconColor = FILE_TYPE_ICON_COLORS[doc.file_type] || "text-violet-400";
+  const iconColor = FILE_TYPE_ICON_COLORS[doc.file_type] || FILE_TYPE_ICON_COLORS.other;
+  const iconBg = FILE_TYPE_ICON_BG[doc.file_type] || FILE_TYPE_ICON_BG.other;
 
   return (
     <Card size="sm" className="group">
@@ -514,9 +527,7 @@ function DocumentListRow({
         <div
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-            FILE_TYPE_COLORS[doc.file_type]
-              ? FILE_TYPE_COLORS[doc.file_type].split(" ")[0]
-              : "bg-violet-500/10"
+            iconBg
           )}
         >
           <Icon className={cn("h-4 w-4", iconColor)} />
@@ -530,7 +541,7 @@ function DocumentListRow({
               variant="outline"
               className={cn(
                 "text-[10px] px-1.5 py-0",
-                FILE_TYPE_COLORS[doc.file_type] || FILE_TYPE_COLORS.other
+                FILE_TYPE_BADGE[doc.file_type] || FILE_TYPE_BADGE.other
               )}
             >
               {doc.file_type}
