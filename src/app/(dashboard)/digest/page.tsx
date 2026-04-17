@@ -59,7 +59,7 @@ const MAX_HISTORY = 10;
 
 const MODE_META: Record<Mode, { label: string; icon: React.ComponentType<{ className?: string }>; desc: string; cta: string; Icon: React.ComponentType<{ className?: string }> }> = {
   digest: { label: "Digest", icon: FileText, desc: "Summarize & break into sections", cta: "Digest Video", Icon: Play },
-  implement: { label: "Implement", icon: Wrench, desc: "Step-by-step implementation guide", cta: "Generate Implementation Guide", Icon: Wrench },
+  implement: { label: "Implement", icon: Wrench, desc: "Open a Claude Code session that implements it into Harv", cta: "Implement in Claude Code", Icon: Wrench },
   visual: { label: "Visual", icon: Eye, desc: "Read what's on screen (Gemini VLM)", cta: "Analyze Visually", Icon: Eye },
   multi: { label: "Multi-Video", icon: Lightbulb, desc: "Synthesize ideas from multiple videos", cta: "Synthesize Ideas", Icon: Lightbulb },
 };
@@ -227,6 +227,26 @@ export default function DigestPage() {
     };
   }, [loading, mode]);
 
+  async function fireClaudeCodeSession(text: string) {
+    const res = await fetch("/api/digest/implement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.session_url) {
+      throw new Error(data.error || "Failed to start Claude Code session");
+    }
+    setClaudeSessionUrl(data.session_url);
+    toast.success("Claude Code session started", {
+      description: "Click to open and watch it work",
+      action: {
+        label: "Open",
+        onClick: () => window.open(data.session_url, "_blank", "noopener,noreferrer"),
+      },
+    });
+  }
+
   async function sendToClaudeCode() {
     if (!response.trim()) return;
     setSendingToClaude(true);
@@ -236,28 +256,35 @@ export default function DigestPage() {
         ? `# Implementation guide for: ${videoMeta.title}\n\n`
         : `# Implementation guide\n\n`;
       const sourceLine = url ? `Source video: ${url}\n\n` : "";
-      const prompt = header + sourceLine + response;
-
-      const res = await fetch("/api/digest/implement", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: prompt }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.session_url) {
-        toast.error(data.error || "Failed to start Claude Code session");
-        return;
-      }
-      setClaudeSessionUrl(data.session_url);
-      toast.success("Claude Code session started", {
-        description: "Click to open and watch it work",
-        action: {
-          label: "Open",
-          onClick: () => window.open(data.session_url, "_blank", "noopener,noreferrer"),
-        },
-      });
+      await fireClaudeCodeSession(header + sourceLine + response);
     } catch (e) {
-      toast.error(`Failed: ${String(e)}`);
+      toast.error(`Failed: ${String(e).slice(0, 140)}`);
+    } finally {
+      setSendingToClaude(false);
+    }
+  }
+
+  async function implementDirectly() {
+    if (!url.trim()) { toast.error("Paste a URL"); return; }
+    setSendingToClaude(true);
+    setClaudeSessionUrl(null);
+    try {
+      const prompt = [
+        `# Implement this video into Harv`,
+        ``,
+        `Source: ${url.trim()}`,
+        ``,
+        `Fetch the transcript yourself (WebFetch or youtube-transcript — don't call the VPS digest agent). Then:`,
+        ``,
+        `1. Identify the concrete features / techniques the video demonstrates.`,
+        `2. Scope which of them actually fit Harv's current architecture (Next.js 16 dashboard on Vercel + Python agents on Hostinger VPS). Skip anything that doesn't — don't force fits.`,
+        `3. Pick the single best-fit change and implement it end-to-end. Open a PR against master with a clear description of what the video showed and what you built.`,
+        ``,
+        `If the video isn't actually implementable (pure concept video, no code), say so in the PR description and close it rather than inventing busywork.`,
+      ].join("\n");
+      await fireClaudeCodeSession(prompt);
+    } catch (e) {
+      toast.error(`Failed: ${String(e).slice(0, 140)}`);
     } finally {
       setSendingToClaude(false);
     }
@@ -349,8 +376,7 @@ export default function DigestPage() {
       if (!multiUrls.trim()) { toast.error("Paste at least 2 URLs"); return; }
       askDigest(`synthesize ideas from these videos: ${multiUrls}`, { multiUrls, mode });
     } else if (mode === "implement") {
-      if (!url.trim()) { toast.error("Paste a URL"); return; }
-      askDigest(`implement this video: ${url}`, { url, mode });
+      implementDirectly();
     } else if (mode === "visual") {
       if (!url.trim()) { toast.error("Paste a URL"); return; }
       askDigest(`[vlm] ${url}`, { url, mode });
@@ -644,10 +670,10 @@ export default function DigestPage() {
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || (mode === "multi" ? !multiUrls.trim() : !url.trim())}
+            disabled={loading || sendingToClaude || (mode === "multi" ? !multiUrls.trim() : !url.trim())}
             className="bg-violet-500/20 text-violet-400 border border-violet-500/30 hover:bg-violet-500/30"
           >
-            {loading ? (
+            {loading || sendingToClaude ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               (() => {
@@ -701,6 +727,30 @@ export default function DigestPage() {
         </Card>
       )}
 
+      {/* Claude Code session banner — visible in implement mode once a session is live */}
+      {claudeSessionUrl && mode === "implement" && !response && (
+        <Card className="mb-6 border-emerald-500/30 bg-emerald-500/5">
+          <CardContent className="pt-6 pb-6">
+            <div className="flex items-center gap-3">
+              <Rocket className="h-4 w-4 text-emerald-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-emerald-400">Claude Code session running</p>
+                <p className="text-xs text-muted-foreground">It will read the video, implement what fits Harv, and open a PR when done.</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                onClick={() => window.open(claudeSessionUrl, "_blank", "noopener,noreferrer")}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Watch session
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* How-to (collapsible) */}
       {!response && !loading && (
         <Card className="mb-6">
@@ -721,7 +771,7 @@ export default function DigestPage() {
                   <span className="font-medium text-violet-400">Digest:</span> Paste a YouTube/TikTok/Twitter URL — gets the transcript, breaks it into actionable sections with takeaways.
                 </div>
                 <div>
-                  <span className="font-medium text-violet-400">Implement:</span> Same as digest but generates a complete step-by-step guide with code, commands, and configs. You can follow it without watching the video.
+                  <span className="font-medium text-violet-400">Implement:</span> Spawns a Claude Code session on Anthropic&apos;s cloud that reads the video, scopes what fits Harv&apos;s architecture, and opens a PR. No in-app preview — work happens in the Claude Code session you&apos;ll see linked below.
                 </div>
                 <div>
                   <span className="font-medium text-violet-400">Visual:</span> Sends the actual video frames to Gemini instead of just the transcript. Reads code on screen, UI demos, charts, and diagrams — catches anything a silent demo would show. Best for tutorials and product walkthroughs. Works best on TikTok/Twitter; YouTube bot-gates datacenter IPs.
@@ -823,12 +873,12 @@ export default function DigestPage() {
                   className="text-xs"
                   onClick={() => {
                     setMode("implement");
-                    askDigest(`implement this video: ${url}`, { url, mode: "implement" });
+                    implementDirectly();
                   }}
-                  disabled={loading}
+                  disabled={loading || sendingToClaude}
                 >
                   <Wrench className="h-3 w-3 mr-1" />
-                  Generate Implementation Guide
+                  Implement in Claude Code
                 </Button>
                 {sections.slice(0, 5).map(({ n, title }) => (
                   <Button
