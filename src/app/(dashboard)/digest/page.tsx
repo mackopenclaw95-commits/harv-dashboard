@@ -498,6 +498,10 @@ export default function DigestPage() {
     [progressStep, progressSteps]
   );
   const sections = useMemo(() => extractSections(response), [response]);
+  const todayCount = useMemo(() => {
+    const today = new Date().toDateString();
+    return history.filter((h) => new Date(h.createdAt).toDateString() === today).length;
+  }, [history]);
 
   // Admin gate
   if (authLoading) {
@@ -545,6 +549,11 @@ export default function DigestPage() {
               YouTube, TikTok, Twitter &middot; Transcribe, digest, and implement
             </p>
           </div>
+          {todayCount > 0 && (
+            <span className="rounded-full bg-violet-500/10 text-violet-400 px-2.5 py-1 text-[10px] font-medium ring-1 ring-violet-500/20">
+              {todayCount} today
+            </span>
+          )}
           <button
             onClick={() => setHistoryOpen(!historyOpen)}
             className={cn(
